@@ -1,0 +1,7 @@
+{
+  "name": "consultant-vault",
+  "description": "Run a consulting engagement out of an Obsidian vault: capture meetings and findings as you work, structure what you learn, and draft client-ready synthesis.",
+  "author": {
+    "name": "Dean"
+  }
+}

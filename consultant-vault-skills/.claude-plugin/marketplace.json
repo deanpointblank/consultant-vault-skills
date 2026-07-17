@@ -1,0 +1,16 @@
+{
+  "name": "consultant-vault-skills",
+  "description": "Skills for running a consulting engagement out of an Obsidian vault with Claude Code: meeting sync, daily capture, open questions, repo dossiers, decisions, and client-ready synthesis.",
+  "owner": {
+    "name": "Dean"
+  },
+  "plugins": [
+    {
+      "name": "consultant-vault",
+      "source": "./",
+      "description": "Run a consulting engagement out of an Obsidian vault. Thirteen skills covering capture (Granola meeting sync, daybook, open questions, clippings), structure (repo dossiers, glossary, people, decisions), and synthesis (meeting trends, weekly status, vault hygiene), built on a shared config and property-schema contract.",
+      "category": "productivity",
+      "keywords": ["obsidian", "notes", "consulting", "meetings", "granola", "knowledge-management"]
+    }
+  ]
+}
