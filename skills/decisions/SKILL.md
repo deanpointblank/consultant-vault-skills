@@ -16,6 +16,10 @@ Follow the obsidian-vault skill's conventions. One note per decision, `YYYY-MM-D
 - **Consequences**: what this commits the team to, and any known trade-offs accepted.
 - Wikilink the repos, people, and meetings involved, and add a log line to today's daily note.
 
+## From meetings
+
+A line under a meeting note's Decisions section that commits the team is a decision note, created during the sync or write-up, not on request afterwards. Status updates and observations stay in the meeting. The meeting's line links to the note; the note's Context links the meeting.
+
 ## Superseding
 
 When a new decision replaces an old one: set the old note's `status: superseded`, link both directions (`supersedes` on the new, a "Superseded by" line on the old). Never edit the old decision's content to match the new reality — its value is that it records what was believed at the time.

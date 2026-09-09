@@ -23,7 +23,7 @@ All user preferences live in `<vault>/Meta/Config.md` as YAML frontmatter (see `
 
 The values you will need constantly:
 
-- `folders` — where each note type lives (daily, meetings, repos, people, questions, decisions, glossary, clippings)
+- `folders` — where each note type lives (daily, meetings, repos, people, questions, decisions, glossary, clippings, conflicts)
 - `daily_note_format` — the user's Obsidian daily-note filename format
 - `active_client` — stamped as `client` on every note you create
 - `meeting_types` — the allowed values for the `meeting_type` property
@@ -51,6 +51,10 @@ The vault will grow to hundreds of notes. When answering questions that span man
 2. Read the full body of only the notes that survive the filter.
 
 Use `grep`/`rg` scoped to the relevant config folder for text search. Never bulk-read a folder of note bodies when frontmatter can answer the question.
+
+Skip notes with `visibility: private` when compiling briefings, status reports, or trend analyses, unless the user names the note. A grep hit inside such a note is discarded too; check the frontmatter of every file a search returns before using a line from it.
+
+"What do I need to raise with X", pre-meeting prep, and review-before-sign-off questions start with a frontmatter scan of the questions and conflicts folders for `status: open` items owned by or naming the people involved (open-questions and reconcile skills), before any body search for the subject.
 
 ## 5. Obsidian CLI (optional enhancement)
 

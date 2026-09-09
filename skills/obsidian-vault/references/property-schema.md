@@ -6,9 +6,11 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 
 | Property | Format | Example |
 |----------|--------|---------|
-| `type` | one of: `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report` | `meeting` |
+| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `clipping` | `meeting` |
 | `client` | slug from config `clients` | `uscold` |
 | `created` | `YYYY-MM-DD` | `2026-07-17` |
+| `jira` | optional list of ticket keys | `- PFD-65810` |
+| `visibility` | optional; `private` excludes the note from briefings, status reports, and trend analyses unless the user names it | `private` |
 
 ## type: meeting
 
@@ -20,6 +22,7 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 | `topics` | list of plain strings | extracted at capture time; this drives trend queries |
 | `source` | `granola` or `manual` | where the note came from |
 | `granola_id` | string | Granola's meeting id; dedupe key. Only when `source: granola` |
+| `attendees_confirmed` | `false` | present only when the roster was inferred from content rather than supplied by the source |
 
 ## type: repo
 
@@ -45,6 +48,43 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 | `status` | `proposed`, `accepted`, `superseded` | |
 | `decided_on` | `YYYY-MM-DD` | |
 | `supersedes` | quoted wikilink | link to the decision this replaces, if any |
+
+## type: ticket
+
+One note per Jira ticket the engagement works, filename `KEY Short title.md` in the tickets folder. Handoffs, stories, spikes, and reviews for a ticket link here instead of restating its state.
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `key` | string | the Jira key, e.g. `PFD-65810` |
+| `epic` | string | parent key, if any |
+| `status` | `draft`, `in-progress`, `review`, `done` | the vault's view, not a mirror of Jira |
+| `owner` | quoted wikilink | who is driving it |
+
+## type: handoff
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `status` | `current`, `superseded` | one current handoff per ticket |
+| `supersedes` | quoted wikilink | the previous handoff for the same ticket |
+| `topics` | list of plain strings | |
+
+## type: time-log
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `period_start` | `YYYY-MM-DD` | |
+| `period_end` | `YYYY-MM-DD` | |
+| `status` | `draft`, `posted` | `posted` only when every row has a worklog id |
+
+## type: conflict
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `kind` | `claim-vs-finding`, `ruling-vs-ruling`, `goal-vs-decision` | what sort of contradiction |
+| `status` | `open`, `resolved`, `obsolete` | lowercase, single word |
+| `sources` | list of exactly two quoted wikilinks | new statement first, contradicted record second |
+| `owner` | quoted wikilink | who can settle it |
+| `resolved_on` | `YYYY-MM-DD` | set only when status leaves `open` |
 
 ## type: person
 

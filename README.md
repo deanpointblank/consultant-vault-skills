@@ -16,13 +16,17 @@ Agent skills for running a consulting engagement out of an Obsidian vault with C
 | `glossary` | Client and domain jargon, with acronym aliases and provenance. |
 | `people` | Stakeholders, roles, and ownership. Professional context only. |
 | `decisions` | Lightweight ADRs with context, rejected options, and supersession chains. |
+| `handoff` | End-of-session state of a ticket in a fixed shape, chained by `supersedes`, so the next session resumes cold. |
+| `shareable` | External-safe copy of an internal note: wikilinks stripped, names to roles, linked both ways to its source. |
+| `time-logging` | Per-day, per-ticket worklog draft reconciled against the invoice source, with evidence and soft spots. Never posts. |
+| `reconcile` | Contradictions between what was said and what the vault records, with owner and status, surfaced before the meeting where they can be settled. |
 | `meeting-trends` | Recurring topics, persistent blockers, and topic evolution across synced meetings. |
 | `weekly-status` | Client-ready weekly update drafted from the week's captures. |
 | `vault-gardener` | Hygiene checks and approved-only fixes. Never deletes. |
 
 ## Install
 
-This repo is a Claude Code plugin marketplace containing one plugin, `consultant-vault`, which bundles all thirteen skills. From Claude Code:
+This repo is a Claude Code plugin marketplace containing one plugin, `consultant-vault`, which bundles all seventeen skills. From Claude Code:
 
 ```
 /plugin marketplace add <owner>/consultant-vault-skills

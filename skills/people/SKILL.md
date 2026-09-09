@@ -14,6 +14,7 @@ Record role, team, ownership, and work context. Do not record personal details, 
 ## Creating and enriching
 
 - Frontmatter per the property schema: `role`, `team`, `owns` as a list of quoted wikilinks to repos and systems.
+- `aliases` holds every spelling a transcript has produced for the person ("Whitedoc", "Fatima"); granola-sync adds them as it resolves mistranscriptions, and the empty declared list is worth filling for anyone whose name Granola gets wrong.
 - Stubs created by granola-sync (name only) get enriched here as facts arrive — every "Jane owns the Keycloak setup" mentioned in passing is an `owns` entry.
 - Body: how to reach them, working context (timezone, availability patterns if relevant), and links to meetings they've attended (backlinks handle most of this automatically).
 
@@ -25,4 +26,4 @@ Record role, team, ownership, and work context. Do not record personal details, 
 
 ## Pre-meeting briefing
 
-Given a meeting's attendees: for each person, their role, team, what they own, plus any open questions they're the `owner` of — the ask-list writes itself.
+Given a meeting's attendees: for each person, their role, team, what they own, any open questions they're the `owner` of, and any open conflicts they own or appear in (reconcile skill) — the ask-list writes itself.

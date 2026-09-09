@@ -16,6 +16,11 @@ Follow the obsidian-vault skill's conventions. This skill runs in two strictly s
 - Orphan notes: no inbound wikilinks anywhere in the vault (grep for `[[Name` across all folders).
 - Broken wikilinks: targets that don't exist. Distinguish genuine breakage from person and glossary stubs waiting to be created — the latter are suggestions, not errors.
 - Glossary collisions: a term existing as both a filename and another note's alias.
+- Glossary coverage: capitalised terms and acronyms mentioned in ten or more notes with no glossary filename or alias. Report the top fifteen with mention counts; the project's own core vocabulary is the usual gap, because nobody looks it up.
+- Private notes: bodies that say "private" or "do not share" without `visibility: private` in frontmatter. The body marker filters nothing.
+- Property drift: one concept under two keys (`ticket` and `jira`, `artifact` and `artifacts`). Report both counts and name the majority form.
+- Type drift: notes whose filename genre word (Handoff, Story, Spike, Runbook, Review) disagrees with `type`.
+- Sync State integrity: run lines that landed below the exclusions heading, and flags in the run log that a later note has already resolved.
 
 ## Report
 

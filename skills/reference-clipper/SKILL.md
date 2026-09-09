@@ -15,6 +15,10 @@ Follow the obsidian-vault skill's conventions. Clippings are evergreen notes in 
 4. Wikilink entities the vault already knows — repos, glossary terms, people — so the clipping joins the graph instead of sitting inert.
 5. Add a one-line entry to today's daily note noting what was clipped and why, if the user gave a reason.
 
+## Local files
+
+A PDF, markdown, or text file the user points at is clipped the same way. `source_url` takes a `file://` path; copy the original into the attachments folder first and point `source_url` at the copy, because a path outside the vault stops resolving when the download folder is cleaned. Add `author` and `source_date` when the document states them.
+
 ## Edge cases
 
 - **Auth-walled or paywalled pages**: create a stub note with the URL, the title, and whatever summary the user provides. Say plainly that the content couldn't be fetched — never fabricate a summary of a page you couldn't read.
