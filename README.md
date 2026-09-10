@@ -49,6 +49,10 @@ Skills trigger automatically from their descriptions; to invoke one by name, plu
 
 The plugin intentionally has no pinned `version`: every commit to this repo counts as a new version, so `/plugin update` (and background auto-update) picks up changes as they land. Before pushing, validate with `claude plugin validate .` from the repo root.
 
+## Output style
+
+The plugin ships one output style, `output-styles/plain-english.md`: action-first replies in plain English, sentences that average 15 words, everyday words, terms defined where they first appear, state restated every turn. It keeps Claude Code's coding instructions and changes only how replies read. Turn it on with `/config` → Output style → Plain English, or `"outputStyle": "Plain English"` in your settings. It covers everything the `i-have-adhd` plugin did, so disable that one if you use both. Wording test: `docs/superpowers/baselines/results/plain-english-2026-09-10.md`.
+
 ## Setup
 
 Ask Claude Code to set up your vault (this triggers `vault-init`). It will ask for your vault path, client slug, timezone, and daily-note date format, then scaffold folders, config, and templates. Machine-specific state lives in `~/.config/vault-skills/vault-path` (or `$OBSIDIAN_VAULT`); everything else lives in your vault at `Meta/Config.md`, editable in Obsidian.
