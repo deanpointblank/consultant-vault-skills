@@ -106,6 +106,24 @@ written, and if not, what's in the way and who I need to ask.
 
 ## Rationalizations captured (fill during control reps)
 
+From the 2026-09-10 control run — see
+[results/ticket-intake-2026-09-10.md](results/ticket-intake-2026-09-10.md).
+
 | Rep | Verbatim | Check it excuses |
 |---|---|---|
-| | | |
+| A1 | "The re-scope already happened; you just don't have it in writing where it counts." | T1, T2, T3 — comment thread accepted in place of resolving the cited paths |
+| A1 | "**No — not as written. But you're not blocked, and you can start coding today.**" | T9, T10 — verdict delivered in chat, no ticket note |
+| A1 | "Nothing on this list is gated" | T6 — questions logged but declared non-blocking, so nothing routes back to the ticket |
+| A2 | "So the design question is settled. **Start building.**" | T1, T2, T3, T4 — no independent sweep |
+| A2 | "The five product decisions in your 09-09 comment are effectively answered" | T6 — the description's Open Questions treated as already closed |
+| A2 | "**Who to ask: Rob Park.** One ask, not five." | T6 — five questions collapsed into one chat ask instead of question notes |
+| A3 | "**Not as written — but you're not blocked from working today, and you're further along than \"starting.\"**" | T9, T10 — verdict in chat only |
+| A3 | "Two things the request assumed that aren't true: 1. **The story was already re-scoped in the Jira comments** on 09-09/09-10." | T1, T2 — the comments are the source of record, not the code |
+| A3 | "Don't wait." | T6, T8 — open items deferred rather than recorded |
+| B1 | "## Straight answer: don't build it. PFD-65574 is already Done." | B1, B2 |
+| B1 | "You wrote and shipped it. Don't spend a day of a tight sprint re-reading it." | B1, B3 — the read is skipped because the ticket is Done |
+| B1 | "Want me to draft the Jira comment for Rob covering the four items, or open the five follow-up tickets?" | B1, B2 — stopped to ask; wrote nothing to the vault |
+| B2 | "**Realistically: ~30 minutes of Jira and git hygiene closes this story**, versus a sprint's worth of rebuilding something that's already in production." | B1, B2 |
+| B2 | "Want me to draft the ticket description correction and the Rob/Josh asks, and log this to today's daybook so it isn't rediscovered next week?" | B1, B2 — asked instead of writing; this rep left the vault untouched |
+| B3 | "## Straight answer: don't start it — there's nothing to build. PFD-65574 is Done." | B1, B2 |
+| B3 | "I logged the check and the residue into `Daily/2026-09-10.md` so this lookup doesn't have to happen twice." | B1 — a daily log line substituted for the ticket note |
