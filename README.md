@@ -19,6 +19,7 @@ Agent skills for running a consulting engagement out of an Obsidian vault with C
 | `handoff` | End-of-session state of a ticket in a fixed shape, chained by `supersedes`, so the next session resumes cold. |
 | `shareable` | External-safe copy of an internal note: wikilinks stripped, names to roles, linked both ways to its source. |
 | `time-logging` | Per-day, per-ticket worklog draft reconciled against the invoice source, with evidence and soft spots. Never posts. |
+| `work-chart` | One plain-language work note per ticket per day: what changed, why, what was decided. A Base over them, a `Work:` line after each batch of rows, and a Stop hook that asks for rows when the repo changed. |
 | `reconcile` | Contradictions between what was said and what the vault records, with owner and status, surfaced before the meeting where they can be settled. |
 | `meeting-trends` | Recurring topics, persistent blockers, and topic evolution across synced meetings. |
 | `weekly-status` | Client-ready weekly update drafted from the week's captures. |
@@ -26,7 +27,7 @@ Agent skills for running a consulting engagement out of an Obsidian vault with C
 
 ## Install
 
-This repo is a Claude Code plugin marketplace containing one plugin, `consultant-vault`, which bundles all seventeen skills. From Claude Code:
+This repo is a Claude Code plugin marketplace containing one plugin, `consultant-vault`, which bundles all eighteen skills. From Claude Code:
 
 ```
 /plugin marketplace add <owner>/consultant-vault-skills
@@ -48,6 +49,10 @@ Skills trigger automatically from their descriptions; to invoke one by name, plu
 ## Updates
 
 The plugin intentionally has no pinned `version`: every commit to this repo counts as a new version, so `/plugin update` (and background auto-update) picks up changes as they land. Before pushing, validate with `claude plugin validate .` from the repo root.
+
+## Hooks
+
+The plugin ships one Stop hook, `hooks/work-chart-stop.sh`. At the end of a turn it checks whether the current repo has uncommitted changes that differ from the last time work-chart wrote rows. If so it asks Claude to write the rows. It is silent when no vault is configured on the machine, when the current directory is not a client repo with a dossier in the vault, and when nothing changed. It never writes to the repo or the vault. Tests: `bash hooks/tests/test-work-chart-hook.sh`.
 
 ## Setup
 

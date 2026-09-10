@@ -13,13 +13,13 @@ Frontmatter per the property schema: `type: handoff`, `jira` (the ticket key fir
 
 Body sections, in this order. Keep the headings; leave a section as one line saying "none" rather than dropping it.
 
-1. **Where things stand** — one bold paragraph: what shipped, what is blocked, what the next person does first.
+1. **Where things stand** — one bold paragraph: what shipped, what is blocked, what the next person does first. What shipped comes from the ticket's work notes for the days since the previous handoff, not from memory.
 2. **Where everything is** — a table, not prose: pull requests with numbers and head SHAs, branches, worktrees, migration versions, Jira comment ids, the story doc path. Everything someone would otherwise have to rediscover.
 3. **Test gate** — the literal counts and whether they were green, per repo.
 4. **Rulings made on the user's behalf** — every decision taken without the person who normally decides, each with its rationale and what reversing it costs. Each one is also a `proposed` decision note via the decisions skill; this section links them.
 5. **Gated** — what is waiting on someone else, one line each, naming the person. An answer given to a colleague without checking is an open question note owned by the person who should have answered, linked here.
 6. **Pick-up list** — numbered, one action per line, in the order to do them.
-7. **Related** — one line of wikilinks: the ticket note, the daily note, the previous handoff, the people involved.
+7. **Related** — one line of wikilinks: the ticket note, the daily note, the previous handoff, the people involved, and every work note for the ticket since the previous handoff.
 
 ## The chain
 

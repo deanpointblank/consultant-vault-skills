@@ -6,7 +6,7 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 
 | Property | Format | Example |
 |----------|--------|---------|
-| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `clipping` | `meeting` |
+| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `work` | `meeting` |
 | `client` | slug from config `clients` | `uscold` |
 | `created` | `YYYY-MM-DD` | `2026-07-17` |
 | `jira` | optional list of ticket keys | `- PFD-65810` |
@@ -107,6 +107,18 @@ One note per Jira ticket the engagement works, filename `KEY Short title.md` in 
 |----------|--------|-------|
 | `period_start` | `YYYY-MM-DD` | |
 | `period_end` | `YYYY-MM-DD` | |
+
+## type: work
+
+One note per ticket per day, filename `KEY Work YYYY-MM-DD.md` (or `Work - <topic> YYYY-MM-DD.md` with no ticket) in the work folder. Rows of what changed, why, and what was decided, written by work-chart as the work happens. `Work.base` in the same folder lists them.
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `jira` | list of ticket keys | the ticket worked first; empty for work with no ticket |
+| `date` | `YYYY-MM-DD` | the day the work happened |
+| `repos` | list of quoted wikilinks | repo dossiers touched |
+| `areas` | list of plain strings | parts of the codebase touched, in the reader's words |
+| `changes` | integer | number of rows in the note |
 
 ## Conventions
 

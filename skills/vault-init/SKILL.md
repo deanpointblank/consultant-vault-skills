@@ -25,6 +25,7 @@ The config template ships with example values (client, timezone), not defaults. 
 - Create every folder from the (possibly renamed) `folders` map, plus `Meta/`.
 - Write `Meta/Config.md` based on the template with the interview answers substituted.
 - Copy default note templates into the vault's templates folder, skipping any that already exist: meeting templates from `../granola-sync/templates/`, the repo template from `../repo-dossier/templates/`, the decision template from `../decisions/templates/`, the conflict template from `../reconcile/templates/`, the handoff and ticket templates from `../handoff/templates/`, the time-logging template from `../time-logging/templates/`.
+- Copy `../work-chart/templates/Work.base` into the work folder as `Work.base`, skipping if one exists, and create `~/.config/vault-skills/work-stamp/`.
 
 ## 4. Verify and report
 

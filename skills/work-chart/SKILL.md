@@ -35,7 +35,7 @@ After writing: update the first line, `changes`, `areas`, `repos`. Daily note: `
 
 ## Answering "what did you just do"
 
-What, why, where to read more; at least three lines. Cite the work note as a wikilink — `[[PFD-65947 Work 2026-09-10]]`, not a file path — so the reader can open it. No rows yet: write them first, then answer.
+What, why, where to read more; at least three lines. Cite the work note as a wikilink — `[[PFD-65947 Work 2026-09-10]]`, not a file path — so the reader can open it. No rows yet: write them first, then answer. A read-back changes no file.
 
 ## Setup
 
