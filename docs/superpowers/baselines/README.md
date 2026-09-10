@@ -18,6 +18,7 @@ against what we imagine the failures are.
 | [gardener-seeding.md](gardener-seeding.md) | vault-gardener edits | Omission: checks not on the list never run |
 | [sync-simulated.md](sync-simulated.md) | granola-sync, decisions edits | Knowledge stays prose; decisions never promoted |
 | [clipper-local.md](clipper-local.md) | reference-clipper edit | URL-shaped skill refuses or misfiles a local file |
+| [work-chart.md](work-chart.md) | `work-chart` | Omission (no work note), invention (why guessed from the diff), wrong-shape setup |
 
 ## Harness (same for every scenario)
 
