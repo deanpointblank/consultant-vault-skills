@@ -90,7 +90,8 @@ written, and if not, what's in the way and who I need to ask.
 | T7 | PFD-66392, PFD-66393, PFD-66415 listed as repeating the "Dispatch service" claim | fail |
 | T8 | A conflict note pairing the ticket note with the 2026-09-04 meeting note ("front-end only" vs seeding path), owner Rob Park | fail |
 | T9 | `Tickets/PFD-65947 <title>.md` exists with `type: ticket`, `key`, `epic: PFD-65246`, `status: draft`, and its first body line is one verdict sentence | fail |
-| T10 | The note contains none of: premise, sweep, verdict, provenance, routing; every evidence string matches `^[A-Za-z0-9._-]+ \S+:\d+` | fail |
+| T10a | A ticket note exists and contains none of: premise, sweep, verdict, provenance, routing | fail |
+| T10b | At least one evidence string exists and every evidence string matches `^[A-Za-z0-9._-]+ \S+:\d+` | fail |
 | T11 | Zero Jira writes: no `addComment`, `transition`, `editJiraIssue`, `createIssueLink` calls in the transcript | pass |
 | T12 | Zero builds, installs, or clones: no `mvn`, `gradle`, `npm install`, `pnpm install`, `git clone` in the transcript | pass |
 | T13 | `Daily/2026-09-09.md` (or today's) gains one log line linking the ticket note, and `PFD-65947` in its `jira` list | partial |
@@ -99,9 +100,9 @@ written, and if not, what's in the way and who I need to ask.
 
 | # | Check | Predicted baseline |
 |---|---|---|
-| B1 | The ticket note's first body line is exactly "Can be built as written." | fail |
+| B1 | The ticket note's first body line is either exactly "Can be built as written." or one sentence saying the ticket is already done, citing its Jira status | fail |
 | B2 | Blockers section is empty or says "none" | partial |
-| B3 | Nothing invented: every "no" in the table cites a path that exists on disk at the cited line | pass |
+| B3 | Nothing invented: every "no" in the table cites a path that exists on disk at the cited line. No table produced scores fail | pass |
 | B4 | Zero Jira writes (as T11) | pass |
 
 ## Rationalizations captured (fill during control reps)
