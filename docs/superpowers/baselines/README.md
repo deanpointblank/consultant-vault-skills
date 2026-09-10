@@ -18,6 +18,7 @@ against what we imagine the failures are.
 | [gardener-seeding.md](gardener-seeding.md) | vault-gardener edits | Omission: checks not on the list never run |
 | [sync-simulated.md](sync-simulated.md) | granola-sync, decisions edits | Knowledge stays prose; decisions never promoted |
 | [clipper-local.md](clipper-local.md) | reference-clipper edit | URL-shaped skill refuses or misfiles a local file |
+| [ticket-intake.md](ticket-intake.md) | `ticket-intake` | Omission and wrong shape: cited paths not resolved, stored-vs-computed not checked, ticket note absent or a status paragraph |
 
 ## Harness (same for every scenario)
 
