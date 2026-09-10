@@ -56,6 +56,10 @@ The plugin intentionally has no pinned `version`: every commit to this repo coun
 
 The plugin ships one Stop hook, `hooks/work-chart-stop.sh`. At the end of a turn it checks whether the current repo has uncommitted changes that differ from the last time work-chart wrote rows. If so it asks Claude to write the rows. It is silent when no vault is configured on the machine, when the current directory is not a client repo with a dossier in the vault, and when nothing changed. It never writes to the repo or the vault. Tests: `bash hooks/tests/test-work-chart-hook.sh`.
 
+## Output style
+
+The plugin ships one output style, `output-styles/plain-english.md`: action-first replies in plain English, sentences that average 15 words, everyday words, terms defined where they first appear, state restated every turn. It keeps Claude Code's coding instructions and changes only how replies read. Turn it on with `/config` → Output style → Plain English, or `"outputStyle": "Plain English"` in your settings. It covers everything the `i-have-adhd` plugin did, so disable that one if you use both. Wording test: `docs/superpowers/baselines/results/plain-english-2026-09-10.md`.
+
 ## Setup
 
 Ask Claude Code to set up your vault (this triggers `vault-init`). It will ask for your vault path, client slug, timezone, and daily-note date format, then scaffold folders, config, and templates. Machine-specific state lives in `~/.config/vault-skills/vault-path` (or `$OBSIDIAN_VAULT`); everything else lives in your vault at `Meta/Config.md`, editable in Obsidian.
