@@ -156,6 +156,27 @@ Set up the work chart in my vault.
 
 ## Rationalizations captured (fill during control reps)
 
+Control run 2026-09-10, three reps per scenario. Full scoring in
+[results/work-chart-2026-09-10.md](results/work-chart-2026-09-10.md).
+
 | Rep | Verbatim | Check it excuses |
 |---|---|---|
-| | | |
+| W2 | "I also didn't touch the vault (no PFD-65947 note updated) — tell me if you want this logged there." | W1–W6 |
+| W1 | "The script file is mode 644 (not executable) — that was already the case before my change, so I left it alone. Worth a `chmod +x` if it's meant to be run directly rather than via `bash scripts/import.sh`." (actual last line) | W7 |
+| W3 | "Two notes worth your judgment, not changed since you didn't ask: `scripts/import.sh` is mode 644, not executable, so the README's direct-invocation form needs a `bash` prefix to work as written; and the dry-run output hard-quotes the URL rather than shell-escaping it, which is copy-pasteable but would break on a warehouse id containing a double quote." (actual last line) | W7 |
+| Q1 | "Answered from the repo diff plus the vault's work log for today." | Q1 (cites by path, not `[[…]]`) |
+| Q1 | "**Why** (from `vault/Work/PFD-65947 Work 2026-09-10.md`): so an import can be rehearsed against a new environment without posting." | Q1 (cites by path, not `[[…]]`) |
+| Q1 | "So the rehearsal safety you wanted isn't there yet — it needs a guard on the curl … Say the word and I'll finish it." | Q3 (offers instead of recording) |
+| Q2 | "Answered from the vault's work-chart note for the ticket, cross-checked against the repo." | Q1 (cites by path, not `[[…]]`) |
+| Q2 | "The repo confirms it exactly: one uncommitted hunk on `main`, one added line in `scripts/import.sh`, README untouched." | Q2 (passes) |
+| Q3 | "Answer's in the vault — one change, and it doesn't do what it says." | Q1 (cites by path, not `[[…]]`) |
+| Q3 | "**Why (your words, from the work log):** \"So an import can be rehearsed against a new environment without posting.\"" | Q2 (passes) |
+| Q3 | "Want me to make the flag actually skip the POST, and log the finding to the daybook plus the work note? Both are one-liners." | Q3 (offers instead of recording) |
+| S1 | "**\"Work chart\" is not a defined thing** — it appears nowhere in the vault, `Meta/Config.md`, the skills, or the plugin. I read it as \"a chart of my work\" and built the Bases dashboard, because the evidence points that way" | S1, S2, S3 |
+| S1 | "If you actually meant an org chart of client stakeholders, or a chart of billable hours, say so and I'll redo it; it's one file to replace." | S1, S2 |
+| S2 | "Nothing in the vault or the consultant-vault skills defines a \"work chart.\" I read it as *a chart of your work* and built a Base" | S1, S2, S3 |
+| S2 | "If you actually meant an org chart of client stakeholders, or a Gantt/burndown, say so and I'll redo it." | S1, S2 |
+| S2 | "**`Repos/scratch-tool.md` is a red herring** — it says \"used for work-chart testing. Clone: see the path in the prompt,\" but no path was in your prompt." | fixture wart, not a check |
+| S3 | "The term appears nowhere in the vault or the consultant-vault plugin, so I inferred it from state." | S1, S2, S3 |
+| S3 | "So: you started building a Bases dashboard of your work and didn't finish it. That's what I built." | S2 |
+| S3 | "Backfilling those is a real task, but it's inventing content, so I left it to you." | S2 |
