@@ -19,6 +19,7 @@ Follow the obsidian-vault skill's conventions. This skill runs in two strictly s
 - Glossary coverage: capitalised terms and acronyms mentioned in ten or more notes with no glossary filename or alias. Report the top fifteen with mention counts; the project's own core vocabulary is the usual gap, because nobody looks it up.
 - Private notes: bodies that say "private" or "do not share" without `visibility: private` in frontmatter. The body marker filters nothing.
 - Property drift: one concept under two keys (`ticket` and `jira`, `artifact` and `artifacts`). Report both counts and name the majority form.
+- Runbook index: every note with `type: runbook` has a row in `<folders.runbooks>/Runbooks.md`; every row's wikilink resolves to a note; each row's sentence matches its note's first body line; each row's status and last-run date match the note's frontmatter. Report each miss with the note name; fix only with approval.
 - Type drift: notes whose filename genre word (Handoff, Story, Spike, Runbook, Review) disagrees with `type`.
 - Sync State integrity: run lines that landed below the exclusions heading, and flags in the run log that a later note has already resolved.
 

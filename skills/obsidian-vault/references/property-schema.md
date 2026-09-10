@@ -6,7 +6,7 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 
 | Property | Format | Example |
 |----------|--------|---------|
-| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `clipping` | `meeting` |
+| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference` | `meeting` |
 | `client` | slug from config `clients` | `uscold` |
 | `created` | `YYYY-MM-DD` | `2026-07-17` |
 | `jira` | optional list of ticket keys | `- PFD-65810` |
@@ -107,6 +107,21 @@ One note per Jira ticket the engagement works, filename `KEY Short title.md` in 
 |----------|--------|-------|
 | `period_start` | `YYYY-MM-DD` | |
 | `period_end` | `YYYY-MM-DD` | |
+
+## type: runbook
+
+One note per workflow outcome, filename `Runbook - <what it does>.md` in the runbooks folder. Written by runbook-capture, run and updated by runbook-run, listed in `Runbooks.md` in the same folder.
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `topics` | list of plain strings | |
+| `repos` | list of quoted wikilinks | repo dossiers for the scripts and services involved |
+| `status` | `draft`, `verified`, `retired` | draft: written, never run. verified: run clean at least once. retired: do not run |
+| `last_run` | `YYYY-MM-DD` | set by runbook-run |
+
+## type: reference
+
+Free-form notes that other notes point at: an index, an environment sheet, a login note. No properties beyond the base trio and optional `topics` and `visibility`.
 
 ## Conventions
 
