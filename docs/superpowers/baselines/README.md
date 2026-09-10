@@ -18,6 +18,7 @@ against what we imagine the failures are.
 | [gardener-seeding.md](gardener-seeding.md) | vault-gardener edits | Omission: checks not on the list never run |
 | [sync-simulated.md](sync-simulated.md) | granola-sync, decisions edits | Knowledge stays prose; decisions never promoted |
 | [clipper-local.md](clipper-local.md) | reference-clipper edit | URL-shaped skill refuses or misfiles a local file |
+| [runbooks.md](runbooks.md) | `runbook-capture`, `runbook-run` | Wrong shape (no inputs, marks, or expected output), skipped confirms, and no offer on repeat |
 
 ## Harness (same for every scenario)
 
