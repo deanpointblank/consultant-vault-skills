@@ -20,6 +20,7 @@ against what we imagine the failures are.
 | [clipper-local.md](clipper-local.md) | reference-clipper edit | URL-shaped skill refuses or misfiles a local file |
 | [runbooks.md](runbooks.md) | `runbook-capture`, `runbook-run` | Wrong shape (no inputs, marks, or expected output), skipped confirms, and no offer on repeat |
 | [work-chart.md](work-chart.md) | `work-chart` | Omission (no work note), invention (why guessed from the diff), wrong-shape setup |
+| [ticket-intake.md](ticket-intake.md) | `ticket-intake` | Omission and wrong shape: cited paths not resolved, stored-vs-computed not checked, ticket note absent or a status paragraph |
 
 ## Harness (same for every scenario)
 
