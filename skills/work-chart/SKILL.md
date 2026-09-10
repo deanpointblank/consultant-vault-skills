@@ -5,7 +5,7 @@ description: Keep a plain-language record of coding work as it happens, one note
 
 # Work chart
 
-Follow the obsidian-vault skill's conventions. One note per ticket per day in `folders.work` (key missing: run Setup below first). Filename `KEY Work YYYY-MM-DD.md`; no ticket: `Work - <topic> YYYY-MM-DD.md`. Template: vault templates folder first, else this skill's `templates/Work.md`.
+Follow the obsidian-vault skill's conventions. One note per ticket per day in `folders.work`. No `work` key in `Meta/Config.md`: the folder is `Work` — create it and write the rows there now. The rows never wait for an answer; ask about the config key in one line above the Work line, which is still the last line of the reply. Filename `KEY Work YYYY-MM-DD.md`; no ticket: `Work - <topic> YYYY-MM-DD.md`. Template: vault templates folder first, else this skill's `templates/Work.md`.
 
 ## When rows get written
 
@@ -23,7 +23,7 @@ First line under the title: one sentence saying what the day's work on this tick
 
 One table: `when | what | why | decided`.
 
-- One row per logical change (a fix, a refactor, a plan task) or per investigation that concluded something. Not per turn, per file, or per commit.
+- One row per logical change (a fix, a refactor, a plan task) or per investigation that concluded something. Not per turn, per file, or per commit. Two changes with different reasons are two rows even in one edit — the code change and the doc line that announces it each get their own `why`.
 - `what`: the repo and path of what changed, and the commit when there is one. No code change: start with "Read" and end with "nothing changed".
 - `why`: one sentence in the reader's words. The reason, not the ticket key.
 - `decided`: the call and its reason, or "none". A call that constrains future work or a reviewer would question also becomes a `proposed` decision note through the decisions skill; the cell links it.
@@ -41,10 +41,10 @@ What, why, where to read more; at least three lines. Cite the work note as a wik
 
 "Set up the work chart", or a first write with no `folders.work` key. Setup creates the place the rows live; it is not a chart over notes that already exist.
 
-1. Add `work: Work` under `folders` in `Meta/Config.md` after the user confirms.
-2. Create the folder.
-3. Copy this skill's `templates/Work.base` to `<folders.work>/Work.base` unless one exists.
-4. Create `~/.config/vault-skills/work-stamp/`.
+1. Create `<folders.work>`, or `Work` when the key is missing.
+2. Copy this skill's `templates/Work.base` into it as `Work.base` unless one exists.
+3. Create `~/.config/vault-skills/work-stamp/`.
+4. Ask the user to confirm `work: Work` under `folders` in `Meta/Config.md`; edit it only on their yes. Steps 1-3 do not wait for that answer.
 5. Say in one line whether the plugin's Stop hook is present (`hooks/hooks.json` at the plugin root). Absent: rows are written at pauses only.
 
 The hook is silent unless a vault is configured and the current repo has a dossier; say so when a repo has none.
@@ -66,4 +66,8 @@ The hook is silent unless a vault is configured and the current repo has a dossi
 | "I read it as 'a chart of my work' and built the Bases dashboard" | A chart at the vault root over notes nobody has written yet; Setup comes first |
 | "The term appears nowhere in the vault … so I inferred it from state" | Half-finished files in the vault are not the request; Setup is |
 | Guessing, then offering a redo — "say so and I'll redo it" | One question before building beats one rebuild after |
-| Adding `work: Work` to `Meta/Config.md` before the user says yes | It is the user's config; step 1 asks, then edits |
+| Adding `work: Work` to `Meta/Config.md` before the user says yes | It is the user's config; step 4 asks, then edits |
+| "Blocked — one question before I write the work-chart rows … `Meta/Config.md` has no `folders.work` key" | The key names the folder; it does not gate the rows. `Work` is the default until the user picks another |
+| Holding the folder, the base and the stamp folder for the same yes | Only the config line is the user's to approve; the rest is this skill's own scaffolding |
+| One row for the whole task — "`scripts/import.sh` and `README.md` — added a `--dry-run` flag …, and put the flag in the README usage line" | Two reasons, two rows; `changes` and the Work line both count what the reader will look for |
+| A last line like "Want me to add `work: Work` under `folders`?" | The config question is a caveat; every caveat sits above the Work line |
