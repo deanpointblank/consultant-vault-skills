@@ -18,6 +18,7 @@ against what we imagine the failures are.
 | [gardener-seeding.md](gardener-seeding.md) | vault-gardener edits | Omission: checks not on the list never run |
 | [sync-simulated.md](sync-simulated.md) | granola-sync, decisions edits | Knowledge stays prose; decisions never promoted |
 | [clipper-local.md](clipper-local.md) | reference-clipper edit | URL-shaped skill refuses or misfiles a local file |
+| [record-testing.md](record-testing.md) | `record-testing` | Omission (no recording, no note, no step log) and unsafe action (recording on a host not allowed) |
 
 ## Harness (same for every scenario)
 
