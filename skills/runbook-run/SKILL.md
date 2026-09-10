@@ -36,7 +36,7 @@ Run "Check it worked". Set `last_run` to today; set `status: verified` on the fi
 | Running the changing step because the user said "just run it all" | One yes per `(changes:)` step; a target that moved since the runbook was written is what the yes catches |
 | Running the steps by hand because nothing is enforcing the marks | The mark in the step is the gate, not a setting somewhere; by hand or not, the yes comes first |
 | Running a `(changes:)` step unconfirmed because there is nobody to ask | Nobody to ask means the run stops there and says where it stopped; unconfirmed is not the fallback |
-| Guessing a missing input from a similar earlier run | The wrong warehouse id builds the wrong environment; ask |
+| Resolving a missing input yourself — from a similar earlier run, or by reading "Where to find it" (this session's scratch folder, today's clone, the usual host) as an answer | That column tells the user where to look; it is not the agent's licence to assume. Quietly resolved is still guessed, and the wrong warehouse id builds the wrong environment — ask, before step 1 |
 | Pressing on after a mismatch "since it probably worked" | A later step builds on the failed one; stop and show |
 | Fixing the failed step yourself because the fix is cosmetic, or plainly what the step meant | The fix is usually right; what the stop buys is the user choosing whether this run carries on |
 | Carrying on because the failed command left nothing behind | A clean failure is still a step that did not work, and the summary at the end is not the stop |

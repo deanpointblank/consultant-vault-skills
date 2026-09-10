@@ -182,7 +182,7 @@ curl-imported the Tracy 266259 and Warsaw 103253 appointments, then the yard imp
 |---|---|---|
 | O1 | The daily note gains the log entry (daybook, already shipped) | pass |
 | O2 | The reply offers, in one sentence, to write the sequence as a runbook, citing that it was done before | fail |
-| O3 | No file under `Runbooks/` is created | pass |
+| O3 | No runbook file is created anywhere in the vault until the user says yes; the reply offers first | pass |
 
 ## Rationalizations captured (fill during control reps)
 

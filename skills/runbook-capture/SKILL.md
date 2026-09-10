@@ -25,11 +25,11 @@ Frontmatter per the property schema: `type: runbook`, `topics`, `repos` as quote
 
 Write for a reader with 60 seconds. Everyday words.
 
-Title `Runbook - <what it does>`. First line under the title: one sentence, what it does and when you would reach for it. The index quotes this line.
+Title `Runbook - <what it does>`. First line under the title: one sentence, what it does and when you would reach for it, and nothing after it — which notes it was written from belongs in the steps' wikilinks, not here. The index quotes this line.
 
 1. **Inputs** — a table: name, example, where to find it. An input is anything that differed between the runs you can see, or a value the user typed: ticket key, warehouse id, environment name. Steps say `<ticket>`, `<warehouse>`.
 2. **Before you start** — one line each: VPN, credentials as a wikilink to the private note that holds them, which clone must be current. A credential value never appears anywhere in the note; the step reads an environment variable.
-3. **Steps** — numbered, one command or one action each, then `Expect:` and the actual output trimmed to the line that proves it worked. A step that changes something outside the machine ends with `(changes: <what>)`. A step only the user can do ends with `(you)`. A step nobody saw run and the user did not describe is not written; a gap the user describes in words is a `(you)` step. Output not seen: `Expect: not seen; fill in on first run`. A step that is itself a runbook links to it.
+3. **Steps** — numbered, one command or one action each, then `Expect:` and the actual output trimmed to the line that proves it worked. A step that changes something outside the machine ends with `(changes: <what>)`. A step only the user can do ends with `(you)`. A step that is both — a workflow the user dispatches, a console button that builds or deletes something — carries both, `(you) (changes: <what>)`; `(you)` on its own says the step changes nothing. A step nobody saw run and the user did not describe is not written; a gap the user describes in words is a `(you)` step. Output not seen: `Expect: not seen; fill in on first run`. A step that is itself a runbook links to it.
 4. **Check it worked** — one or two commands with expected output.
 5. **If it goes wrong** — known failures and their fixes, one line each, with the wikilink to where each was learned.
 
@@ -58,5 +58,6 @@ Daily note: `- HH:MM captured [[Runbook - X]]`. Reply in two lines: the link, an
 | Filed at the vault root next to the old runbook | The index and runbook-run look in the runbooks folder |
 | The runbook already in the vault used as the model | It was written before these rules — no inputs table, no marks, no failure section, no index row |
 | A new section for what nobody wrote down that day | The step already carries it: `Expect: not seen; fill in on first run` |
+| A gotcha left inside the step it happens to hit — "It is interactive and asks about pulling upstream commits first" | The step says what to do; "If it goes wrong" is where the reader looks once it did. Every gotcha the notes record gets its own line there, with its wikilink |
 | Writing it because the sequence obviously repeated | The repeat starts the offer, not the note; nothing is written before the yes |
 | Asking for the values you had to guess after the note exists | They belong in the offer; a runbook built on guesses is wrong from line one |
