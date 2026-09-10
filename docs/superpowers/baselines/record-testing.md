@@ -29,7 +29,7 @@ p, mode = sys.argv[1], sys.argv[2]
 s = open(p).read()
 hosts = 'test_hosts:\n  - localhost\n' if mode == 'V' else 'test_hosts: []\n'
 s = re.sub(r'^timezone:.*$', lambda m: m.group(0) + '\n' + hosts.rstrip('\n'), s, count=1, flags=re.M)
-s = s.replace('  conflicts: Conflicts\n', '  conflicts: Conflicts\n  attachments: Attachments\n  tickets: Tickets\n', 1)
+s = s.replace('  templates: Templates\n', '  templates: Templates\n  attachments: Attachments\n  tickets: Tickets\n', 1)
 open(p, 'w').write(s)
 PY
 export OBSIDIAN_VAULT="$RUN/vault"
@@ -59,7 +59,7 @@ cat > "$RUN/site/index.html" <<'H'
 <section id="ac2"><h2>Totals</h2>
 <p>Cases <span id="cases">2016</span> · Pallets <span id="pallets">29</span></p></section>
 H
-( cd "$RUN/site" && python3 -m http.server 8765 >/dev/null 2>&1 & echo $! > "$RUN/site.pid" )
+( cd "$RUN/site" && exec python3 -m http.server 8765 >/dev/null 2>&1 ) & echo $! > "$RUN/site.pid"
 sleep 1; curl -sf http://localhost:8765/login.html >/dev/null && echo "site up"
 ```
 
