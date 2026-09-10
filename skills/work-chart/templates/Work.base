@@ -1,0 +1,58 @@
+filters:
+  and:
+    - type == "work"
+properties:
+  date:
+    displayName: Date
+  jira:
+    displayName: Ticket
+  repos:
+    displayName: Repos
+  areas:
+    displayName: Areas
+  changes:
+    displayName: Changes
+views:
+  - type: table
+    name: Today
+    filters:
+      and:
+        - date == today()
+    order:
+      - file.name
+      - jira
+      - repos
+      - areas
+      - changes
+  - type: table
+    name: By ticket
+    groupBy:
+      property: jira
+      direction: ASC
+    order:
+      - file.name
+      - date
+      - areas
+      - changes
+  - type: table
+    name: By repo
+    groupBy:
+      property: repos
+      direction: ASC
+    order:
+      - file.name
+      - date
+      - jira
+      - areas
+      - changes
+  - type: table
+    name: By area
+    groupBy:
+      property: areas
+      direction: ASC
+    order:
+      - file.name
+      - date
+      - jira
+      - repos
+      - changes

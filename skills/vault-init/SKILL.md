@@ -26,6 +26,7 @@ The config template ships with example values (client, timezone), not defaults. 
 - Write `Meta/Config.md` based on the template with the interview answers substituted.
 - Copy default note templates into the vault's templates folder, skipping any that already exist: meeting templates from `../granola-sync/templates/`, the repo template from `../repo-dossier/templates/`, the decision template from `../decisions/templates/`, the conflict template from `../reconcile/templates/`, the handoff and ticket templates from `../handoff/templates/`, the time-logging template from `../time-logging/templates/`, the runbook template from `../runbook-capture/templates/`.
 - Create the runbook index at `<folders.runbooks>/Runbooks.md` if it does not exist: `type: reference`, `topics: [runbooks]`, title `# Runbooks`, one intro line "Every runbook in this vault, one line each. runbook-capture and runbook-run keep this list current.", and no rows.
+- Copy `../work-chart/templates/Work.base` into the work folder as `Work.base`, skipping if one exists, and create `~/.config/vault-skills/work-stamp/`.
 
 ## 4. Verify and report
 

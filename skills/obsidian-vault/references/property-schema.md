@@ -6,7 +6,7 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 
 | Property | Format | Example |
 |----------|--------|---------|
-| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference` | `meeting` |
+| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference`, `work` | `meeting` |
 | `client` | slug from config `clients` | `uscold` |
 | `created` | `YYYY-MM-DD` | `2026-07-17` |
 | `jira` | optional list of ticket keys | `- PFD-65810` |
@@ -122,6 +122,18 @@ One note per workflow outcome, filename `Runbook - <what it does>.md` in the run
 ## type: reference
 
 Free-form notes that other notes point at: an index, an environment sheet, a login note. No properties beyond the base trio and optional `topics` and `visibility`.
+
+## type: work
+
+One note per ticket per day, filename `KEY Work YYYY-MM-DD.md` (or `Work - <topic> YYYY-MM-DD.md` with no ticket) in the work folder. Rows of what changed, why, and what was decided, written by work-chart as the work happens. `Work.base` in the same folder lists them.
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `jira` | list of ticket keys | the ticket worked first; empty for work with no ticket |
+| `date` | `YYYY-MM-DD` | the day the work happened |
+| `repos` | list of quoted wikilinks | repo dossiers touched |
+| `areas` | list of plain strings | parts of the codebase touched, in the reader's words |
+| `changes` | integer | number of rows in the note |
 
 ## Conventions
 

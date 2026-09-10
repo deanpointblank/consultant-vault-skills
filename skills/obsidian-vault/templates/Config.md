@@ -14,6 +14,7 @@ folders:
   clippings: Clippings
   conflicts: Conflicts
   runbooks: Runbooks
+  work: Work
   status: Status
   archive: Archive
   templates: Templates
@@ -38,6 +39,7 @@ Skills read the frontmatter above at the start of every task. Edit values here, 
 - `active_client` — stamped as `client` on every note a skill creates. Change it when you rotate engagements, and keep the old slug in `clients` so past notes stay queryable.
 - `folders` — rename these to match your vault. Skills construct every path from these values, so a rename here is all it takes to restructure.
 - `folders.runbooks` — runbooks and their index. runbook-capture writes here; runbook-run reads and updates.
+- `folders.work` — one work note per ticket per day, plus `Work.base`. work-chart writes here; handoff reads it.
 - `daily_note_format` — must match Settings → Daily notes → Date format in Obsidian, otherwise skill-written entries and app-created daily notes land in different files.
 - `meeting_types` — the allowed values for `meeting_type` on meeting notes. Keep the list short: trends are computed within a type, so two names for the same kind of meeting splits your data.
 - `meeting_type_rules` — title substrings that decide `meeting_type` before any guessing. granola-sync adds a rule the first time it settles a recurring title, so precedents live here.
