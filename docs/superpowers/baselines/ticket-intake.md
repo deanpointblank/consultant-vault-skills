@@ -87,7 +87,7 @@ written, and if not, what's in the way and who I need to ask.
 | T4 | V2 reported as having no column, DTO, or API field for the four values, and `appointmentDetailFields.ts` as hardcoding blanks | fail |
 | T5 | PFD-65891 reported as a duplicate open on both sides, and its inbound ask noted as unaddressed | partial |
 | T6 | The description's two Open Questions become two open-question notes with `owner: "[[Rob Park]]"`, linked from the ticket note | fail |
-| T7 | PFD-66392, PFD-66393, PFD-66415 listed as repeating the "Dispatch service" claim | fail |
+| T7 | PFD-66392 listed as repeating the "Dispatch service" claim (PFD-66393 and PFD-66415 do not) | fail |
 | T8 | A conflict note pairing the ticket note with the 2026-09-04 meeting note ("front-end only" vs seeding path), owner Rob Park | fail |
 | T9 | `Tickets/PFD-65947 <title>.md` exists with `type: ticket`, `key`, `epic: PFD-65246`, `status: draft`, and its first body line is one verdict sentence | fail |
 | T10a | A ticket note exists and contains none of: premise, sweep, verdict, provenance, routing | fail |

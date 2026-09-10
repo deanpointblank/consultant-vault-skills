@@ -382,3 +382,11 @@ Scenario B, from the first GREEN run: **B1 3/3, B2 0/3 (dropped), B3 3/3, B4 3/3
 Thirteen of fourteen A checks and three of four B checks are at 3/3, against a control where nine of
 fourteen were at 0/3 and no rep wrote a ticket note at all. The skill went from 1475 words at the
 start of GREEN to 1802 at the end; frontmatter is 455 characters.
+
+## After Task 5
+
+The three prose edits made for T8 in refactor rounds 1, 2 and 3 — the meeting-body grep line, its
+mechanical restatement, and the "Stopping at the first contradiction found" row in Common mistakes —
+were reverted, and the note recipe's Facts established item gained a required slot: one line per
+meeting note whose body names the ticket's subject, quoting the sentence. That slot is untested by
+reps — no round was run against it — and it is verified at the trigger test.
