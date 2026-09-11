@@ -8,7 +8,7 @@
     {
       "name": "consultant-vault",
       "source": "./",
-      "description": "Run a consulting engagement out of an Obsidian vault. Twenty-one skills covering intake (ticket intake), capture (Granola meeting sync, daybook, work chart, open questions, clippings, runbooks), structure (repo dossiers, glossary, people, decisions, tickets and handoffs), and synthesis (meeting trends, weekly status, time logging, reconciliation, vault hygiene), built on a shared config and property-schema contract.",
+      "description": "Run a consulting engagement out of an Obsidian vault. Twenty-two skills covering intake (ticket intake), capture (Granola meeting sync, daybook, work chart, open questions, clippings, runbooks, test recordings), structure (repo dossiers, glossary, people, decisions, tickets and handoffs), and synthesis (meeting trends, weekly status, time logging, reconciliation, vault hygiene), built on a shared config and property-schema contract.",
       "category": "productivity",
       "keywords": ["obsidian", "notes", "consulting", "meetings", "granola", "knowledge-management"]
     }
