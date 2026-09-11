@@ -11,6 +11,8 @@ created:
 
 ## Summary
 
+Meetings checked:
+
 ## Handoffs
 
 ## Facts established

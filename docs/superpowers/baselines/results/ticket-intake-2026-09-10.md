@@ -401,3 +401,49 @@ reps — no round was run against it — and it is verified at the trigger test.
 - Rep 3, edited skill via `--plugin-dir`: fired first; Jira read, vault scan, code checks with repo-path-line citations; first line "Can be built as written — it already has been. Both branches match the current Jira text on every acceptance criterion." Updated the existing ticket note (jira list, verdict, check date, claims table, three blockers) and logged the intake in the daily note. Pass.
 
 T8 in rep 3: the 09-04 session note appears once in the transcript and "front-end only" once, but the reply says "no vault contradictions" and no conflict note was written. 0/1, unchanged from the GREEN rounds. Left open.
+
+## T8, round 5 — the search moved to a script
+
+Diagnosis (2026-09-11): the rep never grepped meeting notes, only `find` by ticket key — the fixture
+note surfaced once in its 09-09 review note. Four rounds of wording hadn't fixed this. Check 3
+works: the ticket supplies its list and the table is mandatory; the meeting check had neither.
+
+Round 5a added `scripts/ticket-intake-meetings.sh <vault> <noun>...` (18 shell tests): it prints
+each meeting sentence with any noun, else none. Check 2 requires 3+ summary/scope nouns, the output
+pasted under `Meetings checked:`, and every listed note opened. The template gained that line; one
+Common-mistakes row: opening only notes whose titles sound related.
+
+Round 5b, judgment: "existing note" narrowed to `type: conflict`/`type: question` notes; a review or
+research note on it counts as a source. Check 2 treats a differently sized or scoped meeting
+sentence as a contradiction post-rewrite — the room hasn't heard it. Two Common-mistakes rows quote
+the 5a rationalizations.
+
+Harness: `claude -p --model sonnet`, fresh session, cwd `uscold-map`, vault copy under the
+scratchpad (`OBSIDIAN_VAULT` set, "the copy is deliberate" prefix), skill via `--plugin-dir`.
+Prompt: `pick up PFD-65947`. Scored: `Meetings checked` naming 09-04, plus a ticket+meeting conflict
+note, owner Rob Park.
+
+| Round | Reps | Script | Meetings | T8 |
+|---|---|---|---|---|
+| Control | 1 | no | no | 0/1 |
+| 5a | 3 | yes | yes | 1/3 |
+| 5b | 3 | yes | yes | 3/3 |
+
+Two of three declined. A, in the note: "The \"front-end only\" framing from
+[[2026-09-04 Dock and door assignment — appointment workflow and yard integration with Josh]] was
+already flagged as wrong in [[PFD-65947 Review - Story vs Code 2026-09-09]] — no new note needed for
+that." In chat: "Created: nothing new — the front-end-only meeting contradiction was already covered
+in an existing note, so I linked it instead." B, in the note: "dated 2026-09-04, before Option D;
+superseded by the backend+UI build and the single PFD-66519/PFD-66392/PFD-66393/PFD-66415 split. No
+action, noted for the record." C wrote `Conflicts/2026-09-11 PFD-65947 is front-end only per the
+09-04 session vs the seeding it actually ships.md`, kind claim-vs-finding, owner Rob Park, status
+open.
+
+5b: D wrote two conflict notes (09-04 sizing, 08-31 deferral); E and F one each, plus Blockers and
+draft comment. Costs: $1.30-$8.40, 25-61 turns; pricier reps re-read large notes.
+
+Not followed: "pasted unchanged" — A and D pasted the full 42-line output ("case" also matching "use
+case"/"lowercase"); B trimmed to four lines; E and F kept 9-10. T8 did not depend on it; short stems
+likely the cause, left as is.
+
+T8 finally passes 3/3. The three-round cap was right: round five changed form, not words.
