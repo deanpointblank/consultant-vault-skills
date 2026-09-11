@@ -51,7 +51,7 @@ Each with why, and what reversing it costs:
 ## Gated
 
 - The user: restart Claude Code so the plugin at `4175ea1` loads.
-- The user: keep or drop the three runbook-capture leftovers in the live vault.
+- ~~The user: keep or drop the three runbook-capture leftovers in the live vault.~~ Removed 2026-09-11.
 - The user: in the live vault, `set up the work chart`, then open `Work/Work.base` in Obsidian and check the four views render.
 - The user: the reps asked on every run for config keys that are missing — `tickets`, `runbooks`, `work` and `conflicts` under `folders`, and `jira_site`. Add them to `Meta/Config.md` when convenient.
 - The user: round-2 answers for the to-do skill (Q9–Q15 in the idea note).
@@ -61,7 +61,7 @@ Each with why, and what reversing it costs:
 ## Pick-up list
 
 1. Restart Claude Code.
-2. Decide what happens to the three live-vault leftovers.
+2. ~~Decide what happens to the three live-vault leftovers.~~ Done 2026-09-11: the user had them removed. One dangling link remains at the user's discretion: `Meetings/2026-09-09 Phenix V2 On-Site Architecture Working Session.md` (lines 36 and 75) still links `[[Runbook - Stand up a PFD environment]]`.
 3. record-testing: add `test_hosts` and `folders.attachments` to the config contract, `type: test-run` to the property schema, and the vault-init entries; then a trigger test with `record this` on a real walkthrough.
 4. Trim the four long skills — ticket-intake is now about 2000 words — once the trigger results say what is load-bearing.
 5. If the pasted `Meetings checked` block keeps getting trimmed: have the script skip frontmatter, and consider a stop-list for stems like "case".
