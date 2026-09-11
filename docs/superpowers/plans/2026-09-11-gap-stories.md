@@ -1061,7 +1061,7 @@ Use superpowers:finishing-a-development-branch to put the choice to the user: me
 ### Decisions this plan makes that the spec leaves open
 
 - **Gap numbers on a first run** follow the lowest blocker number each gap clears, then gaps with only `Also:` items or rows. This makes A7 exact: G1 order catalog (waiting), G2 popup as new work (re-scope PFD-66405), G3 block cycle (link fix), G4 Submit scope (waiting).
-- **The duplicate check** uses `summary ~ "<three or more title words>" AND statusCategory != Done`, not `text ~`. On 2026-09-11, `text ~ "seed order projection"` over PFD returned four unrelated tickets besides PFD-66407 (PFD-63654, PFD-64288, PFD-65812, PFD-66381), so a text search would stop every create. The spec says "one JQL text search per story, on its summary words"; the user should confirm this reading.
+- **The duplicate check** uses `summary ~ "<three or more title words>" AND statusCategory != Done`, not `text ~`. On 2026-09-11, `text ~ "seed order projection"` over PFD returned four unrelated tickets besides PFD-66407 (PFD-63654, PFD-64288, PFD-65812, PFD-66381), so a text search would stop every create. The user confirmed this reading on 2026-09-11, and the spec now says it (commit `045e701`).
 - **`Tickets searched` lists at most ten keys per search**, then "and N more", so a broad text search stays readable.
 - **Fixtures add `jira_site`** to `Meta/Config.md`, so a `claude -p` rep does not stop to ask for the site.
 
