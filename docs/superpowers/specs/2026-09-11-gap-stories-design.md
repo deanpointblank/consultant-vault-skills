@@ -136,7 +136,7 @@ The note is plain language. A reader with 60 seconds learns what is missing and 
 
 ### Body
 
-The first line under the title is one sentence, such as "Buildable after 2 stories and 2 rulings." The first number counts the gaps with a drafted block. The second counts the gaps waiting on a ruling. For PFD-66405 today, the sentence is exactly that example.
+The first line under the title is one sentence, such as "Buildable after 2 stories and 2 rulings." The first number counts the gaps with a drafted block. The second counts the gaps waiting on a ruling. The noun is "stories" when every drafted block is `new` or `split`, and "changes" otherwise. For PFD-66405 today, the sentence is "Buildable after 2 changes and 2 rulings.", since its two drafted blocks are a re-scope and a link fix.
 
 Sections, in this order:
 
@@ -293,8 +293,8 @@ No test ever creates a ticket on the client site. The first real create happens 
 
 1. `skills/ticket-intake/SKILL.md`: the Chat summary gains one line. When the result is "Cannot be built", it suggests gap-stories.
 2. `skills/obsidian-vault/references/property-schema.md`: `proposal` joins the list of types, with a new `## type: proposal` section. Its properties are `status` (`draft`) and an optional `topics` list, as the hand-written notes use.
-3. `README.md`: one table row.
-4. `.claude-plugin/marketplace.json`: the skill count goes from twenty-two to twenty-three, and the blurb names gap stories.
+3. `README.md`: one table row, and the skill count on line 34 goes from twenty-two to twenty-three.
+4. `.claude-plugin/marketplace.json`: the plugin description names gap stories.
 
 ## Later, not now
 
