@@ -27,7 +27,7 @@ Never run two runbooks at once. Never edit a step that worked.
 
 ## After the last step
 
-Run "Check it worked". Set `last_run` to today; set `status: verified` on the first clean run. Update the runbook's row in `<folders.runbooks>/Runbooks.md` to `<status>, last run YYYY-MM-DD`. Daily note: `- HH:MM ran [[Runbook - X]] for <input>: ok, step 2 rewritten` or `: stopped at step 2`. Reply in three lines: what now exists, what was rewritten, the daily-note line.
+Run "Check it worked". Set `last_run` to today; set `status: verified` on the first clean run. Update the runbook's bullet in `<folders.runbooks>/Runbooks.md` so it ends `<status>, last run YYYY-MM-DD`; the index stays a bulleted list, one line per runbook, never a table. Daily note: `- HH:MM ran [[Runbook - X]] for <input>: ok, step 2 rewritten` or `: stopped at step 2`. Reply in three lines: what now exists, what was rewritten, the daily-note line.
 
 ## Common mistakes
 
@@ -44,4 +44,5 @@ Run "Check it worked". Set `last_run` to today; set `status: verified` on the fi
 | Skipping "Check it worked" because every step passed | Steps passing is not the outcome existing |
 | Leaving `status: draft` after a clean run | The index says draft; the next person re-verifies by hand |
 | Picking your own status word because the schema has no runbook type | `verified` and `last_run` are the words here; `tested`, or a status with no date, and nobody can tell which runbooks still work |
-| Writing the index row in your own words | "verified 2026-09-10" reads fine and matches nothing; the row is `<status>, last run YYYY-MM-DD` |
+| Writing the index line in your own words | "verified 2026-09-10" reads fine and matches nothing; the line ends `<status>, last run YYYY-MM-DD` |
+| Rewriting the index as a table because it has a status column | runbook-capture writes bullets and appends to them; a table breaks its append and the next capture |

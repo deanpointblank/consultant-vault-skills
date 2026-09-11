@@ -11,7 +11,7 @@ Follow the obsidian-vault skill's conventions. One note per ticket per day in `f
 
 - A task finished, tests ran, a commit was made, or the user changed subject: write rows for everything since the last row.
 - A plan task completed under subagent-driven development: the controller writes the rows from the subagent's report. Subagents never write this note.
-- The Stop hook said "Files changed since the last work-chart rows": write the rows, then print the Work line.
+- The Stop hook said "Files changed since the last work-chart rows": write the rows, then print the Work line. The hook reports the working tree, not this conversation: a change made by hand, in an editor, or before this session started gets its row too. Reason not known: `why` says "not stated", and one line above the Work line asks for it.
 
 Write the rows; do not offer to write them.
 
@@ -71,3 +71,4 @@ The hook is silent unless a vault is configured and the current repo has a dossi
 | Holding the folder, the base and the stamp folder for the same yes | Only the config line is the user's to approve; the rest is this skill's own scaffolding |
 | One row for the whole task — "`scripts/import.sh` and `README.md` — added a `--dry-run` flag …, and put the flag in the README usage line" | Two reasons, two rows; `changes` and the Work line both count what the reader will look for |
 | A last line like "Want me to add `work: Work` under `folders`?" | The config question is a caveat; every caveat sits above the Work line |
+| "This change was already there before this session started — I didn't make it, so I won't log it" | The rows record the repo, not the conversation; write what changed, put "not stated" in `why`, and ask for the reason in one line above the Work line |

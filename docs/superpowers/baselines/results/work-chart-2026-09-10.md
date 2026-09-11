@@ -416,3 +416,17 @@ Round 2's empty folder is the one case where a rep created the stamp folder duri
 ran `hooks/work-chart-stamp.sh` afterwards. Round 3 is clean, but the gap is worth watching: the
 stamp line lives in a sentence that also carries the daily note and the Work line, and it is the
 part reps drop first.
+
+## Trigger test
+
+2026-09-11. Same harness as the runbooks trigger test: `claude -p --model sonnet`, fresh session per prompt, plugin `58a7e6b`, vault copy under scratch with a one-line "the copy is deliberate" prompt prefix.
+
+**Setup.** Typed `set up the work chart` in `uscold-map`. Fired: yes, first tool call. Created `Work/`, copied `Work.base`, created the stamp folder, said the Stop hook is present, asked for a yes on `work: Work`. Turn 2 `yes`: `work: Work` added under `folders`. Miss: the config question was the reply's last line, no Work line. A first rep (before the prefix line; it found the live vault in cwd and set up there — `Work/Work.base` removed afterwards) did end with `Work: 0 changes today on work-chart setup; last: created Work/Work.base dashboard in the vault`. One of two, left as is.
+
+**Hook.** A scratch clone of `phenix.appointments` (its dossier exists) with one line appended to `README.md` before the session, then: `In one short paragraph, what is the difference between an inner join and a left join?`. The hook fired once each time.
+
+- Rep 1, skill at `58a7e6b`: answered the question, ran `git status` and `git diff`, then refused — "This README change was already there before this session started (it was in the initial git status snapshot) — I didn't make it … I won't invoke the work-chart skill for a change I didn't make and don't have the context for". No rows, no Work line. Fail.
+- Edit: "When rows get written" now says the hook reports the working tree, not the conversation; a change made by hand, in an editor, or before the session gets its row, `why` is "not stated", one line above the Work line asks for it. Common-mistakes row quoting the refusal.
+- Rep 2, edited skill via `--plugin-dir`: fired, wrote `Work/PFD-65947 Work 2026-09-11.md` with one row (`why` "not stated", `decided` none), the daily line, the stamp; config caveat above the Work line; Work line last. Pass. It chose the ticket PFD-65947 from the daily note's context rather than `Work - <topic>`; the README line was about dispatch totals, so plausible; not chased.
+
+**Base views.** Not tested: no Obsidian in the harness. The user opens `Work/Work.base` and checks the four views.

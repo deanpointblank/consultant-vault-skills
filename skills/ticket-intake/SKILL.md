@@ -62,7 +62,7 @@ One line in chat each. No Atlassian MCP or the site is unreachable: say so; if t
 | Reading the ticket and calling it buildable | A ticket can read cleanly and cite files that live in the other system, or values nothing stores |
 | Trusting a cited path because it looks right | Resolve it and name the repo it is actually in |
 | "The comments already settle this", "the re-scope already happened" | Comments answer questions; they do not move a file into the repo the ticket claims, and a scope agreed in a thread is not the code |
-| "It's Done, so there's nothing to check" | Status is not evidence. Run the three checks anyway and let the note say what shipped against what the ticket asked for |
+| "It's Done, so there's nothing to check", "It's In Progress, this is past intake", "No intake needed — I checked the PRs instead" | Status is not evidence. Run the three checks anyway and let the note say what shipped, or what is being built, against what the ticket asked for |
 | Asking whether to write the note | The note is the deliverable. Write it, then say in chat what it says |
 | The answer in chat, or a line in the daily note, instead of the note | Both are pointers. Tomorrow the reader opens the ticket note, not this transcript |
 | Calling a finding non-blocking, so it needs no note | Blocking decides where it sits in the list, not whether it gets written down |

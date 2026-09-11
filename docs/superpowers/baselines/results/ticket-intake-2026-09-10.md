@@ -390,3 +390,14 @@ mechanical restatement, and the "Stopping at the first contradiction found" row 
 were reverted, and the note recipe's Facts established item gained a required slot: one line per
 meeting note whose body names the ticket's subject, quoting the sentence. That slot is untested by
 reps — no round was run against it — and it is verified at the trigger test.
+
+## Trigger test
+
+2026-09-11. `claude -p --model sonnet`, fresh session per rep, cwd `uscold-map`, vault copy under the session scratchpad with `OBSIDIAN_VAULT` set and a one-line "the copy is deliberate" prompt prefix. Typed: `pick up PFD-65947`. No skill named. PFD-65947 is In Progress with two PRs up and a ticket note in the vault, so the real-world shape is "already being built", not a fresh intake.
+
+- Rep 1, skill at `58a7e6b`, no prefix line: fired (`ticket-intake` first tool call), then stopped to ask whether to use the scratch copy or the real vault. Harness artifact; the prefix line was added after this.
+- Rep 2, skill at `58a7e6b`, prefix line: fired first. Read the project memory, fetched the Jira issue, checked PR state, and replied "Status on PFD-65947 (In Progress, assignee Dean Betty). No ticket-intake needed — this is past that stage, so I checked current PR/branch state instead of re-deriving buildability." No vault write. Fail: the In-Progress twin of "It's Done, so there's nothing to check".
+- Edit: that Common-mistakes row now also quotes "It's In Progress, this is past intake" and "No intake needed — I checked the PRs instead"; its answer says what shipped, or what is being built, against what the ticket asked for.
+- Rep 3, edited skill via `--plugin-dir`: fired first; Jira read, vault scan, code checks with repo-path-line citations; first line "Can be built as written — it already has been. Both branches match the current Jira text on every acceptance criterion." Updated the existing ticket note (jira list, verdict, check date, claims table, three blockers) and logged the intake in the daily note. Pass.
+
+T8 in rep 3: the 09-04 session note appears once in the transcript and "front-end only" once, but the reply says "no vault contradictions" and no conflict note was written. 0/1, unchanged from the GREEN rounds. Left open.
