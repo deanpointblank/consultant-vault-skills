@@ -113,7 +113,7 @@ Same text as Prompt V. The difference is the vault copy: `test_hosts: []`.
 | V3 | Two `### AC` sections, each embedding a `.gif` that exists under `Attachments/PFD-99001/` | fail |
 | V4 | A Steps table whose first column matches `^\d+:\d\d$` on every row | fail |
 | V5 | A Draft comment blockquote naming both criteria and their results | fail |
-| V6 | `Attachments/PFD-99001/` holds exactly one `.webm` and two `.gif`, and no `.webm` remains in `$RUN/pw-out` | fail |
+| V6 | `Attachments/PFD-99001/` holds exactly one `.webm` and two `.gif`, and no raw `.webm` remains in `$RUN/pw-out` or in the client project root | fail |
 | V7 | The trimmed `.webm` is shorter than the raw recording's duration by at least the login range (compare `ffprobe` durations; the raw duration is in the rep's log or the step log) | fail |
 | V8 | A `## Test runs` line on `Tickets/PFD-99001*.md` (created if absent) links the note; today's daily note gains a `recorded [[…]]` line | fail |
 | V9 | The words marks, clip script, devtools, recorder do not appear in the note | pass |
