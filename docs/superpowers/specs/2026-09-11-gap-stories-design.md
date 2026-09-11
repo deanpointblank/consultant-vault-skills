@@ -230,7 +230,7 @@ It never edits an existing ticket's description. It never removes or changes a l
 On "create G1" or "create G1 and G3":
 
 1. **Kind check.** Only `new` and `split` gaps can be created. For `re-scope`, `close`, and `link fix`, the skill points at the drafted text for that ticket's owner. For a waiting gap, it names the open question.
-2. **Duplicate check.** One JQL text search per story, on its summary words, over the project. Two keys never count as a match: the source ticket, and the ticket a split came from. Any other match stops that story, and chat shows the match.
+2. **Duplicate check.** One JQL search per story over the project: `summary ~` its summary words, skipping tickets whose status category is Done. A search of all ticket text (`text ~`) was rejected on 2026-09-11: it matched four unrelated tickets for the seeding story. Two keys never count as a match: the source ticket, and the ticket a split came from. Any other match stops that story, and chat shows the match.
 3. **Preview.** For each story that passed, the skill shows:
    - project: from the source key;
    - issue type: Story;
