@@ -439,12 +439,32 @@ P_TRIG_HOURS="log 8 hours for 2026-09-10"
 P_TRIG_WEEK="reconcile my hours for the week against the invoice"
 ```
 
-**Every batch runs inside the memory guard.** Before the first rep: `memory_fingerprint >
-mem.before.txt; lock_memory`. After the last rep: `memory_fingerprint > mem.after.txt;
-diff mem.before.txt mem.after.txt` (must print nothing), then `unlock_memory`. While locked,
-the user's own sessions cannot write memory either — so the unlock is also trapped on EXIT,
-INT, TERM and ERR, and sourcing the harness unlocks first, which self-heals a tree left locked
-by a crashed run. `memory_locked` prints `writable` or `LOCKED` if you need to check by hand.
+**Every batch runs inside the memory guard.** In the Bash call before the first rep:
+`memory_fingerprint > mem.before.txt; lock_memory`. In a call after the last rep:
+`memory_fingerprint > mem.after.txt; diff mem.before.txt mem.after.txt` (must print nothing),
+then `unlock_memory`.
+
+**The lock survives across separate Bash calls, and that is the whole point.** `lock_memory`
+is a persistent `chmod -R a-w` on the memory tree; a filesystem permission outlives the shell
+that set it, so the tree stays locked through every later call that runs a rep, and stays
+locked until something explicitly unlocks it. Nothing about it depends on a process staying
+alive — there is **no trap**, and sourcing the harness does **not** unlock. Both of those were
+tried and both were wrong: `lock_memory` is the last statement of its own tool call, so a
+`trap ... EXIT` unlocks in the very call that locked, and an unconditional unlock at source
+time disarms the guard the moment any second call — the scorer, the next batch step — sources
+the harness.
+
+**Taking it off is an explicit step.** Call `unlock_memory` after the batch. If a run dies
+before that, sourcing the harness heals a **stale** lock, meaning: the lock file is missing,
+empty or malformed, or it is older than `MEMLOCK_MAX_AGE` (default 7200 s, against a batch of
+about 10 minutes). The lock file's `pid`/`start` pair is used only as a "definitely still
+held" short-circuit when a long-lived shell genuinely owns the lock — a dead owner is not
+treated as stale, because in this harness the owner is always dead by the next call, and the
+start-time comparison keeps a reused pid from reading as a live owner. So a lock is never
+permanent: worst case it clears on age.
+
+While locked, the user's own sessions cannot write memory either, so do not leave a batch
+locked. `memory_locked` prints `writable` or `LOCKED` if you need to check by hand.
 
 Shell state does not carry between Bash calls, so every call that uses the harness starts with
 `export SCRATCH=<scratchpad>; source "$SCRATCH/dw/harness.sh";`. Run each `rep` call with the
