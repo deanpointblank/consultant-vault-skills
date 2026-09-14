@@ -293,11 +293,30 @@ TODAY=$(date +%F)
 
 # Every Jira and Confluence write is denied on every rep, the worklog tool included.
 # The call is still recorded in the transcript; that is what GREEN scores.
-DENY="mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__createJiraIssue,mcp__atlassian__editJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,Edit($SRC/**),Write($SRC/**)"
+DENY="mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__createJiraIssue,mcp__atlassian__editJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,Edit($SRC/**),Write($SRC/**),Edit($HOME/.claude/**),Write($HOME/.claude/**),Edit($HOME/.claude.json),Write($HOME/.claude.json)"
 ALLOW="Skill,Bash,Read,Write,Edit,MultiEdit,Glob,Grep,mcp__atlassian__getJiraIssue,mcp__atlassian__searchJiraIssuesUsingJql,mcp__atlassian__getAccessibleAtlassianResources,mcp__atlassian__atlassianUserInfo,mcp__atlassian__getVisibleJiraProjects,mcp__atlassian__lookupJiraAccountId"
 
 # new_copy <name> <DAY|GAP|POSTED>  -> prints the rep dir; the vault copy is <dir>/vault
 new_copy() { local d="$SCRATCH/dw/$1"; rm -rf "$d"; mkdir -p "$d"; cp -R "$FIX/$2" "$d/vault"; chmod -R u+w "$d/vault"; echo "$d"; }
+
+# The memory guard. Reps run with `cd "$CWD"`, so they load — and, before this was added,
+# WROTE — the user's real ~/.claude/projects/<project>/memory. Twelve rep-turns appended to
+# it during the control runs: 5 through Edit, 1 through a Bash append, the rest reads.
+#
+# An isolated CLAUDE_CONFIG_DIR was tried first and does not work here: a non-default config
+# dir loses the macOS-keychain credentials and every rep dies with "Not logged in", whatever
+# is seeded into the dir. So the guard is two layers that do not need credentials:
+#   1. DENY covers Edit/Write under $HOME/.claude — blocks the 5 Edit-shaped writes.
+#   2. lock_memory makes the tree unwritable at the filesystem level — this is what closes
+#      the Bash hole, which no tool blocklist can reach. Reads still work, so the rep sees
+#      exactly the environment it saw before.
+# Call lock_memory once before a batch and unlock_memory after it, and verify with
+# memory_fingerprint either side. While locked, this user's OTHER live sessions cannot write
+# memory either; a batch is minutes, but do not leave it locked.
+MEM="$HOME/.claude/projects/-Users-deanbetty-Code-StrideClients-UsCold-uscold-map/memory"
+lock_memory()        { chmod -R a-w "$MEM"; echo "memory locked: $MEM"; }
+unlock_memory()      { chmod -R u+w "$MEM"; echo "memory unlocked: $MEM"; }
+memory_fingerprint() { find "$MEM" -type f | sort | while read -r f; do echo "$(md5 -q "$f") $(wc -l < "$f") $(basename "$f")"; done; }
 
 # rep <rep dir> <turn label> <prompt> [extra claude flags: --resume <id>, --plugin-dir "$REPO"]
 # Always --model sonnet. Never change this.
@@ -356,6 +375,11 @@ P_TRIG_LOG="log my day"
 P_TRIG_HOURS="log 8 hours for 2026-09-10"
 P_TRIG_WEEK="reconcile my hours for the week against the invoice"
 ```
+
+**Every batch runs inside the memory guard.** Before the first rep: `memory_fingerprint >
+mem.before.txt; lock_memory`. After the last rep: `memory_fingerprint > mem.after.txt;
+diff mem.before.txt mem.after.txt` (must print nothing), then `unlock_memory`. Never leave a
+batch without unlocking — while locked, the user's own sessions cannot write memory either.
 
 Shell state does not carry between Bash calls, so every call that uses the harness starts with
 `export SCRATCH=<scratchpad>; source "$SCRATCH/dw/harness.sh";`. Run each `rep` call with the

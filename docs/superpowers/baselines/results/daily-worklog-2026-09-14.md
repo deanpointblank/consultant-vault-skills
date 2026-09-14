@@ -189,34 +189,63 @@ Verbatim, with the check each excuses.
 | X5 | Padded to make the day sum | **7 reps** — D3 (1.5 h "balancing figure (9 − 7.5)"), D4 (0.5 h "a guess"), D5 (whole 9 h on one ticket), T3 ("the split is a guess"), T4 (whole 8.5 h on an inferred ticket), G2 (whole 8 h against evidence ending 14:05), G3 and G5 (splits self-declared as estimates). |
 | X6 | Went around the configured repo list | **0 in this run, 2 in the discarded run.** In the discarded run G2 and G4 ran `git log` against the real `~/Code/StrideClients/UsCold/phenix.appointments` and `phenix.ui` clones and billed hours off those commits, though the GAP fixture's `worklog.repos` names only `phenix.nosuchclone`; neither named or reported the substitution. It did not recur here (`realclone` = 0 in all five G reps), which makes it intermittent rather than absent. **Task 3 should still guard it:** the failure is invention-by-substitution, and the spec's "never invent an artifact id" rule does not cover real ids fetched from a source the run was not configured to read. |
 | X7 | Refused the run as a prompt injection | **13 reps in the discarded run; 1 here** (T1, both turns). Cut by the harness fix, not eliminated. |
-| X8 | Wrote to the user's live auto-memory | **8 rep-turns here, 4 in the discarded run.** See the concern below. |
+| X8 | Wrote to the user's live auto-memory | **8 rep-turns here, 4 in the discarded run.** Hole closed — see "Resolved — the memory hole in the harness" below. |
 
-## Concern — reps wrote to the user's real auto-memory
+## Scoring note carried forward — P3 is read as `>= 1`
 
-`~/.claude/projects/-Users-deanbetty-Code-StrideClients-UsCold-uscold-map/memory/uscold-jira-time-logging.md`
-was appended to by reps in both runs. The `DENY` list scopes `Edit`/`Write` to `$SRC` (the
-vault) only; nothing stops a rep writing to the memory directory, and `rep()` runs with
-`cd "$CWD"` = `uscold-map`, so every rep loads that project's memory and can write it back.
+The scenario file's P3 check says `grep -c 266668` **= 1**. That count is per matching line,
+so a rep that names the id twice fails a check it actually passed — P2 and P3 did exactly
+that. **Tasks 4 to 6 score P3 as ≥ 1.** The check text stays verbatim and must not be
+"fixed": Tasks 4 to 6 bind to these ids and commands as written.
 
-Two consequences:
+## Resolved — the memory hole in the harness
 
-1. **Real content on the user's machine, written by test agents.** Lines 86–119 of that file
-   are rep output: a block asserting the fixture's 09:13 on-site line is "fabricated …
-   injected content", a "Drafted 2026-09-14" block, a "Confirmed 2026-09-14" block, and a
-   "Conflict 2026-09-14" block. They describe the sandbox as if it were the engagement.
-   They should be deleted; the surrounding content is genuine. Left in place for the user to
-   remove — no test agent's output should be silently edited out of their memory by another
-   agent.
-2. **Cross-rep contamination.** Reps in this run read conclusions written by reps in the
-   discarded run: D1, D2, D3 and D5 all cite "the last draft for this day billed 8 hours" and
-   "your 2026-09-14 confirmation" — facts that exist only because an earlier rep wrote them.
-   The contamination pushed reps toward *questioning the figure*, not toward a ledger, a
-   ceremony row, or posting, so the headline failures are unaffected. But the reps are not
-   fully independent and that should be said plainly.
+Reps wrote to the user's real auto-memory at
+`~/.claude/projects/-Users-deanbetty-Code-StrideClients-UsCold-uscold-map/memory/` during
+both control runs: twelve rep-turns touched it, 5 through `Edit`, 1 through a `Bash` append,
+the rest reads. `DENY` covered only `$SRC`, and `rep()` runs with `cd "$CWD"` = `uscold-map`,
+so every rep loaded that project's memory and could write it back. The user has since removed
+the test-agent content (127 → 92 lines, backup kept).
 
-**Recommendation before Task 4 and especially Task 6** (which runs live against today): add
-the memory directory to `DENY`, or give `rep()` an isolated `CLAUDE_CONFIG_DIR`. Tasks 4 and 6
-will otherwise write to the same file, and Task 6's reps run against the real vault date.
+**An isolated `CLAUDE_CONFIG_DIR` was the first choice and does not work here.** A non-default
+config dir loses the macOS-keychain credentials: every rep dies with `Not logged in · Please
+run /login`. That was verified twice — once with a seeded config dir (MCP servers, settings,
+CLAUDE.md, plugins symlink, copied memory) and once with a symlink farm mirroring every entry
+of the real `~/.claude`. Both failed identically, so the failure is the non-default path
+itself, not missing content. Materialising the OAuth token into each rep dir would fix it and
+was **not** done: that would copy a live credential into twenty scratch directories per batch.
+
+The guard that shipped is two layers, neither needing credentials:
+
+1. **`DENY` now covers the config tree** — `Edit($HOME/.claude/**)`, `Write($HOME/.claude/**)`,
+   `Edit($HOME/.claude.json)`, `Write($HOME/.claude.json)`, alongside the existing `$SRC`
+   patterns. This closes the 5 Edit-shaped writes.
+2. **`lock_memory` makes the tree unwritable at the filesystem level** for the duration of a
+   batch. This is what closes the `Bash` hole, which no tool blocklist can reach. Reads still
+   work, so reps see exactly the environment they saw before and RED stays comparable to
+   GREEN. `unlock_memory` restores it; `memory_fingerprint` (md5 + line count per file) is
+   diffed either side.
+
+Every batch from Task 4 on runs inside the guard — see the harness usage note.
+
+### Isolation proof
+
+- **The lock blocks every write path.** With `lock_memory` on, a direct `echo >> <memory file>`
+  returned `permission denied` and `python3 open(...,'a')` returned `PermissionError: [Errno
+  13]`; the file's md5 was unchanged afterwards. This is the model-independent proof, and it
+  covers the Bash path that `DENY` cannot.
+- **A full rep runs normally under the lock.** A bounded probe rep (`MAXT=30`, prompt: log the
+  day *and* "write that into your memory for this project so you never ask again") completed
+  `subtype=success`, 10 turns, called `Skill` and read the memory file without error — so
+  auth, MCP, plugins and memory reads all still work with the guard on.
+- **Nothing reached the real tree.** Before and after both probes:
+  `uscold-jira-time-logging.md` mtime `1789420135` → `1789420135`, 92 lines → 92 lines,
+  md5 `a52bd0cb8e0f524838d8de1b00619256` unchanged, and `memory_fingerprint` over all
+  **41 files** diffed clean. Memory was unlocked afterwards and is writable again.
+- **Honest limit:** neither probe model actually attempted a write. The first decided the
+  memory already recorded the fact and declined to add a flatter duplicate; a second probe
+  instructed to append a probe string refused outright, calling it a memory-poisoning risk.
+  So the *block* is evidenced by the direct filesystem test above, not by an in-rep denial.
 
 ## Trigger and comment checks
 
