@@ -316,26 +316,69 @@ new_copy() { local d="$SCRATCH/dw/$1"; rm -rf "$d"; mkdir -p "$d"; cp -R "$FIX/$
 #
 # The lock MUST always come off. A batch that dies mid-run with the tree still `a-w` leaves
 # the user's own sessions silently unable to write memory, which is worse than the hole it
-# closes. Two safeguards, both unconditional:
-#   - lock_memory arms a trap, so EXIT, INT, TERM and ERR all unlock, however the run ends.
-#   - SIGKILL cannot be trapped, so lock_memory also records its PID in MEMLOCK. Sourcing this
-#     harness clears a STALE lock — one whose owner is gone — which self-heals the next run.
-#     It deliberately leaves a live batch's lock alone: the scorer and the batch both source
-#     this file, and an unconditional unlock here would disarm the guard mid-run.
+# closes. NO TRAP is used to do that, and this is the important part:
+#
+#   lock_memory runs inside its own Bash tool call, and that call exits the moment the
+#   function returns. A `trap ... EXIT` would therefore fire in the very call that locked,
+#   unlocking the tree before the first rep ever starts — every batch would run unlocked.
+#   Reps are separate, later calls, so NOTHING about this lock may depend on process
+#   lifetime. A filesystem permission outlives the process that set it; that is the whole
+#   reason it is the right primitive here.
+#
+# So: the chmod persists, unlock_memory is an explicit step after the batch, and recovery is
+# what is made robust. Sourcing this harness heals a STALE lock, where stale means:
+#   - the lock file is missing, empty or malformed, OR
+#   - the lock is older than MEMLOCK_MAX_AGE (default 2 h; a batch is ~10 min).
+# The owner pid and its start time are recorded too, but note what they can and cannot do
+# here. "Owner process is gone" is NOT on its own a staleness signal in this harness: the
+# owner is a short-lived tool call and is always gone by the next call, so healing on that
+# would disarm the guard immediately — the same process-lifetime mistake as the trap. They
+# are used only in the other direction, as a fast "definitely still held" short-circuit when
+# a long-running shell does own the lock, and the start-time comparison keeps a REUSED pid
+# from reading as a live owner. A reused pid therefore cannot wedge the lock open forever:
+# it falls through to the age test, which always heals eventually.
 MEM="$HOME/.claude/projects/-Users-deanbetty-Code-StrideClients-UsCold-uscold-map/memory"
-MEMLOCK="${TMPDIR:-/tmp}/dw-memory-lock.pid"
-unlock_memory()      { [ -d "$MEM" ] || return 0; chmod -R u+w "$MEM"; rm -f "$MEMLOCK"; echo "memory unlocked: $MEM"; }
-lock_memory()        { [ -d "$MEM" ] || return 0; trap 'unlock_memory' EXIT INT TERM ERR; echo $$ > "$MEMLOCK"; chmod -R a-w "$MEM"; echo "memory locked: $MEM (owner $$; unlock trapped on EXIT INT TERM ERR)"; }
-memory_locked()      { [ -w "$MEM" ] && echo "writable" || echo "LOCKED"; }
+MEMLOCK="${TMPDIR:-/tmp}/dw-memory-lock"
+MEMLOCK_MAX_AGE="${MEMLOCK_MAX_AGE:-7200}"
+
+unlock_memory()  { [ -d "$MEM" ] || return 0; chmod -R u+w "$MEM"; rm -f "$MEMLOCK"; echo "memory unlocked: $MEM"; }
+lock_memory()    {
+  [ -d "$MEM" ] || return 0
+  { echo "pid=$$"
+    echo "start=$(ps -o lstart= -p $$ 2>/dev/null | tr -s ' ' | sed 's/^ *//;s/ *$//')"
+    echo "epoch=$(date +%s)"; } > "$MEMLOCK"
+  chmod -R a-w "$MEM"
+  echo "memory locked: $MEM (owner $$, persists across Bash calls until unlock_memory)"
+}
+memory_locked()  { [ -w "$MEM" ] && echo "writable" || echo "LOCKED"; }
 memory_fingerprint() { find "$MEM" -type f | sort | while read -r f; do echo "$(md5 -q "$f") $(wc -l < "$f") $(basename "$f")"; done; }
 
-# Self-heal on source: clear a lock left behind by a crashed run, never a live one.
-if [ -s "$MEMLOCK" ] && kill -0 "$(cat "$MEMLOCK" 2>/dev/null)" 2>/dev/null; then
-  :                                    # a batch is running and owns the lock; leave it
-elif [ -d "$MEM" ] && [ ! -w "$MEM" ]; then
-  echo "stale memory lock found (owner gone) — self-healing"; unlock_memory
-else
-  rm -f "$MEMLOCK"
+# 0 = stale (heal it), 1 = a live owner still holds it. Fails safe toward healing.
+memory_lock_stale() {
+  [ -s "$MEMLOCK" ] || return 0
+  local pid start epoch now
+  pid=$(sed -n 's/^pid=//p'   "$MEMLOCK")
+  start=$(sed -n 's/^start=//p' "$MEMLOCK")
+  epoch=$(sed -n 's/^epoch=//p' "$MEMLOCK")
+  case "$pid"   in ''|*[!0-9]*) return 0;; esac          # malformed
+  case "$epoch" in ''|*[!0-9]*) return 0;; esac          # malformed
+  now=$(date +%s)
+  [ $((now - epoch)) -ge "$MEMLOCK_MAX_AGE" ] && return 0   # too old, whatever else is true
+  # Fast "definitely still held": the recorded process is alive AND is the same process.
+  if kill -0 "$pid" 2>/dev/null; then
+    [ "$(ps -o lstart= -p "$pid" 2>/dev/null | tr -s ' ' | sed 's/^ *//;s/ *$//')" = "$start" ] && return 1
+  fi
+  # Owner gone, or a reused pid: not proof of staleness in this harness, and not proof of a
+  # live batch either. Within MEMLOCK_MAX_AGE the lock stands; past it, the age test above
+  # has already healed.
+  return 1
+}
+
+# Self-heal on source: clear a lock a crashed run left behind, never a live one.
+if [ -d "$MEM" ] && [ ! -w "$MEM" ] && memory_lock_stale; then
+  echo "stale memory lock found — self-healing"; unlock_memory
+elif [ -e "$MEMLOCK" ] && [ -d "$MEM" ] && [ -w "$MEM" ]; then
+  rm -f "$MEMLOCK"                                        # tree already writable; tidy up
 fi
 
 # rep <rep dir> <turn label> <prompt> [extra claude flags: --resume <id>, --plugin-dir "$REPO"]

@@ -248,28 +248,52 @@ Every batch from Task 4 on runs inside the guard — see the harness usage note.
   instructed to append a probe string refused outright, calling it a memory-poisoning risk.
   So the *block* is evidenced by the direct filesystem test above, not by an in-rep denial.
 
-### The lock always comes off
+### The lock always comes off — and survives between Bash calls
 
-A lock left on would leave the user's own sessions silently unable to write memory — worse
-than the hole it closes. Two unconditional safeguards:
+**No trap.** A first attempt hung the unlock on `trap 'unlock_memory' EXIT INT TERM ERR` and
+that was a regression, caught in review: `lock_memory` runs inside its own Bash tool call,
+which exits the moment the function returns, so the trap fired in the very call that locked
+and every batch would have run fully unlocked. Reps are separate, later calls, so nothing
+about this lock may depend on process lifetime. A filesystem permission outlives the process
+that set it — that is precisely why it is the right primitive.
 
-- `lock_memory` arms `trap 'unlock_memory' EXIT INT TERM ERR`, so the tree unlocks however
-  the run ends.
-- SIGKILL cannot be trapped, so `lock_memory` also records its PID in `$MEMLOCK`. Sourcing the
-  harness clears a **stale** lock — owner gone — and deliberately leaves a **live** batch's
-  lock alone, because the scorer and the batch both source this file and an unconditional
-  unlock here would disarm the guard mid-run.
+So the `chmod` persists, `unlock_memory` is an explicit step after the batch, and *recovery*
+is what is hardened. Sourcing the harness heals a **stale** lock: lock file missing, empty or
+malformed, or older than `MEMLOCK_MAX_AGE` (default 2 h; a batch is ~10 min). The owner pid
+and its start time are recorded, but "owner process is gone" is deliberately **not** a
+staleness signal here — the owner is a short-lived tool call and is always gone by the next
+call, so healing on that would disarm the guard immediately, the same process-lifetime
+mistake as the trap. The pid/start pair is used only as a fast "definitely still held"
+short-circuit, and the start-time comparison stops a **reused pid** reading as a live owner;
+a reused pid therefore cannot wedge the lock open, it falls through to the age test.
 
-Proved by killing a run mid-batch, twice:
+#### Proof, in the shape the harness is actually used — three separate Bash calls
 
-| Kill | Mid-run | After kill | After next `source harness.sh` |
-|---|---|---|---|
-| `SIGTERM` | `LOCKED` | `writable` (trap fired) | — |
-| `SIGKILL` | `LOCKED` | `LOCKED` (trap cannot run) | `writable` ("stale memory lock found (owner gone) — self-healing") |
+| Call | What ran | Tree state |
+|---|---|---|
+| 1 | `source harness.sh; lock_memory` — shell exits immediately | `LOCKED` |
+| 2 | `source harness.sh` (owner pid 38764 already **GONE**), then a real rep | `LOCKED` on entry, `LOCKED` after the rep |
+| 3 | `source harness.sh; unlock_memory` | `LOCKED` on entry → `writable` |
 
-Memory came through both proofs untouched: all 41 files identical by md5 and line count,
-`uscold-jira-time-logging.md` still md5 `a52bd0cb8e0f524838d8de1b00619256`, 92 lines, and the
-lock file cleared.
+In call 2, with the lock held across the call boundary:
+
+- A direct `echo >> uscold-jira-time-logging.md` and a `: > new-note.md` both returned
+  `permission denied`.
+- **A real rep attempted a memory write and was blocked.** It called `Edit` on
+  `uscold-jira-time-logging.md` and the tool returned
+  `EACCES: permission denied, open '.../uscold-jira-time-logging.md.tmp.40325.71d10cea138b'`.
+  Its own words: *"Write failed. The memory directory is locked read-only right now… the
+  memory directory and every file in it are set read-only (`dr-xr-xr-x` on the folder,
+  `-r--r--r--` on files) — no write bit at all, even for you as owner."* It then asked
+  permission to `chmod u+w` rather than doing it, and did not.
+
+Recovery paths verified separately: an aged lock file (`epoch` set 99999 s in the past) and a
+malformed one both printed `stale memory lock found — self-healing` on the next
+`source harness.sh` and left the tree `writable`.
+
+End state: `writable`, lock file absent, 41 files in the tree,
+`uscold-jira-time-logging.md` 92 lines, md5 `a52bd0cb8e0f524838d8de1b00619256`, and the
+fingerprint taken while locked diffs clean against the one taken before locking.
 
 ### Two residual gaps, recorded not fixed
 
