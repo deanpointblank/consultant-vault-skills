@@ -22,6 +22,7 @@ against what we imagine the failures are.
 | [work-chart.md](work-chart.md) | `work-chart` | Omission (no work note), invention (why guessed from the diff), wrong-shape setup |
 | [ticket-intake.md](ticket-intake.md) | `ticket-intake` | Omission and wrong shape: cited paths not resolved, stored-vs-computed not checked, ticket note absent or a status paragraph |
 | [record-testing.md](record-testing.md) | `record-testing` | Omission (no recording, no note, no step log) and unsafe action (recording on a host not allowed) |
+| [daily-worklog.md](daily-worklog.md) | `daily-worklog` | Wrong shape and unsafe action: a weekly note instead of a month ledger, ceremonies folded, padding, posting without a yes or refusing to post, a re-post over a posted day |
 
 ## Harness (same for every scenario)
 
