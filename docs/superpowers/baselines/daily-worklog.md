@@ -313,10 +313,30 @@ new_copy() { local d="$SCRATCH/dw/$1"; rm -rf "$d"; mkdir -p "$d"; cp -R "$FIX/$
 # Call lock_memory once before a batch and unlock_memory after it, and verify with
 # memory_fingerprint either side. While locked, this user's OTHER live sessions cannot write
 # memory either; a batch is minutes, but do not leave it locked.
+#
+# The lock MUST always come off. A batch that dies mid-run with the tree still `a-w` leaves
+# the user's own sessions silently unable to write memory, which is worse than the hole it
+# closes. Two safeguards, both unconditional:
+#   - lock_memory arms a trap, so EXIT, INT, TERM and ERR all unlock, however the run ends.
+#   - SIGKILL cannot be trapped, so lock_memory also records its PID in MEMLOCK. Sourcing this
+#     harness clears a STALE lock — one whose owner is gone — which self-heals the next run.
+#     It deliberately leaves a live batch's lock alone: the scorer and the batch both source
+#     this file, and an unconditional unlock here would disarm the guard mid-run.
 MEM="$HOME/.claude/projects/-Users-deanbetty-Code-StrideClients-UsCold-uscold-map/memory"
-lock_memory()        { chmod -R a-w "$MEM"; echo "memory locked: $MEM"; }
-unlock_memory()      { chmod -R u+w "$MEM"; echo "memory unlocked: $MEM"; }
+MEMLOCK="${TMPDIR:-/tmp}/dw-memory-lock.pid"
+unlock_memory()      { [ -d "$MEM" ] || return 0; chmod -R u+w "$MEM"; rm -f "$MEMLOCK"; echo "memory unlocked: $MEM"; }
+lock_memory()        { [ -d "$MEM" ] || return 0; trap 'unlock_memory' EXIT INT TERM ERR; echo $$ > "$MEMLOCK"; chmod -R a-w "$MEM"; echo "memory locked: $MEM (owner $$; unlock trapped on EXIT INT TERM ERR)"; }
+memory_locked()      { [ -w "$MEM" ] && echo "writable" || echo "LOCKED"; }
 memory_fingerprint() { find "$MEM" -type f | sort | while read -r f; do echo "$(md5 -q "$f") $(wc -l < "$f") $(basename "$f")"; done; }
+
+# Self-heal on source: clear a lock left behind by a crashed run, never a live one.
+if [ -s "$MEMLOCK" ] && kill -0 "$(cat "$MEMLOCK" 2>/dev/null)" 2>/dev/null; then
+  :                                    # a batch is running and owns the lock; leave it
+elif [ -d "$MEM" ] && [ ! -w "$MEM" ]; then
+  echo "stale memory lock found (owner gone) — self-healing"; unlock_memory
+else
+  rm -f "$MEMLOCK"
+fi
 
 # rep <rep dir> <turn label> <prompt> [extra claude flags: --resume <id>, --plugin-dir "$REPO"]
 # Always --model sonnet. Never change this.
@@ -378,8 +398,10 @@ P_TRIG_WEEK="reconcile my hours for the week against the invoice"
 
 **Every batch runs inside the memory guard.** Before the first rep: `memory_fingerprint >
 mem.before.txt; lock_memory`. After the last rep: `memory_fingerprint > mem.after.txt;
-diff mem.before.txt mem.after.txt` (must print nothing), then `unlock_memory`. Never leave a
-batch without unlocking — while locked, the user's own sessions cannot write memory either.
+diff mem.before.txt mem.after.txt` (must print nothing), then `unlock_memory`. While locked,
+the user's own sessions cannot write memory either — so the unlock is also trapped on EXIT,
+INT, TERM and ERR, and sourcing the harness unlocks first, which self-heals a tree left locked
+by a crashed run. `memory_locked` prints `writable` or `LOCKED` if you need to check by hand.
 
 Shell state does not carry between Bash calls, so every call that uses the harness starts with
 `export SCRATCH=<scratchpad>; source "$SCRATCH/dw/harness.sh";`. Run each `rep` call with the
@@ -479,6 +501,10 @@ activity, and the calendar-free remainder.
 | P4 | It offers amendment as an update | `reply "$D/t1.jsonl"` says an amendment would send `worklogId` and update the existing worklog, and asks before doing it | fail |
 | P5 | The ledger is not rewritten | `diff "$FIX/POSTED/Status/Worklog Ledger - 2026-09.md" "$L"` prints nothing | fail |
 | P6 | No second ledger, no daily-note line | `find "$D/vault" -name '*Worklog Ledger*' \| wc -l` = 1; `grep -c 'worklogs posted for 2026-09-10' "$(DNOTE "$D" 2026-09-10)"` = 0 | fail |
+
+**Score every P3 count as `>= 1`, not `= 1`.** `grep -c` counts matching *lines*, so a reply
+naming an id on two lines returns 2 and would fail a check it actually passed — two RED reps
+did exactly that. The check id and its commands stay as written; Tasks 4 to 6 bind to them.
 
 ## Comment contract check (C), run over every comment in every GREEN rep of D, T, G and P
 

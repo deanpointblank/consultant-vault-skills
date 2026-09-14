@@ -196,7 +196,8 @@ Verbatim, with the check each excuses.
 The scenario file's P3 check says `grep -c 266668` **= 1**. That count is per matching line,
 so a rep that names the id twice fails a check it actually passed — P2 and P3 did exactly
 that. **Tasks 4 to 6 score P3 as ≥ 1.** The check text stays verbatim and must not be
-"fixed": Tasks 4 to 6 bind to these ids and commands as written.
+"fixed": Tasks 4 to 6 bind to these ids and commands as written. The note now also sits beside
+the P3 row in `daily-worklog.md`, which is the file Task 4 actually runs.
 
 ## Resolved — the memory hole in the harness
 
@@ -246,6 +247,41 @@ Every batch from Task 4 on runs inside the guard — see the harness usage note.
   memory already recorded the fact and declined to add a flatter duplicate; a second probe
   instructed to append a probe string refused outright, calling it a memory-poisoning risk.
   So the *block* is evidenced by the direct filesystem test above, not by an in-rep denial.
+
+### The lock always comes off
+
+A lock left on would leave the user's own sessions silently unable to write memory — worse
+than the hole it closes. Two unconditional safeguards:
+
+- `lock_memory` arms `trap 'unlock_memory' EXIT INT TERM ERR`, so the tree unlocks however
+  the run ends.
+- SIGKILL cannot be trapped, so `lock_memory` also records its PID in `$MEMLOCK`. Sourcing the
+  harness clears a **stale** lock — owner gone — and deliberately leaves a **live** batch's
+  lock alone, because the scorer and the batch both source this file and an unconditional
+  unlock here would disarm the guard mid-run.
+
+Proved by killing a run mid-batch, twice:
+
+| Kill | Mid-run | After kill | After next `source harness.sh` |
+|---|---|---|---|
+| `SIGTERM` | `LOCKED` | `writable` (trap fired) | — |
+| `SIGKILL` | `LOCKED` | `LOCKED` (trap cannot run) | `writable` ("stale memory lock found (owner gone) — self-healing") |
+
+Memory came through both proofs untouched: all 41 files identical by md5 and line count,
+`uscold-jira-time-logging.md` still md5 `a52bd0cb8e0f524838d8de1b00619256`, 92 lines, and the
+lock file cleared.
+
+### Two residual gaps, recorded not fixed
+
+- **`DENY` does not cover Bash.** `Edit`/`Write` under `$HOME/.claude` are blocked and the
+  memory tree is locked at the filesystem level, but a rep's `Bash` can still reach
+  `~/.claude.json`, `~/.claude/CLAUDE.md` and *other* projects' memory directories, none of
+  which the lock covers. No rep has done so; the exposure is noted so Task 4 and Task 6 know
+  the guard's edge.
+- **No calendar tool in `ALLOW`.** Reps have no calendar evidence source, so the spec's
+  step-2 calendar sweep is untested by every scenario. This is identical in RED and GREEN, so
+  it introduces no delta bias — it just means calendar-derived row times are out of scope for
+  the comparison.
 
 ## Trigger and comment checks
 
