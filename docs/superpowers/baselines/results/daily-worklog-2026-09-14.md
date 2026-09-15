@@ -471,10 +471,34 @@ D from round 1, T from round 2, G from round 3, P from the first batch (never re
 | P5 | 5/5 | 5/5 | `diff` against the fixture ledger is empty in all five. |
 | P6 | 5/5 | 5/5 | One ledger, no daily-note line, in all five. |
 
-**26 checks improved, and nothing regressed.** P1 leaves the scored set — it was never a
-measurement — so the count of checks at full marks is 25, not 26. **18 are short of full marks**;
-of those, D13, D14, D15 and T6 are unmeasurable under confound 1 and D6, D9, D10, G2, G4 and G5
-are confounded by confound 2.
+### Terms, defined once
+
+The three counts below are used nowhere in this document before this point, so they are defined
+here and used with these definitions everywhere after, including in the Task 4 report.
+
+- **Improved**: a check's GREEN numerator is greater than its RED numerator (RED and GREEN always
+  share the same denominator within a row — verified for all 40 scored rows below).
+- **At full marks**: a check's GREEN numerator equals that check's own denominator (its maximum —
+  5/5 for most checks, 3/3 for G4 and G5, 2/2 for G6 and G7).
+- **Short of full marks**: a scored check that is not at full marks, i.e. its GREEN numerator is
+  below its own denominator.
+- **Scored rows**: 40 of the table's 42 rows. **T5** (GREEN cell `n/a` — its command reads ids out
+  of worklog comments that do not exist under confound 1) and **P1** (GREEN cell `—` — `wl_n` is 0
+  by construction under confound 1, so it was never a measurement) are excluded from all three
+  counts. U1 and U2 are each counted once, at their own maximum of 5/5, despite the `×4` notation.
+
+**Recounted directly from the table above** (one row at a time, GREEN numerator against RED
+numerator and against that row's own denominator):
+
+**27 of 40 scored checks improved. 23 of 40 scored checks are at full marks. 17 of 40 scored
+checks are short of full marks** — 23 + 17 = 40, the whole scored set, with no row left over and
+none double-counted. Of the 17 short of full marks: D13, D14, D15 and T6 are unmeasurable under
+confound 1, and D6, D9, D10, G2, G4 and G5 are confounded by confound 2. **Nothing regressed**: no
+check's GREEN numerator is below its RED numerator.
+
+*(A prior pass of this section stated 26 / 25 / 18, which is internally impossible — 25 + 18 = 43
+exceeds the 40 scored rows. This recount, run programmatically over the table above, replaces it;
+the script and its raw output are in the Task 4 report, fix round 2.)*
 
 ### Scoring conventions used here, stated once
 
