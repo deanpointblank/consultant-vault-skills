@@ -1,5 +1,7 @@
 # record-testing Implementation Plan
 
+> **Superseded 2026-09-15** by `docs/superpowers/plans/2026-09-15-record-testing-cli-swap.md`. Tasks 1 to 5 were executed and merged; the transport they describe — Playwright MCP, `browser_start_video`, `--caps=devtools` — was replaced by `playwright-cli`. Kept as history; do not follow its Task 7 recipe.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a `record-testing` skill to the `consultant-vault` plugin that records a Playwright walkthrough used as UI-testing evidence, cuts one GIF per acceptance criterion with a login-free trimmed video, and writes a test-run note with the step log and a draft Jira comment.

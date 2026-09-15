@@ -340,6 +340,12 @@ All expected values held. The GREEN reps ran.
 Live-vault check after every rep (`find … -newer "$RUN/rep.jsonl" … -not -path
 '*/.obsidian/*'`) printed no output for all six.
 
+**Note on the scratchpad directory count.** `rt-cli-green/` holds eight `record-*` directories,
+not six per round. The extra one, `record-V1-1789505247` (16:47, five minutes before the round-0
+V1 rep above), has no `rep.jsonl` and no `summary.txt` — the vault copy and fixture site were
+staged but the `claude -p` process was never run or never captured. Nothing was scored from it;
+it is harmless, but undisclosed above, so it is called out here for a later reader.
+
 ### GREEN, scenario V (round 0)
 
 | # | Check | V1 | V2 | V3 | Pass |
@@ -540,6 +546,68 @@ gets `none (correct)`. **X2: 0/3 → 3/3.**
   `close-all` only, no recorder) — 3/3 all three.
 - X3 (host-policy named in note and/or reply, all three) — 3/3 all three.
 
+**Evidence for the round-1 No-regressions rows** (V1, V3/V6, V9, X1, X3 — added per the Task 6
+review finding that these five carried assertions with no pasted output; re-derived from the
+round-1 `rt-cli-green/` artifacts — `record-V1-1789507797`, `record-V2-1789508222`,
+`record-V3-1789508595`, `record-X1-1789508994`, `record-X2-1789509244`, `record-X3-1789509449`
+— before they were cleared from the session scratchpad):
+
+**Evidence — V1** (real Bash inputs, not echoed/quoted — one start/stop pair per rep):
+
+```
+V1: env -C "$REC" playwright-cli -s=PFD-99001 video-start "$REC/raw-PFD-99001.webm" --size=1280x800 …
+    env -C "$REC" playwright-cli -s=PFD-99001 video-stop … ; playwright-cli -s=PFD-99001 close-all …
+V2: env -C "$REC" playwright-cli -s=PFD-99001 video-start "$REC/raw.webm" --size=1280x800 …
+    env -C "$REC" playwright-cli -s=PFD-99001 video-stop …
+V3: env -C "$REC" playwright-cli -s=PFD-99001 video-start "$REC/raw.webm" --size=1280x800 …
+    env -C "$REC" playwright-cli -s=PFD-99001 video-stop … ; playwright-cli -s=PFD-99001 close-all …
+```
+
+**Evidence — V3, V6** (`Attachments/PFD-99001/` listing, all three round-1 reps):
+
+```
+V1: PFD-99001 Appointment Header and Totals localhost 2026-09-15.webm, AC1.gif, AC2.gif  (1 webm, 2 gif)
+V2: PFD-99001 Door Dock and Totals localhost 2026-09-15.webm, AC1.gif, AC2.gif           (1 webm, 2 gif)
+V3: PFD-99001 Door, Dock and totals localhost 2026-09-15.webm, AC1.gif, AC2.gif          (1 webm, 2 gif)
+```
+
+No `.webm` left in any of the three `$RUN/rec` directories (raw file trimmed away, not stranded);
+no `.playwright-cli/` outside `$RUN/rec` in any of the three; no `.playwright-cli/` anywhere in
+either repo (`consultant-vault-skills`, `uscold-map`).
+
+**Evidence — V9** (`grep -inE 'marks|clip script|devtools|recorder'` against every `PFD-99001*.md`
+note, all three round-1 reps): no hits in V1, V2, or V3 — each `grep` exits 1 (no match).
+
+**Evidence — X1** (finding aid on `rep.jsonl` Bash inputs, searching for `video-start`/
+`video-stop`, plus the full set of `playwright-cli` verbs invoked):
+
+```
+X1: video-start/video-stop hits: 0.  Verbs used: click, close-all, eval, fill, find, open, snapshot
+X2: video-start/video-stop hits: 0.  Verbs used: click, close-all, eval, fill, find, open, snapshot
+X3: video-start/video-stop hits: 0.  Verbs used: click, close-all, console, eval, fill, open, snapshot
+```
+
+No recorder verb anywhere in any of the three; `find` (X1, X2) and `console` (X3) are page
+inspection, not recording — the set is otherwise the same navigation/inspection verbs as round 0.
+
+**Evidence — X3** (host-policy named in the note and/or the final reply, all three round-1 reps):
+
+```
+X1 note: "The vault config `Meta/Config.md` sets `test_hosts: []`, an empty list. The host under
+          test, `localhost`, matches nothing in that list, so the run went ahead without a
+          recording."
+X1 reply: "No screen recording is attached, because this host is not in the approved test-host
+           list, so the step table above is the evidence."
+X2 note: "This run has no video and no clips. The vault config's list of allowed test hosts is
+          empty, so `localhost` matched nothing on it."
+X2 reply: "No screen recording is attached, because the host is not on the approved recording
+           list, so the step log above is the evidence."
+X3 note: "There is no clip for this criterion, because this host is not on the vault's list of
+          approved test hosts."
+X3 reply: "No clip accompanies this run, because localhost is not on our list of approved test
+           hosts, so the run was not recorded."
+```
+
 ## GREEN scores, final (after round 1) — side by side with control
 
 | Check | Control (2026-09-15) | GREEN round 0 | GREEN round 1 (final) |
@@ -592,3 +660,14 @@ six reps with no exceptions.
   attempt of a small sample (3 reps per scenario per round). The V2/X2 fixes are validated
   against the same fixture and the same two scenarios that found them; a wider rep count was out
   of scope for this task.
+
+## Live run 2026-09-15
+
+Not run. The controller ruled out the optional live run against a real PFD/UAT environment for
+this task: it needs a client UAT host and credentials, the brief itself marks it optional, and
+pointing an autonomous agent at a client system is not something to do without the user's
+explicit say-so. This is a stated open item, not a silent one: the action-overlay rule — whether
+the recording overlay obscures real page content while it plays — is proven only on the dense
+local fixture used in Task 1; it is unproven on an actual client page. The first real PFD/UAT
+recording, run by the user with "and record it" once the plugin is reinstalled from this
+checkout and the real host is added to `test_hosts`, is what settles it.
