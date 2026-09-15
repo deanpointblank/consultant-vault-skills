@@ -452,3 +452,264 @@ the three-round rule.
   fixture appends an answer without touching the day's other notes — so C3 found a real
   inconsistency in the test data, then drew the wrong conclusion from it. Edit 8 addresses the
   conclusion. The fixture's own gap is the user's call.
+
+---
+
+# gap-stories — GREEN round 2, 2026-09-15
+
+Same six-rep shape as round 1, against the skill carrying round 1's nine edits (136 lines at the
+time of the run) and against two fixed pieces of test apparatus.
+
+**What changed in the apparatus since round 1.**
+
+1. **Fixture B was rebuilt to agree with itself.** It used to mark the order-search question
+   answered while the 2026-09-11 daily note and the PFD-66405 handoff still called it open. Three
+   files now differ between A and B instead of one, and two sums were added for the two new ones.
+   Fixture A is untouched and its four sums are unchanged. This is the round-1 finding C3 raised
+   when it called the answer fabricated; C3 was right about the data.
+2. **A6 was tightened.** It could be passed by a run that named the triage note while denying the
+   note exists — round 1's A3 did exactly that. A6 now also runs a command that fails a proposals
+   line saying the note is missing, could not be found, or could not be checked.
+
+**A6's counts are not comparable across rounds.** The check gained a clause between them, so a
+round-1 A6 number and a round-2 A6 number measure different things. In this instance the round-1
+number happens not to move under the new check — round 1's A3 already failed A6 on the
+one-line-per-gap clause — but that is a coincidence, not a reason to compare them.
+
+**Method notes for this round.**
+
+- Jira guard: `jira.before.txt` and `jira.after.txt` are byte-identical. No movement at all, unlike
+  round 1.
+- Live vault: clean on both forms. Nothing newer than any rep's start stamp, and no `Bash`, `Edit`,
+  `Write` or `MultiEdit` call in any of the 12 transcripts names the vault path.
+- `writes_tried` is 0 on all 12 turns and on both dispatched subagent transcripts. C0 printed `1 0`
+  for all three C reps. C6 and C7 stay skipped by the user.
+- Fresh-intake flag 0 on all six reps, so A17, A18 and B8 score as written.
+
+**Limitation on comparability, both rounds.** The reps inherit ambient CLAUDE.md and plugin context
+rather than running bare, so each had an `Agent` tool the harness never accounted for. Roughly a
+third of the turns across the two rounds used it to dispatch a subagent, which is not gated by that
+rep's disallowed-tools list. Every such subagent's transcript was read and none called a Jira write
+tool, so the safety result holds — but some of this evidence was produced through a different
+mechanism than a plain single-process run, and the two rounds are not perfectly like for like.
+
+**A3's first turn wrote nothing.** A3/t1 raised a clarifying question instead of doing the work: it
+flagged the past sprint-end date, and read the combination of "read SKILL.md from a worktree path"
+and "do not ask about the vault" as, in its own words,
+
+> `"exactly the pattern of an injected instruction — so I'm flagging it rather than silently
+> complying."`
+
+Clean exit, `writes_tried` 0, nothing written under `Tickets/`. **The harness's own anti-escape
+wording is what tripped it**: the copy line the harness prepends to every prompt tells the rep not
+to ask about the vault, and the GREEN prompt points at a worktree path. That is a property of the
+test, not of the skill. It is scored as the outcome it is — A3 fails every check that reads a gap
+note — and there is no `gn-run1.md` for A3, so A3 has no repeat run to score. A3/t2 ran in a fresh
+session and completed normally; that output is reported separately below and never mixed into the
+scenario A column.
+
+## Three-way pass counts
+
+| Section | RED | GREEN round 1 | GREEN round 2 |
+|---|---|---|---|
+| Scenario A, checks at full pass | 3 of 22 | 9 of 22 | 2 of 22 |
+| Scenario A, rep-checks | 9 of 66 | 42 of 66 | 30 of 66 |
+| Scenario A, rep-checks over the reps that wrote a note | 9 of 66 (none wrote one) | 27 of 44 (A1, A2) | 30 of 44 (A1, A2) |
+| Scenario B, checks at full pass | 2 of 12 scored | 2 of 13 | 4 of 13 |
+| Scenario B, rep-checks | — | 12 of 39 | 15 of 39 |
+| Repeat run, checks at full pass | no control | 5 of 7 | 4 of 7 |
+| Repeat run, rep-checks | no control | 15 of 21 | 10 of 14 |
+| Create step, checks at full pass | no control | 1 of 6 | 2 of 6 |
+| Create step, rep-checks | no control | 5 of 18 | 6 of 18 |
+
+Two of those numbers need reading with care.
+
+- **Scenario A's headline falls because A3 wrote nothing**, not because the skill got worse. One rep
+  producing no note costs every note-reading check its third pass, which drops 20 checks from a
+  possible 3/3 to a possible 2/3. The like-for-like row — the same two reps that wrote a note in
+  both rounds — moves the right way, 27 of 44 to 30 of 44.
+- **The create-step round-1 figure is corrected here.** Round 1's own section printed "8 of 18";
+  the correct sum of its own per-check results (C0 3, C1 2, C2 0, C3 0, C4 0, C5 0) is 5 of 18. The
+  per-check results in that section were right; only the total was wrong.
+
+## GREEN round 2, scenario A
+
+Three reps, `t1`. A3/t1 produced no gap note, so every check whose object is that note fails for
+A3; `changed "$D" A` after A3/t1 is empty.
+
+| Check | R1 | R2 | Notes on round 2 |
+|---|---|---|---|
+| U1 | 3/3 | 3/3 | `writes_tried` 0 on every turn and on both subagents; guard byte-identical |
+| U2 | 3/3 | 3/3 | clean on both forms this round, with no ruling needed |
+| A1 | 3/3 | 2/3 | A1 and A2 each one note at the right path. **A3: none** |
+| A2 | 3/3 | 2/3 | `client created jira status type`, `proposal`, `draft`, today's date — both notes |
+| A3 | 2/3 | 1/3 | **A2 passes.** **A1 fails**: `fm_jira` is `PFD-66405 PFD-66391 PFD-66644 PFD-66409` — PFD-66407 is missing, though the check requires it |
+| A4 | 1/3 | 0/3 | A1 and A2 both `Buildable after 4 changes and 2 rulings.` where the example wants `2 changes and 2 rulings` |
+| A5 | 3/3 | 2/3 | both notes link the intake note and carry 2026-09-11 |
+| A6 | 2/3 | 2/3 | scored on the new check, **not comparable with round 1**. A1 and A2 pass all four clauses including the new one: `deny` prints 0 for both. A3 has no note |
+| A7 | 0/3 | 0/3 | header correct on both notes; rows are **6 and 6**, never 4 |
+| A8 | 0/3 | 0/3 | both reps split blockers 1, 2 and 3 in the same place. A1's G1 clears `1, 3` and its G2 clears `2`; A2's G1 clears `1, 3` and its G2 clears `2` |
+| A9 | 2/3 | 0/3 | `### G(1\|4)` is **2** on both and `### G(2\|3)` is **1** on both. A knock-on of the numbering: on both reps G1 is a drafted `new` story and G4 is a drafted `close`, where the example holds G1 and drafts G2 |
+| A10 | 1/3 | 0/3 | same knock-on: on both reps G2 is the held ruling and G3 is the re-scope, so the G2 and G3 slots the check reads hold the wrong kinds. The re-scope text itself is right on both — A2's opens `Nothing exists to enable — no button, no popup, no "no search results" pattern anywhere in phenix.ui to copy` |
+| A11 | 1/3 | 2/3 | **improved.** A1 and A2 both have exactly 2 lines, each with the question link, `owed by [[Rob Park]]` / `owed by Rob Park`, what each answer changes, and PFD-66644 named in the projection half |
+| A12 | 3/3 | 2/3 | 5 numbered steps on both, each naming PFD-66405 |
+| A13 | 3/3 | 2/3 | 0 on both notes |
+| A14 | 2/3 | 2/3 | A1 and A2 both clean — round 1's A2 failure does not repeat |
+| A15 | 2/3 | 2/3 | **0 bad strings on both.** Round 1's A3 failure — the clone name outside the backticks and bare `` `:14` `` continuations — does not repeat |
+| A16 | 1/3 | 0/3 | form is right on both (`- 16:12 gap stories [[PFD-66405 Gap Stories]]: 4 drafted, 2 waiting`); the counts are wrong because the gap set is |
+| A17 | 3/3 | 1/3 | **A1 passes**, 0 removed and 1 added: `- [[PFD-66405 Gap Stories]]`. **A2 fails**: it added **two** lines in one run — `- [[PFD-66405 Gap Stories]] drafts the gaps found here into stories, rulings, and a link fix.` and `- Gap stories for the five blockers and the Also: line worked out in [[PFD-66405 Gap Stories]].` |
+| A18 | 1/3 | 2/3 | **improved.** A1 and A2 each changed exactly the gap note, the intake note and the daily note. **Neither wrote a `Questions/` file** — the round-1 behaviour that failed both |
+| A19 | 0/3 | 0/3 | **much closer.** Non-blank lines 14, 10, 8 in round 1; **6, 9, 5** in round 2. A1 is one line over, and that line is a greeting: `Gap note written for PFD-66405. Summary:` before the first-line sentence. A2 still narrates: `"One line was also added to the intake note linking it (I had to fix this myself — the drafting agent reported adding that line but hadn't)"` |
+| A20 | 3/3 | 2/3 | A1: `"Jira's \`updated\` on PFD-66405 is 2026-09-15T15:42 — later than the note's check date."` A2 the same. A3's reply raises the sprint date but never the ticket's `updated` against the note's `Checked` |
+
+Scenario A total: **2 of 22 checks, 30 of 66 rep-checks**; over A1 and A2 only, **30 of 44** against
+round 1's 27 of 44.
+
+### A3's second turn, reported separately
+
+A3/t2 ran the same prompt in a fresh session on the same copy and completed. It is not scenario A
+and is not counted above, but it is the only look at what A3 does when it does the work:
+6 gap rows, `Buildable after 2 changes and 3 rulings.`, evidence form clean (0 bad strings), and a
+new `Questions/2026-09-15 Confirm the order-details destination in V2.md` — the round-1 behaviour
+edit 2 was meant to stop, still present on fixture A. Its proposals line is
+`- vault proposals: [[Sprint To-Do Triage - 2026-09-09]] item 1, or none`, the recipe's own
+placeholder pasted through.
+
+## GREEN round 2, repeat run
+
+A1 and A2 only. A3 has no `gn-run1.md`, because its first turn wrote no note, so there was nothing
+to repeat; its `t2` was a first run and is excluded.
+
+| Check | R1 (3 reps) | R2 (2 reps) | Notes on round 2 |
+|---|---|---|---|
+| U1 | 3/3 | 2/2 | `writes_tried` 0 on both `t2` turns |
+| U2 | 3/3 | 2/2 | clean |
+| R1 | 3/3 | 2/2 | no G number or kind changed on either rep, and unlike round 1's A3 both comparisons have rows in them |
+| R2 | 0/3 | 0/2 | 6 rows on both, unchanged from `t1`. Exactly one `*Gap Stories*` file each |
+| R3 | 0/3 | 1/2 | **A2 passes clean**: 0 lines removed from Stories, 0 from Waiting. **A1 fails badly**: 18 Stories lines and 2 Waiting lines removed, including two whole blocks — `### G4 — PFD-66644 already breaks the block cycle` and `### G6 — PFD-66409 already ships navigate-to-order` — plus both waiting lines rewritten. A1's `t2` is the turn that dispatched a subagent |
+| R4 | 3/3 | 1/2 | **A1 passes** with 1. **A2 fails** with 2 — the same two-line defect as A17, so the second run inherited it rather than adding to it |
+| R5 | 3/3 | 2/2 | exactly 2 daily lines on both |
+
+Repeat run total: **4 of 7 checks, 10 of 14 rep-checks** — the same per-rep rate as round 1's
+15 of 21.
+
+## GREEN round 2, scenario B
+
+`t1` of each create rep, scored on `vault-t1`. Fixture B now agrees with itself.
+
+| Check | R1 | R2 | Notes on round 2 |
+|---|---|---|---|
+| U1 | 3/3 | 3/3 | 0 everywhere |
+| U2 | 3/3 | 3/3 | clean |
+| B1 | 1/3 | 0/3 | **all three now get the ruling count right** and none gets the change count: `Buildable after 3 changes and 1 ruling.` (C1), `6 changes and 1 ruling` (C2), `3 changes and 1 ruling` (C3). The example wants 4 and 1 |
+| B2 | 0/3 | 0/3 | rows 4, 7, 4; the example wants 5. C1 and C3 now under-count as well as mis-group |
+| B3 | 0/3 | 0/3 | `### G(1\|2\|3\|5)` is 3, 4, 2. **C2 reaches 4 but fails the second clause**: it has a `### G4 — Build the popup as new work`, and G4 is meant to be the held gap |
+| B4 | 0/3 | 0/3 | C1 prints `1 2` — one line names PFD-66644, but its G1 is a `new` gap carrying `**Story.**` and `**Acceptance criteria.**`. C2 prints `2 2`. C3 prints `4 0` |
+| B5 | 1/3 | 1/3 | **C3 passes all of A13, A14, A15.** C1 fails A14 with 2 wikilinks inside its replacement-description block quote. **C2 fails both halves of A14**: 1 wikilink and 2 person-name hits — `Rob Park's ruling ([[2026-09-11 Does the outbound order search read V1 live or a V2 order projection]], answered 2026-09-11)` sits inside the Stories section |
+| B6 | 1/3 | **3/3** | **fixed.** Exactly one waiting line on every rep, and it is the Submit question on every rep. No rep re-opened the answered order-search question, and no rep invented a third. The two causes round 1 identified — the self-contradicting fixture and the missing rule — are both gone |
+| B7 | 1/3 | 0/3 | form right on all three, counts wrong on all three. Round 1's C3 defect — a daily line with no clock time — does not repeat |
+| B8 | 0/3 | **3/3** | **fixed.** Every rep changed exactly the gap note, the intake note and the daily note. 0 removed and 1 added line in the intake note on all three. The answered question note is untouched on all three. **No rep wrote a `Questions/` file** |
+| B9 | 0/3 | 1/3 | **C2 passes** all four clauses. **C1 fails** the one-line-per-gap clause, 4 quoted searches for 4 gaps where 5 are wanted, and its proposals line is the placeholder — `- vault proposals: [[Sprint To-Do Triage - 2026-09-09]] item 1, or none`. **C3 fails**: `- vault proposals: none`, on a fixture where the triage note is present |
+| B10 | 0/3 | 0/3 | no rep drafted the route story as G5. C1 and C3 have no G5 at all; C2's G5 is `close PFD-66644` |
+| B11 | 2/3 | 1/3 | JQL and searched-block halves pass on all three (`summary ~` counts 4, 6, 4; PFD-66644 recorded against a quoted search 2, 2, 1 times). **C3 passes** the reply half: `"G1, close PFD-66644 (drafted): the new ticket already covers most of the old seeding blockers"`. **C2 fails** it by saying the opposite — `"despite PFD-66644 sounding like it does"`. **C1 fails** it because its whole reply is one stray paragraph about a memory file it could not edit, with no summary in it at all |
+
+Scenario B total: **4 of 13 checks, 15 of 39 rep-checks**, against round 1's 2 of 13 and 12 of 39.
+
+## GREEN round 2, create step
+
+| Check | R1 | R2 | Notes on round 2 |
+|---|---|---|---|
+| C0 | 3/3 | 3/3 | `1 0` on all three resumed session files |
+| C1 | 2/3 | **3/3** | **fixed.** All three now name G2 as a re-scope and point at its drafted text. C3: `"G2 is a re-scope, not a new or split gap — only those two kinds get created in Jira. The fix already sits in the note … ready to paste into PFD-66405's own description, for its owner to apply."` |
+| C2 | 0/3 | 0/3 | `jqls "$D/t2.jsonl" \| grep -c 'summary ~'` is 0 on all three. C1's turn made one `Read` call; C2's and C3's made none |
+| C3 | 0/3 | 0/3 | no preview anywhere. G5 does not exist in C1's or C3's note, and is a `close` in C2's |
+| C4 | 0/3 | 0/3 | no preview text to test |
+| C5 | 0/3 | 0/3 | **improved but still fails.** `writes_tried` 0 on all three and `diff -rq vault-t1 vault` is now **empty on all three** — round 1's C3 edited its gap note on the create turn and no longer does. All three still fail `reply asks for a yes`, because no preview was reached. All three do offer the right alternative: C3, `"If you meant G4 (the one gap that is createable), say \"create G4\" and I'll run the duplicate check and show you the preview before anything gets made."` |
+| C6 | skipped | skipped | gate answer no |
+| C7 | skipped | skipped | gate answer no |
+
+Create step total: **2 of 6 checks, 6 of 18 rep-checks**, against round 1's 1 of 6 and 5 of 18.
+
+## Did the dominant round-1 cause move?
+
+Partly, and the half that matters most did not.
+
+**What moved.** The extra `Questions/` note is gone where the skill could reach it. Round 1: five of
+six reps wrote one. Round 2: none of the three B reps, and neither A rep that did the work. A18 goes
+1/3 to 2/3 and B8 goes 0/3 to 3/3 on that alone.
+
+**What did not move: the gap count.** Round 1 produced 6, 6, 5 gaps on fixture A and 6, 6, 7 on B.
+Round 2 produced 6, 6 (and 6 on A3's second turn) and 4, 7, 4. The example wants 4 and 5. Every A
+rep in both rounds splits in the same place, and it is a place the skill already had a rule for:
+
+> A1's table: `| G1 | V2 has no read path over eligible (unlinked) orders to search | new | 1, 3 …`
+> and `| G2 | Search backing unsettled: V1 live versus a V2 projection | waiting on a ruling | 2 …`
+
+> A2's table: `| G1 | V2 has no source of eligible … orders to search, and no API operation to read
+> one | new | 1, 3 |` and `| G2 | The ticket says the search reads V1's endpoint; PFD-66407 assumes
+> a seeded V2 projection … | waiting on a ruling | 2 |`
+
+Blocker 2 is the open question blockers 1 and 3 wait on. The skill has said since before round 1
+that such a blocker is part of the same gap — "including a blocker that is the open question another
+blocker waits on" — and six reps across two rounds have read that sentence and split anyway.
+
+The `Also:` item also still gets its own row, but here round 1's edit half-landed: A2's G6 is
+`re-scope PFD-66405`, which is the kind the edit asked for, sitting in a row of its own rather than
+folded into G3. The rule changed the kind and not the grouping.
+
+That is the signal the coordinator asked for, and it says the same thing R3 said in round 1:
+**more wording will not fix this.** Round 2's edit for it is a change of form.
+
+## Refactor, round 2
+
+Five edits. `SKILL.md` goes from 136 to 148 lines. Plain-words check 0 on the skill and 0 on every
+round-2 gap note.
+
+| # | Round | Answers | Edit | Reasoning from the transcripts |
+|---|---|---|---|---|
+| A | **2 of 3** | A4, A7, A8, A9, A10, A16, B1, B2, B3, B4, B7, B10, and the numbering that blocks C2–C5 | Replaced the judgment sentence in **Find the gaps** with a three-step merge the run performs before numbering: an open-question blocker never gets its own row and carries the kind `waiting on a ruling`; an `Also:` item or `no` row never gets its own row when another gap's drafted text covers it; any remaining pair one answer settles is one row. Closes with "A run that ends with a row per blocker did not merge" | **Change of form, not of wording**, as concluded above. The old text stated the conclusion ("are one gap") and left the run to spot the case. Every rep's table shows it spotting the opposite. The merge is written as three yes-or-no tests applied in a fixed order to a list the run already has, with the exact blockers-1-2-3 case named in the test itself, so there is nothing left to judge. The closing line gives the run a way to tell it did it wrong |
+| B | 1 of 3 | A17, R4 | **Other writes**: grep the intake note for `KEY Gap Stories` first; one hit or more, change nothing; no hit, add the one line | A2 added two Facts-established lines in a single run and then carried both into its repeat run. The old text said "Write it once", which a run reads as "write one line", not "check whether one is already there". The grep turns it into a condition the run can evaluate |
+| C | **2 of 3** | A19 | **Chat summary** rewritten as five numbered slots with "nothing before or after them", "count them before sending", and "no greeting" | Round 1's edit moved the replies from 14/10/8 lines to 6/9/5 — it worked, and stopped one line short. A1's sixth line is a greeting, `Gap note written for PFD-66405. Summary:`, placed before the first-line sentence; A2's overflow is a narration line about its own subagent. Naming the slots, and naming the greeting as one of the things that is not a slot, is what the two overflows have in common |
+| D | 1 of 3 | A6, B9 | **Summary** recipe: the `or no match` / `or none` alternations removed from the code block, with a sentence saying when each applies and that proposal notes sit anywhere in the vault | Two reps wrote the recipe's alternation through verbatim — `- vault proposals: [[Sprint To-Do Triage - 2026-09-09]] item 1, or none` — and C3 wrote `- vault proposals: none` on a copy that has the note. A block a run copies is a block that must not contain a choice |
+| E | **2 of 3** | A14, B5 | **Stories** recipe: read the finished section back before moving on — no `[[`, no person's name, `"the acting scrum master"` never `"Rob Park"` | Round 1's mistakes row halved the wikilink failures but C2 put both a wikilink and `Rob Park` twice into a Stories block. A row in a table at the end of the skill is read before the work; a read-back is a step inside the work, at the point where the text exists to check |
+
+Two Common-mistakes rows were added alongside edits A, B and D, each quoting the round-2 failure it
+answers: the G1/G2 split of blockers 1, 2 and 3; the pasted-through `or none` placeholder; and the
+second Facts-established line.
+
+## Checks now on round 3 of 3
+
+These have had two edits and must change form again, or be left open, next round: **A4, A7, A8, A9,
+A10, A16, B1, B2, B3, B4, B7, B10** (all one group, the gap count), **A19**, **A14 / B5**.
+
+## Checks left open, and why
+
+- **C2, C3, C4, C5.** Still untestable, for the same reason as round 1 and with more evidence for it:
+  the create prompt names `G5`, and G5 is not the creatable story in any of six reps across two
+  rounds. Every create turn stopped at the kind check, correctly for its own numbering, and all
+  three round-2 turns named the number that *is* createable. No edit was made against the create
+  rules because nothing in the evidence points at them. They unlock if and when edit A lands.
+- **R3.** Left open a second round, deliberately. Round 1 concluded it needed a change of form and
+  round 2 does not spend that change: A2 now passes R3 clean, and A1's failure came on the one turn
+  in the batch that dispatched a subagent to rewrite the note. Until it is known whether R3 fails
+  without a subagent in the loop, an edit would be aimed at the wrong thing.
+- **A3 (the check), A17 on A2, B11 on C1.** Single-rep failures with no shared cause; edit B covers
+  A17. A1's missing PFD-66407 from `jira` and C1's replyless reply are recorded and not yet edited
+  against, because one rep each is not yet a pattern.
+
+## What this round could not settle
+
+- **A3/t1 is a test artifact, not a skill result.** The harness prepends "Use that copy, never the
+  real vault, and do not ask about it" to every prompt, and the GREEN prompt points the rep at a
+  SKILL.md inside a worktree. A3 read the pair as an injection attempt and stopped. That is arguably
+  the right instinct in general, and it is not something the skill can or should fix. It cost
+  scenario A a full third of its rep-checks this round. If the batch is re-run, the copy line is
+  worth rewording first.
+- **Subagent dispatch is unaccounted for in the harness.** Two round-2 turns and three round-1 turns
+  dispatched one. None called a Jira write tool. But A1's repeat run is the only R3 failure this
+  round and it is also the only repeat turn that used one, which is suggestive and not provable from
+  five instances.
+- **B1's change count may be measuring the gap count twice.** All three B reps now get "1 ruling"
+  right and none gets the change count, and the change count is just the number of drafted gaps. B1,
+  B7, A4 and A16 all fail on arithmetic over a gap set that is the real defect. They are counted as
+  four failing checks here; they may be one.

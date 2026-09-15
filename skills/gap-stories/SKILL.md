@@ -21,7 +21,15 @@ If the intake note says "Can be built as written", say so in chat and stop. With
 
 Candidates: each unticked line under Blockers, each item on its `Also:` line, and each `no` row in "What the ticket says vs what's there". Candidates that one fact would clear together are one gap, including a blocker that is the open question another blocker waits on. Name blockers by number (1 to 5), `Also:` items by a few words, and rows by their first words.
 
-An `Also:` item or a `no` row that the same fix clears belongs to that gap, not to a gap of its own. A wrong claim in the ticket's own text — a column nothing supplies, a ticket it names that is closed — is part of the re-scope for that ticket. Only a question the intake note itself leaves open is a `waiting` gap; do not raise a new one to hold a gap the intake note has already settled.
+A wrong claim in the ticket's own text — a column nothing supplies, a ticket it names that is closed — is part of the re-scope for that ticket. Only a question the intake note itself leaves open is a `waiting` gap; do not raise a new one to hold a gap the intake note has already settled.
+
+Then merge the candidates, in this order, before any of them gets a number. Each step is a yes-or-no test, not a judgment call:
+
+1. **A blocker that is an open question never gets its own row.** Put it in the row of the blockers waiting on it, and that row's kind is `waiting on a ruling`. Blockers 1, 2 and 3, where 2 is the question 1 and 3 wait on, are one row, not two and not three.
+2. **An `Also:` item or a `no` row never gets its own row when another gap's drafted text already covers it.** A closed ticket the description still names is a line in the re-scope for that description, not a gap.
+3. **Two candidates one answer settles together are one row.** Ask it of every remaining pair.
+
+Only what is left gets a number. A run that ends with a row per blocker did not merge.
 
 First run: number the gaps G1, G2, … in order of the lowest blocker number each clears; gaps that clear only `Also:` items or rows come after, in note order. A number never changes and is never reused. A gap found on a later run takes the next free number.
 
@@ -62,9 +70,10 @@ Sections in this order, each a `##` heading:
    ```
    Tickets searched:
    - epic <epic key> children: <keys>
-   - "<words>": <keys>, or no match
-   - vault proposals: [[<note>]] item <n>, or none
+   - "<words>": <keys>
+   - vault proposals: [[<note>]] item <n>
    ```
+   Fill each line with what the search found: `no match` only when a search returned nothing, `none` only when no `type: proposal` note mentions the key, the epic or the gap's nouns. Never write that a note could not be found or checked — proposal notes sit anywhere in the vault, so search the whole vault by name and by body first.
 2. **The gaps.** A table: `# | Gap | Kind | Blockers it clears | Existing ticket | State`. The `#` cell holds the number with its G — `G1`, not `1`. Existing ticket is the key a search matched, or "none"; for a `link fix` it is the ticket at the other end of the wrong link, never the source key, and when the source key is at neither end, the ticket the link is wrong on. State is `drafted`, `waiting on [[<question note>]]`, `created <key>`, or `done YYYY-MM-DD`.
 3. **Stories.** One block per drafted gap. A gap waiting on a ruling gets no heading here at all:
    - Heading `### G<n> — <short title>`. After a create, the new key joins the heading.
@@ -74,13 +83,13 @@ Sections in this order, each a `##` heading:
    - **Depends on.** Other gaps or tickets.
    - **Evidence.** Copied from the intake note, in its form: the clone's name, one space, the path from the repo root, a colon, the line — `phenix.ui apps/appointments/src/lib/appointmentDetailFields.ts:217`. One whole line per place, clone name and all, inside one pair of backticks. Never leave the clone's name outside them, and never write a second line as a bare `` `:225` ``: give it its own full line.
 
-   `re-scope`, `link fix`, and `close` blocks hold their text for the owner in place of Story and criteria. A `split` block holds both. All of it is ready to paste into Jira: roles, not names, and no wikilinks.
+   `re-scope`, `link fix`, and `close` blocks hold their text for the owner in place of Story and criteria. A `split` block holds both. All of it is ready to paste into Jira: roles, not names, and no wikilinks. Read the finished section back before moving on: no `[[` anywhere in it, and no person's name — "the acting scrum master", never "Rob Park". Fix what the read-back finds.
 4. **Waiting on a ruling.** One line per held gap: the question note link, who owes the answer (its `owner`), what each answer would change, and any ticket a search matched for that gap with the piece it leaves undone.
 5. **Build order.** A numbered order across the drafted stories and the source ticket.
 
 ## Other writes
 
-- The intake note: one line under Facts established that links `[[KEY Gap Stories]]`. Write it once, and change nothing else in that note.
+- The intake note: one line under Facts established that links `[[KEY Gap Stories]]`. Grep the note for `KEY Gap Stories` first. One hit or more: change nothing. No hit: add the one line, and change nothing else in that note. One run adds one line, not two.
 - The daily note: `- HH:MM gap stories [[KEY Gap Stories]]: N drafted, M waiting`, and the key into its `jira` list. HH:MM is the clock time the line is written, never left out, and the line ends at the counts.
 
 ## Repeat runs
@@ -101,7 +110,7 @@ Jira text names roles, not people, and carries no Claude attribution and no sess
 
 ## Chat summary
 
-Five lines at most: the first-line sentence; up to three gaps, each with its number, kind, and state; which numbers can be created, and the note link. When none can be created, say which role acts on the drafted text. Five plain lines, counted: no table, no headings, no extra findings, nothing about how the work was done. Anything worth more than a line belongs in the note.
+Exactly these lines, in this order, nothing before or after: (1) the first-line sentence, on its own, as the reply's opening words; (2), (3) and (4) one gap each, with its number, kind and state; (5) which numbers can be created, and the note link — or, when none can be created, which role acts on the drafted text. Count them before sending. Five is the ceiling, not the target. No greeting, no table, no headings, no extra findings, nothing about how the work was done or what else you noticed. Anything worth more than a line belongs in the note.
 
 ## When something fails
 
@@ -134,3 +143,6 @@ One line in chat each. No Atlassian MCP, or the site is unreachable: write the n
 | "Evidence. Recorded as housekeeping in [[Sprint To-Do Triage - 2026-09-09]]" | Everything under Stories gets pasted into Jira, Evidence lines too, and a wikilink is dead text there. Name the note in the Summary instead |
 | "Its status: answered is not backed by any record elsewhere in the vault — treat it as open until Rob confirms" | An answered question note is the answer. Re-opening it here holds a gap the team has already unblocked |
 | "Drafting the gap stories now, running in the background. I'll report back when it's done" | The note is written in this turn. A progress message is not the summary, and it pushes the summary past five lines |
+| A `G1` row clearing blockers 1 and 3, and a `G2` row clearing blocker 2, where 2 is the question 1 and 3 wait on | One answer settles all three, so they are one row. Splitting them adds a count to the first line, a waiting line, and a number the create step then cannot find |
+| "vault proposals: [[Sprint To-Do Triage - 2026-09-09]] item 1, or none" | That is the recipe's own placeholder pasted through. Write what the search found |
+| Adding a second Facts-established line on a later run because the first one reads differently | The check is whether the note already links the gap note, not whether the wording matches. A second line is a second claim about one run |
