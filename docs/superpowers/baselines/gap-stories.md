@@ -203,7 +203,7 @@ TODAY=$(date +%F)
 
 # Jira and Confluence writes, file edits in the live vault, and writes to the shared session
 # memory folder, are denied on every rep.
-DENY="mcp__atlassian__createJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__editJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,Edit(/$SRC/**),Write(/$SRC/**),Edit(/$MEMORY_DIR/**),Write(/$MEMORY_DIR/**)"
+DENY="mcp__atlassian__createJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__editJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,Edit(/$SRC/**),Write(/$SRC/**),Edit(/$MEMORY_DIR/**),Write(/$MEMORY_DIR/**),Agent"
 ALLOW="Skill,Bash,Read,Write,Edit,MultiEdit,Glob,Grep,mcp__atlassian__getJiraIssue,mcp__atlassian__searchJiraIssuesUsingJql,mcp__atlassian__getAccessibleAtlassianResources,mcp__atlassian__atlassianUserInfo,mcp__atlassian__getIssueLinkTypes,mcp__atlassian__getJiraIssueRemoteIssueLinks,mcp__atlassian__getVisibleJiraProjects,mcp__atlassian__getJiraProjectIssueTypesMetadata,mcp__atlassian__getJiraIssueTypeMetaWithFields,mcp__atlassian__lookupJiraAccountId"
 
 # new_copy <name> <A|B>  -> prints the rep dir; the vault copy is <dir>/vault
@@ -214,7 +214,7 @@ rep() {
   local dir=$1 label=$2 prompt=$3; shift 3
   touch "$dir/$label.start"
   ( cd "$CWD" && env -u CLAUDECODE OBSIDIAN_VAULT="$dir/vault" claude -p \
-"OBSIDIAN_VAULT is set to a test copy of the vault at $dir/vault, on purpose. Use that copy, never the real vault, and do not ask about it.
+"This is a test run. OBSIDIAN_VAULT points to a copy of the vault made just for this run, at $dir/vault. Work only in that copy. Never touch the real vault.
 
 $prompt" \
       --model sonnet --max-turns "${MAXT:-60}" --permission-mode acceptEdits --add-dir "$dir/vault" \
@@ -269,6 +269,10 @@ runs after the turn it resumes has exited.
 All reps share one session memory folder, because that folder comes from the working directory,
 not from the vault copy. On 2026-09-15, two reps ran at the same time and wrote over each other's
 notes in that folder, so the `MEMORY_DIR` deny above stops a rep from writing there at all.
+
+A rep can call `Agent` to start a background subagent, and that subagent does not follow the
+rep's own deny list. So `Agent` is denied above: reps must run as one process, or the deny list
+does not cover everything that runs.
 
 ### Jira guard
 
