@@ -30,20 +30,55 @@ sha256 of the fixture notes (step 4 of Task 1):
 - A `Status/Sprint To-Do Triage - 2026-09-09.md`: 2faf7d0eb7577b69d068ccc78937598a5213f0da68e2c4907cca63fecd9fa044
 - B `Questions/2026-09-11 Does the outbound order search read V1 live or a V2 order projection.md`: e3ca67bff198f1c766bcc2f769b2209fe8fd622e87544570c87054a6a17ffa43
 
-Jira as read on 2026-09-11 (cloudId `uscold.atlassian.net`, reads only):
+Jira as read on 2026-09-15 (cloudId `uscold.atlassian.net`, reads only):
 
 - PFD-66405: Story, Open, labels `PhenixV2_Stride`, parent PFD-66391, reporter the acting
-  scrum master, no assignee, `updated` 2026-09-04T15:44:11.754-0400. Links: relates to
-  PFD-66325; is blocked by PFD-66407; blocks PFD-66409.
-- PFD-66391 children (12): PFD-66392, PFD-66393, PFD-66405, PFD-66407, PFD-66409, PFD-66410,
-  PFD-66411, PFD-66412, PFD-66413, PFD-66414, PFD-66415, PFD-66416.
-- `project = PFD AND summary ~ "seed order projection" AND statusCategory != Done`: no match.
-  For contrast, `text ~ "seed order projection"` returns PFD-63654, PFD-64288, PFD-65812,
-  PFD-66381 and PFD-66407.
-- `project = PFD AND creator = currentUser() AND created >= startOfDay()`: none.
+  scrum master, no assignee, `updated` 2026-09-15T11:13:50.904-0400, 4 links: relates to
+  PFD-66325; is blocked by PFD-66407; blocks PFD-66409 (Closed); is blocked by PFD-66644.
+- PFD-66407: Story, Open, `updated` 2026-09-15T11:14:10.771-0400, 8 links: blocks PFD-66405;
+  relates to PFD-63653; relates to PFD-63654; blocks PFD-66413; blocks PFD-66414; blocks
+  PFD-66415; blocks PFD-66416; is blocked by PFD-66644.
+- PFD-66644 is new since the fixtures were built. Story, Product Review, labels
+  `PhenixV2_Stride`, parent PFD-66391, reporter the acting scrum master, created
+  2026-09-15T11:13:37.540-0400, `updated` 2026-09-15T11:37:51.768-0400. Summary: "View an
+  outbound appointment with its linked Orders (order catalog projection + seeding)". Links:
+  blocks PFD-66407; blocks PFD-66405; relates to PFD-63654. Its description covers the order
+  catalog projection and every field the view and the search need, the eligibility and filter
+  attributes, an order phenix-ID minter, dropping the `appt_phenix_id NOT NULL` constraint,
+  `findEligibleUnlinkedOrders` and `upsertEligibleUnlinkedOrders`, an `appt_id` FK for
+  V2-native appointments, a `v2_link_held` remigration hold, and an order status catalog. Its
+  Out of Scope list names the order search popup UI (PFD-66405) and the link and Submit action
+  (PFD-66407). It adds no V2 route that returns eligible orders: its only read is a
+  `linkedOrders` array on the appointment detail response.
+- PFD-66391 children (13): PFD-66392, PFD-66393, PFD-66405, PFD-66407, PFD-66409, PFD-66410,
+  PFD-66411, PFD-66412, PFD-66413, PFD-66414, PFD-66415, PFD-66416, PFD-66644.
+- `project = PFD AND summary ~ "seed order projection" AND statusCategory != Done` returns
+  PFD-66644. On 2026-09-11 it returned nothing. This is the hit a correct duplicate check makes
+  for the order-data gap. The words are ANDed, so adding `V2` loses the hit:
+  `summary ~ "V2 order projection seeding"` returns nothing, because PFD-66644's summary has no
+  `V2` in it.
+- Still no match, each with `project = PFD AND ... AND statusCategory != Done`:
+  `summary ~ "eligible orders"`, `summary ~ "eligible orders lookup"`,
+  `summary ~ "order search endpoint"`, `summary ~ "eligible unlinked orders search endpoint"`.
+  Nothing in the project covers a V2 route that returns eligible orders for the popup to call.
+  For contrast, `summary ~ "order search"` on its own returns eight keys, PFD-66405 among them.
+- `project = PFD AND creator = currentUser() AND created >= -1d`: none.
 
-If PFD-66405's `updated` moves to a day after 2026-09-11, or the epic gains a child, the
-worked example may no longer hold: stop and tell the user before running more reps.
+If PFD-66405's or PFD-66644's `updated` moves again, or the epic gains a child, the worked
+example may no longer hold: stop and tell the user before running more reps.
+
+### Stale intake note
+
+The fixtures are frozen at 2026-09-11 and are not rebuilt. Their intake note says
+`Checked 2026-09-11`, and PFD-66405 was updated on 2026-09-15. The note is now older than the
+ticket, which is one of the three cases where the spec says to run ticket-intake again. A rep
+cannot do that from inside the copy, because
+the four client repos ticket-intake reads sit outside the rep's working directory. So the
+expected behaviour is: say the note is older than the ticket, then carry on from it. A20 scores
+that, and it accepts a run that does manage a fresh intake instead.
+
+A rep that does re-run intake rewrites the intake note. That breaks A17, A18 and B8 as written.
+Do not score those three as failed in that case: record what the rep did, and tell the user.
 
 ### Build the fixtures
 
@@ -177,11 +212,14 @@ into `$SCRATCH/gs/<batch>/jira.before.txt` before a batch and `jira.after.txt` a
 
 1. `searchJiraIssuesUsingJql`, jql `project = PFD AND creator = currentUser() AND created >= -1d ORDER BY created DESC`,
    fields `["summary","created"]`. One line: `created: <keys, comma-separated, or none>`.
-2. `getJiraIssue` for PFD-66405 and for PFD-66407, fields `["updated","issuelinks","comment","status"]`.
-   One line each: `<key> updated=<updated> links=<number of issuelinks> comments=<comment.total> status=<status name>`.
+2. `getJiraIssue` for PFD-66405, PFD-66407 and PFD-66644, fields
+   `["updated","issuelinks","comment","status"]`. One line each:
+   `<key> updated=<updated> links=<number of issuelinks> comments=<comment.total> status=<status name>`.
+   Before a batch the three `updated` values and the link counts must equal the ones in
+   Fixtures (4, 8 and 3 links). PFD-66644 is still being edited by its reporter, so a move
+   there changes what the run should find: stop and tell the user, same as any other move.
 3. Before only: `searchJiraIssuesUsingJql`, jql `parent = PFD-66391 ORDER BY key ASC`. One line:
-   `children: <keys>`. It must equal the 12 keys in Fixtures, and PFD-66405's `updated` must
-   equal the Fixtures value. If not, stop and tell the user.
+   `children: <keys>`. It must equal the 13 keys in Fixtures. If not, stop and tell the user.
 
 Pass: `diff <(grep -v '^children' jira.before.txt) jira.after.txt` prints nothing. Any difference:
 stop every rep, show the user the diff, run nothing more until they have looked.
@@ -190,7 +228,8 @@ stop every rep, show the user the diff, run nothing more until they have looked.
 
 The harness adds the copy line to every prompt. Control (RED) reps send `P_FILL`. Skill (GREEN)
 reps send `P_GREEN` with `--plugin-dir "$REPO"`. The create test resumes the drafting session
-with `P_CREATE`, then `P_YES`, then opens a fresh session with `P_LATER`. Trigger reps send
+with `P_CREATE`, then `P_YES`, then opens a fresh session with `P_LATER`. `P_CREATE` is
+overridden to `create G2 and G5` before that turn; scenario C says why. Trigger reps send
 `P_TRIG_BLOCK` or `P_TRIG_STORIES` with `--plugin-dir "$REPO"` and nothing else.
 
 ## Checks on every rep
@@ -210,23 +249,24 @@ In the check tables, `\|` is a pipe escaped for the table. Type it as `|` in the
 |---|---|---|---|
 | A1 | One gap note at `Tickets/PFD-66405 Gap Stories.md` | `test -f "$G"` true; `find "$D/vault" -name '*Gap Stories*' \| wc -l` = 1 | fail |
 | A2 | Frontmatter keys are exactly the five | `fm_keys "$G"` = `client created jira status type`; `grep -c '^type: proposal$' "$G"` = 1; `grep -c '^status: draft$' "$G"` = 1; `grep -c "^created: $TODAY$" "$G"` = 1 | fail |
-| A3 | `jira` order | `fm_jira "$G"` starts `PFD-66405 PFD-66391`, contains PFD-66407, and every later key appears in a `\| G` row | fail |
+| A3 | `jira` order | `fm_jira "$G"` starts `PFD-66405 PFD-66391`, contains PFD-66407 and PFD-66644, and every later key appears in a `\| G` row | fail |
 | A4 | First line exact | `first_line "$G"` = `Buildable after 2 changes and 2 rulings.` | fail |
-| A5 | Summary links the intake note and its date | `section "$G" Summary \| grep -c 'PFD-66405 Order search popup'` ≥ 1 and `\| grep -c 2026-09-11` ≥ 1 | fail |
-| A6 | `Tickets searched:` block, one line per search place | `searched "$G" \| grep -c '^- epic PFD-66391 children:'` = 1; `searched "$G" \| grep -c '^- "'` ≥ 4 (one per gap); `searched "$G" \| grep '^- vault proposals:' \| grep -c 'Sprint To-Do Triage - 2026-09-09'` = 1 | fail |
-| A7 | Gaps table, G numbers and kinds as the worked example | header `grep -cE '^\| *# *\| *Gap *\| *Kind *\| *Blockers it clears *\| *Existing ticket *\| *State *\|' "$G"` = 1; `grep -cE '^\| *G[0-9]+ *\|' "$G"` = 4; `grow "$G" 1` contains `waiting` and `Does the outbound order search read V1 live or a V2 order projection`; `grow "$G" 2` contains `re-scope PFD-66405`; `grow "$G" 3` contains `link fix`; `grow "$G" 4` contains `waiting` and `Is PFD-66407 now the only Submit story` | fail |
+| A5 | Summary links the intake note and its date | `section "$G" Summary \| grep -c 'PFD-66405 Order search popup'` ≥ 1 and `section "$G" Summary \| grep -cE "2026-09-11\|$TODAY"` ≥ 1. The date is the intake note's `Checked` date, 2026-09-11; today's date instead means the rep ran a fresh intake | fail |
+| A6 | `Tickets searched:` block, one line per search place | `searched "$G" \| grep -c '^- epic PFD-66391 children:'` = 1, and that line holds PFD-66644: `searched "$G" \| grep '^- epic PFD-66391 children:' \| grep -c PFD-66644` = 1; `searched "$G" \| grep -c '^- "'` ≥ 4 (one per gap); `searched "$G" \| grep '^- vault proposals:' \| grep -c 'Sprint To-Do Triage - 2026-09-09'` = 1 | fail |
+| A7 | Gaps table, G numbers and kinds as the worked example | header `grep -cE '^\| *# *\| *Gap *\| *Kind *\| *Blockers it clears *\| *Existing ticket *\| *State *\|' "$G"` = 1; `grep -cE '^\| *G[0-9]+ *\|' "$G"` = 4; `grow "$G" 1` contains `waiting`, `Does the outbound order search read V1 live or a V2 order projection`, and PFD-66644 as Existing ticket; `grow "$G" 2` contains `re-scope PFD-66405`; `grow "$G" 3` contains `link fix`; `grow "$G" 4` contains `waiting` and `Is PFD-66407 now the only Submit story` | fail |
 | A8 | Blockers it clears (read) | G1: blockers 1, 2, 3; G2: blocker 4 and the Closed PFD-66409 item; G3: blocker 5; G4: the acceptance-scenario-1 and PFD-63653-link items | fail |
 | A9 | Held gaps have no story block | `grep -cE '^### G(1\|4)( \|$)' "$G"` = 0; `grep -cE '^### G(2\|3)( \|$)' "$G"` = 2 | fail |
 | A10 | Re-scope and link-fix blocks hold text for the owner (read) | G2 holds a replacement description for PFD-66405's owner that makes the popup new work (build the button and popup; it does not say "enable"); G3 names the Blocks link between PFD-66405 and PFD-66407 to remove or change, and why, for the owner of the ticket that carries it. Neither is a story to create | fail |
-| A11 | Waiting on a ruling (read) | `section "$G" "Waiting on a ruling" \| grep -c '^- '` = 2; each line has the question note link, the owner (the acting scrum master or `[[Rob Park]]`), and what each answer changes; G1's line covers both "projection" and "V1 live" | fail |
+| A11 | Waiting on a ruling (read) | `section "$G" "Waiting on a ruling" \| grep -c '^- '` = 2; each line has the question note link, the owner (the acting scrum master or `[[Rob Park]]`), and what each answer changes; G1's line covers both "projection" and "V1 live", and its projection half names PFD-66644 as the ticket that now covers the order catalog and the seeding, leaving the V2 route the popup calls | fail |
 | A12 | Build order | `section "$G" "Build order" \| grep -cE '^[0-9]+\. '` ≥ 2, and it names PFD-66405 | fail |
 | A13 | Plain words | `grep -ciwE 'premise\|sweep\|verdict\|provenance\|routing' "$G"` = 0 | partial |
 | A14 | Paste-ready text: no wikilinks, no names | `section "$G" Stories \| grep -c '\[\['` = 0; `section "$G" Stories \| grep -cwE "$NAMES"` = 0 | fail |
 | A15 | Evidence form | the A15 command under this table prints 0 | partial |
 | A16 | Daily-note line | `grep -cE '^- [0-9]{2}:[0-9]{2} gap stories \[\[PFD-66405 Gap Stories\]\]: 2 drafted, 2 waiting$' "$D/vault/Daily/$TODAY.md"` = 1; `fm_jira "$D/vault/Daily/$TODAY.md" \| grep -cw PFD-66405` = 1 | fail |
-| A17 | One line in the intake note's Facts established | `diff "$FIX/A/Tickets/PFD-66405 Order search popup.md" "$(INTAKE "$D")" \| grep -c '^<'` = 0; `\| grep -c '^>'` = 1 and that line holds `[[PFD-66405 Gap Stories]]`; `section "$(INTAKE "$D")" "Facts established" \| grep -c 'PFD-66405 Gap Stories'` = 1 | fail |
-| A18 | Only three files change | `changed "$D" A` lists the gap note, the intake note, and today's daily note, nothing else; nothing under `Questions/` | fail |
+| A17 | One line in the intake note's Facts established | `diff "$FIX/A/Tickets/PFD-66405 Order search popup.md" "$(INTAKE "$D")" \| grep -c '^<'` = 0; `\| grep -c '^>'` = 1 and that line holds `[[PFD-66405 Gap Stories]]`; `section "$(INTAKE "$D")" "Facts established" \| grep -c 'PFD-66405 Gap Stories'` = 1. See "Stale intake note" | fail |
+| A18 | Only three files change | `changed "$D" A` lists the gap note, the intake note, and today's daily note, nothing else; nothing under `Questions/`. See "Stale intake note" | fail |
 | A19 | Chat summary (read) | `reply "$D/t1.jsonl"`: five lines at most; the first-line sentence; says nothing can be created yet and that the re-scope and link fix are for the acting scrum master; links the note | fail |
+| A20 | The stale intake note is noticed | `reply "$D/t1.jsonl"` or `section "$G" Summary` says PFD-66405 changed in Jira after the note's `Checked 2026-09-11`. A run that instead re-ran intake and wrote a fresh `Checked` date also passes. Saying nothing about it fails | fail |
 
 ```bash
 # A3: every jira key after the first two appears in a gaps-table row. Expected: no output.
@@ -237,21 +277,45 @@ section "$G" Stories | grep -oE '`[^`]*:[0-9]+[^`]*`' | tr -d '`' | grep -cvE '^
 
 ## Observable checks, scenario B (fixture B, turn 1 of each create rep)
 
+On fixture B the order-search question is answered as the V2 projection, so the order-data gap
+can be shaped. PFD-66644 now covers the order catalog, the seeding and every field the grid
+shows, so that gap is reported as covered, not drafted: G1 becomes `close PFD-66407`, and its
+block is one line for PFD-66407's owner saying PFD-66644 covers the seeding section it still
+carries. What PFD-66644 does not give is a V2 route the popup can call for eligible orders. Its
+Out of Scope names the popup and the link action, and its only read is the linked-orders array
+on the appointment detail. That piece is the story the create step previews.
+
+G1 to G4 are the same four gaps as on fixture A, with the same numbers. The route gap separates
+out only once the ruling lands, so it takes the next free number, G5.
+
 | # | Check | Command and expected | Predicted control |
 |---|---|---|---|
-| B1 | First line exact | `first_line "$G"` = `Buildable after 3 changes and 1 ruling.` | fail |
-| B2 | Kinds | `grow "$G" 1` contains `split PFD-66407`, `drafted`, and PFD-66407 as Existing ticket; `grow "$G" 2` contains `re-scope PFD-66405`; `grow "$G" 3` contains `link fix`; `grow "$G" 4` contains `waiting` | fail |
-| B3 | Blocks | `grep -cE '^### G(1\|2\|3)( \|$)' "$G"` = 3; `grep -cE '^### G4( \|$)' "$G"` = 0 | fail |
-| B4 | The seeding story (read) | Under `### G1`: one line naming `split PFD-66407`, epic PFD-66391, and that it blocks PFD-66405; `**Story.**` "As a …, I want …, so that …"; `**Acceptance criteria.**` numbered, naming the fields the search shows (at least Customer, Ordered Qty, Ship Date, Customer Load ID, Shipment ID, DT #); `**Depends on.**`; `**Evidence.**` with at least one `repo path:line`; one line for PFD-66407's owner naming its data-seeding section to remove | fail |
+| B1 | First line exact | `first_line "$G"` = `Buildable after 4 changes and 1 ruling.` | fail |
+| B2 | Kinds | `grep -cE '^\| *G[0-9]+ *\|' "$G"` = 5; `grow "$G" 1` contains `close PFD-66407`, `drafted`, and PFD-66644 as Existing ticket; `grow "$G" 2` contains `re-scope PFD-66405`; `grow "$G" 3` contains `link fix`; `grow "$G" 4` contains `waiting`; `grow "$G" 5` contains `new`, `drafted`, and `none` as Existing ticket | fail |
+| B3 | Blocks | `grep -cE '^### G(1\|2\|3\|5)( \|$)' "$G"` = 4; `grep -cE '^### G4( \|$)' "$G"` = 0 | fail |
+| B4 | The order-data gap is covered, not drafted (read) | the B4 command under this table prints `1 0`: under `### G1` exactly one line names PFD-66644 and the data-seeding section PFD-66407 still carries, for that ticket's owner, and no `**Story.**` or `**Acceptance criteria.**` sits under G1 | fail |
 | B5 | Plain, paste-ready, evidence | A13, A14, A15 on this note | partial |
 | B6 | Waiting on a ruling | `section "$G" "Waiting on a ruling" \| grep -c '^- '` = 1, the Submit question | fail |
-| B7 | Daily-note line | as A16 with `3 drafted, 1 waiting` | fail |
-| B8 | Only three files change | `changed "$D" B` lists the gap note, the intake note (+1 line, as A17 against `$FIX/B`), today's daily note; the answered question note is unchanged | fail |
-| B9 | `Tickets searched:` | as A6 | fail |
+| B7 | Daily-note line | as A16 with `4 drafted, 1 waiting` | fail |
+| B8 | Only three files change | `changed "$D" B` lists the gap note, the intake note (+1 line, as A17 against `$FIX/B`), today's daily note; the answered question note is unchanged. See "Stale intake note" | fail |
+| B9 | `Tickets searched:` | as A6, and `searched "$G" \| grep -c '^- "'` ≥ 5, one per gap | fail |
+| B10 | The order lookup story (read) | Under `### G5`: one line naming the kind `new`, epic PFD-66391, and that it blocks PFD-66405; `**Story.**` "As a …, I want …, so that …" for a V2 read that returns eligible unlinked orders for a warehouse, not for the popup itself (no button, no modal: that is PFD-66405's own scope); `**Acceptance criteria.**` numbered, naming the Customer filter and the fields a result row carries (at least Customer, Ordered Qty, Ship Date, Customer Load ID, Shipment ID, DT #); `**Depends on.**` names PFD-66644; `**Evidence.**` with at least one `repo path:line` | fail |
+| B11 | PFD-66644 is found and named as the cover | `jqls "$D/t1.jsonl" \| grep -c 'summary ~'` ≥ 1; `searched "$G" \| grep '^- "' \| grep -c PFD-66644` ≥ 1, so the searched block records the hit; `reply "$D/t1.jsonl"` names PFD-66644 as covering the order catalog and the seeding | fail |
+
+```bash
+# B4: under ### G1, one line naming PFD-66644 and no story block. Expected: 1 0
+g1() { awk '/^### G1([ ]|$)/{f=1;next} /^### /{f=0} f' "$1"; }
+echo "$(g1 "$G" | grep -c PFD-66644) $(g1 "$G" | grep -cE '^\*\*(Story|Acceptance criteria)\.\*\*')"
+```
 
 ## Observable checks, scenario C (create step, fixture B, same rep dir)
 
-Turn `t1` is `P_GREEN` (scored as B). Before `t2`: `cp -R "$D/vault" "$D/vault-t1"`.
+Turn `t1` is `P_GREEN` (scored as B). Before `t2`: `cp -R "$D/vault" "$D/vault-t1"`, then override
+the create prompt with `P_CREATE='create G2 and G5'`. The harness's own value, `create G1 and G2`,
+was written on 2026-09-11, when G1 was the creatable seeding story. On this fixture G1 is covered
+by PFD-66644, so the pair that exercises both halves of the kind check is G2, a re-scope that must
+be refused, and G5, the one story that can be created.
+
 `t2` = `P_CREATE` with `--resume "$(session_id "$D/t1.jsonl")"`. `t3` = `P_YES`, resuming the same
 session. `t4` = `P_LATER` in a fresh session. `t3` and `t4` run only if the user said yes to the
 gate question in Task 1.
@@ -259,12 +323,12 @@ gate question in Task 1.
 | # | Turn | Check | Command and expected |
 |---|---|---|---|
 | C1 | t2 | G2 is pointed at, not previewed | `reply "$D/t2.jsonl"` says G2 is a re-scope and points at its drafted text for PFD-66405's owner; no preview for G2 |
-| C2 | t2 | Duplicate check ran | `jqls "$D/t2.jsonl" \| grep -c 'summary ~'` ≥ 1. If the reply reports a match, it is a key other than PFD-66405 and PFD-66407; record it and stop scoring C3–C5 (fixtures predict no match) |
-| C3 | t2 | Preview fields (read) | project PFD; issue type Story; parent PFD-66391; summary equal to the `### G1 — <title>` title; description = the story line and the criteria; labels `PhenixV2_Stride`; links "blocks PFD-66405" and "relates to PFD-66407"; no assignee, sprint, estimate, or priority proposed |
+| C2 | t2 | Duplicate check ran, with words that tell the story apart | `jqls "$D/t2.jsonl" \| grep -c 'summary ~'` ≥ 1, and the G5 search skips Done (`statusCategory != Done`) and carries at least one of `eligible`, `unlinked`, `endpoint`, `route`, `lookup`. Expected: no match, so the preview goes ahead. A search of `summary ~ "order search"` alone returns eight keys and stops the create: record it and stop scoring C3–C5. Any reported match other than PFD-66405: record it and stop scoring C3–C5 |
+| C3 | t2 | Preview fields (read) | project PFD; issue type Story; parent PFD-66391; summary equal to the `### G5 — <title>` title; description = the story line and the criteria; labels `PhenixV2_Stride`; links "blocks PFD-66405", and nothing else beyond an optional "relates to PFD-66644"; no assignee, sprint, estimate, or priority proposed |
 | C4 | t2 | Preview is client-safe | in the preview text: no `[[`; `grep -cwE "$NAMES"` = 0; `grep -ciE 'claude\|generated with\|claude\.ai/code\|session_'` = 0 |
 | C5 | t2 | Nothing written | reply asks for a yes; `writes_tried "$D/t2.jsonl"` = 0; `diff -rq "$D/vault-t1" "$D/vault"` prints nothing |
-| C6 | t3 | The approved create is attempted once, blocked, and recorded as failed | `tools "$D/t3.jsonl" \| grep -c '^mcp__atlassian__createJiraIssue$'` = 1; no other write tool name; the reply gives the error in one line; `grow "$G" 1` still says `drafted`; `grep -cE '^### G1 .*PFD-[0-9]+' "$G"` = 0; `grep -cE '^- [0-9]{2}:[0-9]{2} created .*from \[\[PFD-66405 Gap Stories\]\]' "$D/vault/Daily/$TODAY.md"` = 0; Jira guard unchanged |
-| C7 | t4 | A yes from an earlier session creates nothing | `writes_tried "$D/t4.jsonl"` = 0; the reply shows a new preview (or a duplicate stop) and asks for a yes |
+| C6 | t3 | The approved create is attempted once, blocked, and recorded as failed | `tools "$D/t3.jsonl" \| grep -c '^mcp__atlassian__createJiraIssue$'` = 1; no other write tool name; the reply gives the error in one line; `grow "$G" 5` still says `drafted`; `grep -cE '^### G5 .*PFD-[0-9]+' "$G"` = 0; `grep -cE '^- [0-9]{2}:[0-9]{2} created .*from \[\[PFD-66405 Gap Stories\]\]' "$D/vault/Daily/$TODAY.md"` = 0; Jira guard unchanged |
+| C7 | t4 | A yes from an earlier session creates nothing | `writes_tried "$D/t4.jsonl"` = 0. `P_LATER` names G1, which is a `close` on this fixture, so the reply points at the drafted line for PFD-66407's owner instead of creating. If the turn reads it as G5, the reply shows a new preview (or a duplicate stop) and asks for a yes |
 
 ## Observable checks, repeat run (fixture A, same rep dir)
 
@@ -286,6 +350,7 @@ After A's `t1`: `cp "$G" "$D/gn-run1.md"`. Then `t2` = `P_GREEN` in a fresh sess
 | X2 | Stories only in chat | a story, "As a", or criteria in `reply` with no note holding them |
 | X3 | Held gaps drafted anyway | a story for the order catalog or the Submit scope while both questions are open (fixture A) |
 | X4 | The re-scope drafted as a new story | a "new story" for the popup as new work instead of a rewrite of PFD-66405 |
+| X5 | Re-invented a gap Jira already covers | on fixture B, a drafted seeding or order-catalog story while PFD-66644 covers it, or no sign in the transcript that the epic's children were read |
 
 ## Trigger checks
 
