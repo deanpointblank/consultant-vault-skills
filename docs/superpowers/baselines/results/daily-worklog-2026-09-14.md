@@ -438,7 +438,7 @@ D from round 1, T from round 2, G from round 3, P from the first batch (never re
 | D6 | 0/5 | 1/5 | Row counts 2, 4, 2, 2, 3. Confound 2: the day is two pre-existing worklogs. |
 | D7 | 0/5 | **5/5** | `hours` = `9.00` in all five. |
 | D8 | 0/5 | **5/5** | No row off the 0.25 h grid, none under 0.25 h. |
-| D9 | 0/5 | **2/5** | D2 and D5 carry a `PFD-66613 … ceremony` row. The other three inherited the fold from pre-existing worklog 266668 and flagged it rather than amending it, which the skill requires. |
+| D9 | 0/5 | **2/5** | D2 and D5 carry a `PFD-66613 … ceremony` row. The other three inherited the fold from pre-existing worklog 266668 and flagged it rather than amending it, which the skill requires. **A second, independent cause**: the skill's own classification table routed a huddle to `meeting`, not `ceremony` — two of the five rep-authored comments below read `meeting: Stride Huddle`. That is a skill defect, not confound 2, and it was fixed on 2026-09-15 (see the closing section). |
 | D10 | 0/5 | **3/5** | D1, D3, D4. |
 | D11 | 0/5 | **5/5** | A `PFD-65947 … coding` row in all five. |
 | D12 | 0/5 | **5/5** | Every activity cell is one of the eight. |
@@ -575,7 +575,9 @@ check's `= 1`). G5 is the real miss — it names the path in the soft spot inste
 - **T5 — unscoreable as written.** Its command reads artifact ids out of worklog comments,
   which confound 1 prevents from existing. Checked by hand instead: no id in any ledger is
   invented.
-- **D6, D9, D10, G2, G4, G5 — confounded by live Jira (confound 2).** The days these scenarios
+- **D6, D9, D10, G2, G4, G5 — confounded by live Jira (confound 2).** D9 additionally has a
+  cause that is not confound 2: the skill routed huddles to `meeting` rather than `ceremony`
+  (fixed 2026-09-15). The days these scenarios
   describe are, in live Jira, already fully posted. The reps' behaviour is the skill's
   documented "day already partly posted by hand" branch and is correct; the checks describe a
   day that no longer exists. No edit was spent on them either, because the only skill text that
@@ -936,3 +938,28 @@ above. Recorded as found, not softened to match the prediction.
 
 **Known gap this does NOT close.** The skill has still never itself posted a worklog to Jira in
 any test to date. Its first real post should be watched.
+
+## SKILL.md changed after this scoring — 2026-09-15
+
+Every score above was measured against `skills/daily-worklog/SKILL.md` as of `ea088a4`. A final
+whole-branch review then changed the skill in seven places, five of which change behaviour:
+
+- **Worklog tool fields** (step 6) — `started` now specifies the literal
+  `YYYY-MM-DDTHH:MM:SS.000±HHMM` form, and `contentFormat: markdown` is named.
+- **Ceremony classification** (step 3) — huddle, sprint planning and retro are named in the
+  `ceremony` row, and the title test now beats `meeting_type: working-session`. This is the D9
+  cause recorded above.
+- **Partially-posted days** (step 2) — a date carrying `not posted` rows now resumes and posts
+  exactly those rows instead of halting or re-sweeping.
+- **Cross-ticket merges** (step 4) — merging sub-0.25 h evidence into another ticket's row now
+  requires a soft-spots line.
+- **Banned word in an artifact's own name** (comment contract) — such an artifact is left out of
+  the comment and named in the reply; ids are never reworded.
+
+The other two were corrections, not behaviour: "the four totals sections" → "the opening line
+and the two totals sections", and a false harness comment in the scenario file.
+
+**None of the changed paths were measured by this baseline.** The tool-call fields were never
+exercised at all (confound 1: `addWorklogToJiraIssue` is absent from every rep's tool list), and
+no rep reached the partially-posted or cross-ticket-merge paths. The headline totals above are
+unchanged and are not restated here; they describe the pre-change skill.

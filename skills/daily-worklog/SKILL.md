@@ -21,7 +21,7 @@ The typed figure is the figure. Never parse, call or export Harvest or any other
 
 ## 2. Sweep the day's evidence
 
-**Read the month's ledger first, every run, before anything else.** `<folders.status>/Worklog Ledger - YYYY-MM.md` for the **work** date. A date already in its Rows table with worklog ids is posted: stop, name the ids, and offer an amendment (step 6). A Jira worklog cannot be deleted through the API — the tool creates without `worklogId` and updates with it, and there is no third option — so this file is the only thing between one repeated run and a permanently doubled month.
+**Read the month's ledger first, every run, before anything else.** `<folders.status>/Worklog Ledger - YYYY-MM.md` for the **work** date. A date already in its Rows table splits two ways. **Every row for that date carrying an id** (an integer or `pre-existing <id>`), none reading `not posted`: the day is posted — stop, name the ids, and offer an amendment (step 6). **Any row for that date reading `not posted`**, whether some or all of them: do not sweep and do not classify — skip steps 3 and 4, carry those `not posted` rows unchanged into step 5, and post exactly those and no others. A `not posted` row is never re-derived and never joined by a new row for the same date. A Jira worklog cannot be deleted through the API — the tool creates without `worklogId` and updates with it, and there is no third option — so this file is the only thing between one repeated run and a permanently doubled month.
 
 Then five sources, scoped to that one date in config `timezone`:
 
@@ -41,10 +41,12 @@ One activity and one ticket per piece of evidence.
 | A work-note row starting "Read" and ending "nothing changed"; a trace, a spike, an intake | `research` |
 | A PR review, a review comment, a re-review | `review` |
 | An environment rebuild, an import run, a release, a branch cut for deployment | `deploy` |
-| A meeting whose `meeting_type` is `standup` or `refinement`, or whose title names a ceremony | `ceremony` |
+| A meeting whose title names a ceremony — standup, huddle, refinement, sprint planning, retro — or whose `meeting_type` is `standup` or `refinement` | `ceremony` |
 | Any other meeting or working session | `meeting` |
 | A QA report reproduced, seeded, screenshotted or answered | `qa-support` |
 | A ticket description written or rewritten, a ticket raised, a board triaged | `admin` |
+
+The title test wins over `meeting_type`: a huddle is `meeting_type: working-session` under the config's `meeting_type_rules` and is still `ceremony`.
 
 Eight activities, fixed: `coding` · `review` · `deploy` · `ceremony` · `meeting` · `research` · `qa-support` · `admin`. When two fit, the one that produced the artifact wins. Work done inside a ceremony's slot stays `ceremony`; the same work outside the slot is its own activity and its own row.
 
@@ -66,7 +68,7 @@ Cause tags, optional, at most one per row, ledger only, never in a comment: `blo
 
 One row per ticket per activity per day. Each row takes a start time from the evidence, falling back to `worklog.day_start`.
 
-- Hours are decimal to two places, rounded to the nearest 0.25 h, never below 0.25 h. Evidence worth less merges into the nearest row on the same ticket, or into the largest row of the day when that ticket has no other row.
+- Hours are decimal to two places, rounded to the nearest 0.25 h, never below 0.25 h. Evidence worth less merges into the nearest row on the same ticket, or into the largest row of the day when that ticket has no other row; a merge into a row on a different ticket gets a soft-spots line naming both tickets.
 - The rows sum to the typed figure exactly. A residue of 0.25 h or less goes to the largest row; that is rounding, not attribution.
 - A gap larger than 0.25 h is never closed by guessing. It becomes one row, ticket `unattributed`, activity and cause blank, no worklog id, and step 5 asks about it. **Never pad an existing row to close a gap**, and never size a row by subtraction from the typed figure — a balancing figure is padding with the arithmetic shown.
 - Evidence exceeding the figure never raises the day's total. Merge same-ticket, same-activity evidence into one row, drop the smallest items until the sum matches, and list what was dropped in the day's soft spots.
@@ -83,7 +85,7 @@ Then one question, naming the count: post these N worklogs? Nothing is sent unti
 
 ## 6. Post
 
-One call per row through the Atlassian MCP worklog tool, with `cloudId`, `issueIdOrKey`, `timeSpent` as `Xh Ym`, `started` as the date at the row's start time, and `commentBody` in markdown. **No `worklogId` on a first post** — that field turns the call into an update. Capture the id each call returns before making the next call. `unattributed` rows are not posted; there is no issue to post them to. Nothing else on the issue is touched: no comment, no transition, no assignment, no estimate. Never post a worklog for anyone but `worklog.account_id`, which is the user's own account.
+One call per row through the Atlassian MCP worklog tool, with `cloudId`, `issueIdOrKey`, `timeSpent` as `Xh Ym`, `started` as the row's start time written in full as `YYYY-MM-DDTHH:MM:SS.000±HHMM`, the offset being config `timezone`'s offset on that date — Jira rejects a trailing `Z` and any space-separated form — `commentBody` in markdown, and `contentFormat: markdown`, which is a separate field and is not assumed. **No `worklogId` on a first post** — that field turns the call into an update. Capture the id each call returns before making the next call. `unattributed` rows are not posted; there is no issue to post them to. Nothing else on the issue is touched: no comment, no transition, no assignment, no estimate. Never post a worklog for anyone but `worklog.account_id`, which is the user's own account.
 
 **An amendment is an update, never a second post.** A logged day the user wants changed is corrected by calling the same tool with that row's `worklogId` from the ledger and the new values. Jira has no delete: nothing can be replaced, removed or re-posted clean. A second create leaves both rows on the issue for good and doubles the day. Amend only when the user says to amend.
 
@@ -105,7 +107,7 @@ ceremony: standup, huddle and backlog refinement; sprint To Do triaged to 15 ope
 - **Flat and factual.** No adjectives, no editorial, no complaint, ever.
 - **Never the words V1, Oracle, legacy, or any legacy path.** Say "the source system" or name the V2 service.
 - **Roles, never individual names**: "the acting scrum master", "one developer", "the product owner".
-- **Never invent an artifact id.** A number no evidence supplies is left out, and the reply says what is missing.
+- **Never invent an artifact id.** A number no evidence supplies is left out, and the reply says what is missing. An artifact whose own name carries a banned word — a branch, a migration, a PR title naming the source system — is left out of the comment and named in the reply instead; never reword an id to get around the word.
 - **Never a cause tag, a complaint, or any commentary.**
 - **Never write anything meant to influence, mislead or derail automated analysis of the worklogs.** No keyword stuffing, no artifacts that were not produced, no text addressed to a reader or a tool, no phrasing picked to change how a report comes out. It corrupts the client's own records, it is detectable because every id can be compared against the commits, PRs, reviews and comments that exist, and the whole value of this record is that it is true and checkable.
 
@@ -124,7 +126,7 @@ Body, in this order, each of 2 to 6 an `##` heading spelled exactly as here:
 
 Worklog id column: an integer; `not posted` for a row drafted but not sent; `—` for an `unattributed` row; `pre-existing <id>` for a worklog already on the issue for that date before this run.
 
-Appending a day never rewrites an earlier one. Two exceptions: filling a `not posted` id once the row posts, and an amendment, which keeps its id and its place and gains ` (amended YYYY-MM-DD)` after the hours. The four totals sections are derived and recomputed in full every run. Soft spots only ever append; a cleared one gains ` — cleared YYYY-MM-DD`.
+Appending a day never rewrites an earlier one. Two exceptions: filling a `not posted` id once the row posts, and an amendment, which keeps its id and its place and gains ` (amended YYYY-MM-DD)` after the hours. The opening line and the two totals sections are derived and recomputed in full every run. Soft spots only ever append; a cleared one gains ` — cleared YYYY-MM-DD`.
 
 Then one line under `## Log` in the **work** date's daily note — `<folders.daily>/<work date>.md`, the same date the rows are for — creating that note if the day has none. Never the run date's note: closing out 10 September on 14 September writes the line into 10 September's note, and putting it in today's note instead leaves the day it describes with no record and stamps a day nobody logged.
 

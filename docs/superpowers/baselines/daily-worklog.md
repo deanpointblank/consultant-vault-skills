@@ -292,7 +292,9 @@ CWD=/Users/deanbetty/Code/StrideClients/UsCold/uscold-map
 TODAY=$(date +%F)
 
 # Every Jira and Confluence write is denied on every rep, the worklog tool included.
-# The call is still recorded in the transcript; that is what GREEN scores.
+# NOT recorded in the transcript: `--disallowedTools` strips the tool from the rep's list, so no
+# call is ever emitted and the posting mechanics are unscoreable. A future run must STUB the
+# worklog tool instead — a no-op tool that records its arguments and returns a synthetic id.
 DENY="mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__createJiraIssue,mcp__atlassian__editJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,Edit($SRC/**),Write($SRC/**),Edit($HOME/.claude/**),Write($HOME/.claude/**),Edit($HOME/.claude.json),Write($HOME/.claude.json)"
 ALLOW="Skill,Bash,Read,Write,Edit,MultiEdit,Glob,Grep,mcp__atlassian__getJiraIssue,mcp__atlassian__searchJiraIssuesUsingJql,mcp__atlassian__getAccessibleAtlassianResources,mcp__atlassian__atlassianUserInfo,mcp__atlassian__getVisibleJiraProjects,mcp__atlassian__lookupJiraAccountId"
 
