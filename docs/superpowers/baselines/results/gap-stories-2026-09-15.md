@@ -918,6 +918,19 @@ Scenario B total: **5 of 13 checks, 19 of 39 rep-checks** — the best of the th
 
 Create step total: **2 of 6 checks, 6 of 18 rep-checks.**
 
+## Trigger checks
+
+Six one-turn reps, three per trigger, sent with `--plugin-dir "$REPO"` and nothing else. Each is
+scored on the first `Skill` call in its transcript.
+
+| Check | Typed | Reps | Result |
+|---|---|---|---|
+| TR1 | `what's blocking PFD-66405` | `block1`, `block2`, `block3` | **3 of 3.** Every rep's first `Skill` call is `consultant-vault:ticket-intake` |
+| TR2 | `what stories do we need to unblock PFD-66405` | `stories1`, `stories2`, `stories3` | **3 of 3.** Every rep's first `Skill` call is `consultant-vault:gap-stories` |
+
+Trigger total: **2 of 2 checks, 6 of 6 rep-checks.** The two phrases the description sets against
+each other open different skills, every time. Read twice, from the transcripts, on 2026-09-15.
+
 ## Were B1, B7, A4 and A16 one defect wearing four numbers?
 
 **Yes. Round 3 settles it.** All four are arithmetic over the drafted-gap count, and round 3 makes
@@ -934,9 +947,9 @@ and B7 likewise, and all four are the gap count. They should be read as one defe
 ids, which makes the gap-count group smaller than its twelve ids suggest — and makes the bound on
 merge test 3 worth more than its line count implies.
 
-## Two places a check and the skill disagree
+## Where a check and the skill disagree
 
-Recorded, not edited. The brief says to say so and leave it.
+One place. Recorded, not edited. The brief says to say so and leave it.
 
 **A3 (the check) against the `jira` rule.** A1 and A2 wrote `jira: PFD-66405, PFD-66391, PFD-66644`.
 The skill says `jira` is "the source key, then the epic, then every key in the Existing ticket
@@ -947,12 +960,14 @@ the example's G4 has PFD-66407 in its Existing ticket cell. The check is right a
 wrong as a general rule. Closing it means either the example's gap set (the merge bound) or a change
 to the check, not a change to the skill.
 
-**A19's five lines against B11's content.** A19 caps the reply at five lines. B11 requires the reply
-to name PFD-66644 as covering the order catalog and the seeding. In round 3 the two reps whose
-replies are tightest — C2 and C3, both clean five-line summaries — fail B11 for leaving PFD-66644
-out, and the rep that passes B11 has the longest reply. The skill cannot satisfy both without the
-gap note's G1 line and the reply's gap line being the same sentence, which only happens when the
-order-data gap is a `close` on PFD-66644. So B11 too is downstream of the gap set.
+**B11 is not a second one. Correction.** An earlier draft of this section said A19's five-line cap
+and B11's content requirement could not both hold. That was wrong, and the branch's own evidence
+says so. A19 is a scenario-A check and is never scored on a fixture-B rep, so the two are never
+applied to the same reply. And C1's round-3 fixture-B reply is 5 non-blank lines **and** names
+PFD-66644 — counted straight from the transcript — so five lines is room enough for both. What C2
+and C3 are missing is not a line of room, it is the gap set: their order-data gap is not a `close`
+on PFD-66644, so their replies have nothing to name. B11 is downstream of the gap count, like the
+rest of that group.
 
 ## Refactor, round 3
 
@@ -983,7 +998,7 @@ Left open, with what it would take to close each:
 | A3 (the check) | the skill's `jira` rule and the check disagree; the reps followed the rule | the check's PFD-66407 requirement holds only because the example's G4 carries it. Closes when the gap set matches the example — or, if the gap set is accepted as-is, the check should say "every key in an Existing ticket cell" rather than naming PFD-66407 |
 | A6, B9 | edit ii is round 2 of 3, untested | re-run and read the proposals-line count. If reps still write one per gap, round 3's form is a single pre-formatted block the run fills rather than a list it builds. A6's quoted-search clause is also downstream of the gap count |
 | A17 | edit i is round 2 of 3, untested | re-run and check placement. If a rep still misses the section, round 3's form is naming the anchor line to insert after, not the heading |
-| B11 | pulls against A19's five-line cap; both cannot hold unless the order-data gap is a `close` on PFD-66644 | closes with the gap count, or by moving the PFD-66644 clause out of the reply and into a check on the note |
+| B11 | the gap count. The reply names PFD-66644 only when the order-data gap is a `close` on it | closes with the gap count. A19's five-line cap is not in the way: A19 is never scored on a fixture-B rep, and C1's round-3 B reply is five lines and names PFD-66644 |
 | R2 | the row count again | same fix as the gap-count group |
 | R3 | edit iii is round 1 of 3, untested. Round 2's subagent hypothesis is disproved | re-run. If a rep still rewrites the line, round 3's form is a copy step: carry the Waiting section across verbatim and edit only the lines whose State changed |
 | C2, C3, C4, C5 | **untestable as the scenario stands.** The create prompt names `G5`, and G5 is the creatable story in none of nine reps across three rounds. Every create turn stopped correctly at the kind check for its own numbering, and in rounds 2 and 3 every turn named the number that *is* createable | they unlock when the gap count lands on the example's, because `G5` is then the route story. Until then no edit to the create rules is justified: nothing in three rounds of evidence points at them. If the gap count cannot be fixed, the alternative is to change the create prompt to name the gap by kind rather than by number |
@@ -991,6 +1006,12 @@ Left open, with what it would take to close each:
 
 ## What three rounds could not settle
 
+- **The create path past the kind check, and one clause added after round 3.** No rep ever got past
+  the kind check, so C2 to C5 never ran and the create path has never reached a real Jira. After
+  round 3 closed, step 4 of "Creating stories in Jira" in `SKILL.md` gained a clause saying nothing
+  is created without a yes to the preview in this session — the rule was only in the Common-mistakes
+  table before, where a run reading the numbered steps alone could miss it. **That clause is
+  untested.** No rep has run since it was added.
 - **Whether the merge bound is enough.** The diagnosis is well supported — every rep merges blocker
   5 through the same chain, and fixture B, where the ruling is answered, scatters instead — but no
   rep has run against a bounded test 3. The next round finds out.

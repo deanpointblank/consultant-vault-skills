@@ -103,7 +103,7 @@ Only on "create G<n>" or "create G<n> and G<m>". Bare, it means the gap note thi
 1. **Kind.** Only `new` and `split` gaps are created. For the other kinds, point at the drafted text for that ticket's owner, or name the open question.
 2. **Duplicates.** One JQL per story: `project = <project> AND summary ~ "<three or more words from its title>" AND statusCategory != Done`. Use the words that tell this story apart from the ticket it unblocks, not the words the two share. The source key and the split source never count. Any other match stops that story; show the match in chat.
 3. **Preview.** Project from the source key; issue type Story; parent the epic; summary the heading title; description the story line and the criteria; labels copied from the source ticket; links "blocks" the source key, and "relates to" the split source or the ticket the story depends on. No assignee, sprint, estimate, or priority. Ask for a yes.
-4. **Approval.** A yes to that preview, in this session, covers the stories in it and nothing else.
+4. **Approval.** A yes to that preview, in this session, covers the stories in it and nothing else, and without that yes nothing is created, whatever was said before the preview.
 5. **Record.** Each new key goes into the State, the story heading, and `jira`. The daily note gets `- HH:MM created <new key> from [[KEY Gap Stories]] G<n>`, and the key joins its `jira` list. Chat gets one line per new key, with its URL.
 
 Jira text names roles, not people, and carries no Claude attribution and no session link. Descriptions, existing links, status, assignee, and comments on existing tickets stay as they are; changes to them are drafted text for the owner.

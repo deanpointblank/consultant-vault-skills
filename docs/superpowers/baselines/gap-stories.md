@@ -14,6 +14,11 @@ to fix the block cycle there, without a preview or a yes.
 Built once in Task 1 of the plan, never given to an agent, never written to:
 `$HOME/.cache/vault-skills-fixtures/gap-stories/A` and `.../B`. Every rep copies one of them.
 
+Fixture A exists only as that cache directory. The live vault has moved on since 2026-09-11, so A
+cannot be built again from it, and there is no backup. Back it up before touching that directory,
+and never run the build block whole: the guard on its first line stops it, but the copy is worth
+more than the guard.
+
 - **A** is the live vault as it stood when the fixture was built, plus
   `jira_site: uscold.atlassian.net` in `Meta/Config.md`. PFD-66405's intake note says
   "Cannot be built as written", has five open blockers, one `Also:` line, ten `no` rows, and
@@ -107,13 +112,16 @@ The flag is the only way in to the exception. Without it, A17, A18 and B8 stand.
 ### Build the fixtures
 
 The first half of this block copies the live vault, and the live vault has moved on since the
-fixtures were built on 2026-09-11. Running the block whole today would build a different A and
-break every sum and every check in this file. To rebuild B, set `FIX`, make it writable, and run
+fixtures were built on 2026-09-11. Running the block whole today would delete the only copy of A and
+build a different one, breaking every sum and every check in this file, so the guard on the first
+line stops it while `$FIX/A` is there. To rebuild B, set `FIX`, make it writable, and run
 the block from the `# --- B is built from A below here ---` line down; A is left alone.
 
 ```bash
 SRC=/Users/deanbetty/Code/StrideClients/UsCold/uscold-map/US_Cold_Notes
 FIX=$HOME/.cache/vault-skills-fixtures/gap-stories
+# Stop before anything destructive. A exists and cannot be rebuilt.
+[ -d "$FIX/A" ] && { echo "fixture A exists and cannot be rebuilt — run from the B marker down"; exit 1; }
 [ -d "$FIX" ] && chmod -R u+w "$FIX"
 rm -rf "$FIX" && mkdir -p "$FIX"
 cp -R "$SRC" "$FIX/A"
@@ -201,9 +209,9 @@ CWD=/Users/deanbetty/Code/StrideClients/UsCold/uscold-map
 MEMORY_DIR=/Users/deanbetty/.claude/projects
 TODAY=$(date +%F)
 
-# Jira and Confluence writes, file edits in the live vault, and writes to the shared session
-# memory folder, are denied on every rep.
-DENY="mcp__atlassian__createJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__editJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,Edit(/$SRC/**),Write(/$SRC/**),Edit(/$MEMORY_DIR/**),Write(/$MEMORY_DIR/**),Agent"
+# Jira, Confluence and Compass writes, the Teamwork Graph write, file edits in the live vault,
+# and writes to the shared session memory folder, are denied on every rep.
+DENY="mcp__atlassian__createJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__editJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,mcp__atlassian__addTeamworkGraphContext,mcp__atlassian__createCompassComponent,mcp__atlassian__createCompassComponentRelationship,mcp__atlassian__createCompassCustomFieldDefinition,Edit(/$SRC/**),Write(/$SRC/**),Edit(/$MEMORY_DIR/**),Write(/$MEMORY_DIR/**),Agent"
 ALLOW="Skill,Bash,Read,Write,Edit,MultiEdit,Glob,Grep,mcp__atlassian__getJiraIssue,mcp__atlassian__searchJiraIssuesUsingJql,mcp__atlassian__getAccessibleAtlassianResources,mcp__atlassian__atlassianUserInfo,mcp__atlassian__getIssueLinkTypes,mcp__atlassian__getJiraIssueRemoteIssueLinks,mcp__atlassian__getVisibleJiraProjects,mcp__atlassian__getJiraProjectIssueTypesMetadata,mcp__atlassian__getJiraIssueTypeMetaWithFields,mcp__atlassian__lookupJiraAccountId"
 
 # new_copy <name> <A|B>  -> prints the rep dir; the vault copy is <dir>/vault
@@ -271,8 +279,14 @@ not from the vault copy. On 2026-09-15, two reps ran at the same time and wrote 
 notes in that folder, so the `MEMORY_DIR` deny above stops a rep from writing there at all.
 
 A rep can call `Agent` to start a background subagent, and that subagent does not follow the
-rep's own deny list. So `Agent` is denied above: reps must run as one process, or the deny list
-does not cover everything that runs.
+rep's own deny list. So `Agent` is denied above, which keeps each rep to one process.
+
+What the deny list covers is the tools it names: the Jira, Confluence and Compass write tools, the
+Teamwork Graph write, and `Edit` and `Write` under the live vault and the memory folder. It does
+not cover a file written through `Bash`, because `Bash` is in `ALLOW`. A rep that writes into the
+live vault that way is caught after the fact by `live_touched` and by grepping the transcripts for
+the live vault path — caught, not stopped. Run both every round, and read them before scoring
+anything else.
 
 ### Jira guard
 
