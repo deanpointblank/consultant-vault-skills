@@ -33,6 +33,8 @@ Three places for every gap, gaps waiting on a ruling included. Each search is on
 
 A match that covers the whole gap makes it a `close`. A match that covers part of it covers that part only: the rest becomes its own gap with the next free number, drafted from what the matched ticket leaves undone. A gap waiting on a ruling records its match and splits only once the ruling lands.
 
+For example: a gap that waits on a ruling and whose search matched KEY keeps KEY in its Existing ticket cell, keeps its number, and stays waiting. When the ruling lands, the part KEY covers becomes a `close`, and the part KEY does not cover becomes a new gap with the next free number.
+
 ## One kind per gap
 
 | Kind | When | What gets drafted |
@@ -50,7 +52,7 @@ An open question is a `type: question` note with `status: open`, or a question i
 
 `KEY Gap Stories.md` in `folders.tickets` (key missing: use `Tickets`, create it, tell the user to add the key). Frontmatter: `type: proposal`, `client`, `created`, `status: draft`, and `jira`: the source key, then the epic, then every key in the Existing ticket column, then every key created. No other keys, and no key in `jira` past the first two that is not in a gaps-table row. `status` stays `draft`.
 
-Write for a reader with 60 seconds: short sentences, everyday words, no skill words, what is missing and who acts next. First line under the title: "Buildable after N stories and M rulings." N counts the gaps with a drafted block, whatever their kind. M counts the gaps waiting on a ruling. Write "changes" for "stories" when any drafted block is not `new` or `split`, and "1 ruling" when M is one.
+Write for a reader with 60 seconds: short sentences, everyday words, no skill words, what is missing and who acts next. First line under the title: "Buildable after N stories and M rulings." N counts the gaps with a drafted block, whatever their kind. M counts the gaps waiting on a ruling. Write "changes" for "stories" when any drafted block is not `new` or `split`. A count of one drops the plural: "1 story", "1 change", "1 ruling".
 
 Sections in this order, each a `##` heading:
 
@@ -61,7 +63,7 @@ Sections in this order, each a `##` heading:
    - "<words>": <keys>, or no match
    - vault proposals: [[<note>]] item <n>, or none
    ```
-2. **The gaps.** A table: `# | Gap | Kind | Blockers it clears | Existing ticket | State`. Existing ticket is the key a search matched, or "none"; for a `link fix` it is the ticket that carries the link. State is `drafted`, `waiting on [[<question note>]]`, `created <key>`, or `done YYYY-MM-DD`.
+2. **The gaps.** A table: `# | Gap | Kind | Blockers it clears | Existing ticket | State`. Existing ticket is the key a search matched, or "none"; for a `link fix` it is the ticket at the other end of the wrong link, never the source key, and when the source key is at neither end, the ticket the link is wrong on. State is `drafted`, `waiting on [[<question note>]]`, `created <key>`, or `done YYYY-MM-DD`.
 3. **Stories.** One block per drafted gap. A gap waiting on a ruling gets no heading here at all:
    - Heading `### G<n> — <short title>`. After a create, the new key joins the heading.
    - One line: the kind, the epic, and the ticket it blocks.
