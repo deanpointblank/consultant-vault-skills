@@ -390,9 +390,22 @@ After A's `t1`: `cp "$G" "$D/gn-run1.md"`. Then `t2` = `P_GREEN` in a fresh sess
 
 ## Rationalizations captured (fill during control reps)
 
+From the RED control run of 2026-09-15. Quoted exactly.
+
 | Rep | Verbatim | Check it excuses |
 |---|---|---|
-| | | |
+| A1 | "**Why I didn't write code:** the only way to \"fill\" the remaining gap today would be a live V1/Oracle read at request time, or invented data for columns that don't exist until 66644 ships. Both break the architecture rule and would need reverting." | A1, A7 |
+| A1 | "I updated the vault ticket note and the open-questions note to reflect this. One question (V1 vs. V2) is now answered; the other (whether PFD-66407 or PFD-63653 owns Submit) is still open." | A18, A11 |
+| A1 | "- [x] V2 has nothing to search. Cleared 2026-09-15: [[PFD-66644]] (created today, \"View an outbound appointment with its linked Orders (order catalog projection + seeding)\") owns the projection" | A17 |
+| A1 | "Next action: want me to draft an updated Jira comment on PFD-66405 for your review (not posted — same V1-reference-optics gate as before), or take the remaining open question straight to Rob?" | A1, A19 |
+| A2 | "So \"filling the gaps\" splits into two different things, and I don't want to guess which you mean" | A1, A18 |
+| A2 | "I haven't rechecked whether an order-search button exists in `phenix.ui` yet (blocker from intake: there wasn't one on main). Four days passed and I'd want to re-verify before claiming it's fixed rather than assume." | A8, A15 |
+| A2 | "Which do you want me to do: draft the updated PFD-66405 description for your review, or draft a ping to Rob on PFD-66644's priority given the sprint's already over?" | A1, A19 |
+| A3 | "**Bottom line: PFD-66405 still can't be built today, and it missed the sprint.** The real gap left is a decision, not code" | A1, A7 |
+| A3 | "I checked the ticket against live Jira instead of taking the \"high priority, sprint ends 2026-09-14\" framing at face value" | A1 |
+| B1 | "**What I did:** re-ran full intake — checked all four repos' current code, current Jira state and links, and past meeting notes — then rewrote the ticket note, updated both linked open-question notes (one still needs Rob Park's ruling, sharpened with today's contradiction), and logged it in today's daily note." | B1, B8 |
+| B1 | "**Next action:** open `Tickets/PFD-66405 Order search popup.md` in the vault, review the rewritten draft comment, and decide whether to post it or take it straight to Rob Park" | B1, B7 |
+| B1 | "I didn't touch Jira — no write access, and posting is your call anyway." | X1 |
 
 ## Gate for turns that say yes to a preview
 
