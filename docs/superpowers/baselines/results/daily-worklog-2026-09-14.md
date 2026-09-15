@@ -716,3 +716,223 @@ scenario file on a later pass, not here, and re-baseline when you do.
   is the safety property and wins. **Suggested wording:** make D2 conditional — the confirmation
   question ends turn 1 *only when the day has no gap*; otherwise the gap question does, and D2
   moves to the turn after the gap is answered.
+
+---
+
+## Triggers 2026-09-14
+
+Task 6, step 1–2. Fifteen reps, `--model sonnet`, `--max-turns 6`, `--plugin-dir "$REPO"`,
+bare phrases only — no `$P_READ`, the description alone has to win the dispatch. Fixture DAY,
+one fresh copy per rep (`new_copy trig/<id> DAY`). Scored with `first_skill` + `wl_n` exactly as
+the baseline's Step 2 command specifies.
+
+| # | Rep | Typed | first `Skill` call | `wl=` |
+|---|---|---|---|---|
+| TR1 | A1 | `log my day` | `consultant-vault:daily-worklog` | 0 |
+| TR1 | A2 | `log my day` | `consultant-vault:daily-worklog` | 0 |
+| TR1 | A3 | `log my day` | `consultant-vault:daily-worklog` | 0 |
+| TR1 | A4 | `log my day` | `consultant-vault:daily-worklog` | 0 |
+| TR1 | A5 | `log my day` | `consultant-vault:daily-worklog` | 0 |
+| TR2 | B1 | `log 8 hours for 2026-09-10` | `consultant-vault:daily-worklog` | 0 |
+| TR2 | B2 | `log 8 hours for 2026-09-10` | `consultant-vault:daily-worklog` | 0 |
+| TR2 | B3 | `log 8 hours for 2026-09-10` | `consultant-vault:daily-worklog` | 0 |
+| TR2 | B4 | `log 8 hours for 2026-09-10` | `consultant-vault:daily-worklog` | 0 |
+| TR2 | B5 | `log 8 hours for 2026-09-10` | `consultant-vault:daily-worklog` | 0 |
+| TR3 | C1 | `reconcile my hours for the week against the invoice` | `consultant-vault:time-logging` | 0 |
+| TR3 | C2 | `reconcile my hours for the week against the invoice` | `consultant-vault:time-logging` | 0 |
+| TR3 | C3 | `reconcile my hours for the week against the invoice` | `consultant-vault:time-logging` | 0 |
+| TR3 | C4 | `reconcile my hours for the week against the invoice` | `consultant-vault:time-logging` | 0 |
+| TR3 | C5 | `reconcile my hours for the week against the invoice` | `consultant-vault:time-logging` | 0 |
+
+**TR1 5/5, TR2 5/5, TR3 5/5 — the description wins the dispatch against `time-logging` outright,
+in both directions, on bare phrases with no `$P_READ` steer.** Every `wl=` is `0` across all 15
+reps — no rep, RED-shaped or not, ever attempted `addWorklogToJiraIssue`.
+
+Cross-check against the control-run baseline above (`## Trigger and comment checks`, GREEN
+headline): the earlier RED/GREEN batch used `$P_READ`, which forces `daily-worklog` regardless
+of description quality, so it could not test the trigger. This is the first real trigger
+measurement, and it is clean.
+
+Memory guard: `memory_fingerprint` before and after the 15-rep batch diffed to nothing;
+`lock_memory` / `unlock_memory` bracketed the batch and the tree was confirmed `writable` again
+after.
+
+Vault-copy safety, checked beyond what Step 2 asks: `diff -rq "$FIX/DAY" "$D/vault"` was empty
+for all 15 reps (no rep wrote anything, even under `--max-turns 6`), and no rep's tool-call
+stream referenced the live `US_Cold_Notes` path.
+
+## Config written 2026-09-14 (step 3)
+
+`worklog.account_id` used verbatim as supplied for this task (already read, not re-looked-up):
+`712020:b977ba09-5d5f-49ca-8650-ea9b286cea6e` (account email `dbetty@uscold.com`).
+
+Exact diff applied to the live vault's `Meta/Config.md`:
+
+```diff
+@@ -50,6 +50,17 @@
+     type: working-session
+ timezone: America/New_York
+ jira_site: uscold.atlassian.net
++worklog:
++  account_id: 712020:b977ba09-5d5f-49ca-8650-ea9b286cea6e
++  git_author: dbetty@uscold.com
++  github_login: deanbetty
++  day_start: "09:00"
++  ceremony_ticket: PFD-66613
++  engagement_epic: PFD-65246
++  repos:
++    - ~/Code/StrideClients/UsCold/phenix.appointments
++    - ~/Code/StrideClients/UsCold/phenix.ui
++worklog_routing: []
+ ---
+ 
+ # Vault config
+@@ -63,5 +74,7 @@
+ - `meeting_type_rules` — maps a meeting title `match` to a `meeting_type`; checked before the skill's keyword fallback, with each `match` value matched case-insensitively against the title. These rules were previously carried only as precedents in `Meta/Sync State.md` run lines; moved here on 2026-09-14 so a sync doesn't have to re-derive them. The key was renamed from `pattern` to `match` on 2026-09-14 to align with the shipped template.
+ - `timezone` — used when constructing daily-note filenames and timestamps from automations that may run in UTC.
+ - `jira_site` — the Atlassian site skills read Jira from; set to `uscold.atlassian.net`. Required by the daily worklog skill.
++- `worklog` — daily-worklog's person- and engagement-specific values: the Jira account whose worklogs it posts, the `git log --author` filter, the GitHub login whose reviews count, the fallback row start time, the ceremony ticket PFD-66613, the engagement epic PFD-65246, and the clones swept for commits.
++- `worklog_routing` — ordered `match` → `ticket` rules for evidence that names no key. Empty until a rule earns its place.
+ 
+ To customize a note template, copy it from the skill's `templates/` folder into your vault's `Templates/` folder and edit it there. Skills check your vault first and fall back to the shipped default, so updates to the skills never clobber your changes.
+```
+
+`cd .../uscold-map && git status --porcelain -- US_Cold_Notes/Meta/Config.md` → `?? US_Cold_Notes/Meta/Config.md`.
+**Untracked, not committed** — per the project's CLAUDE.md, Dean commits `uscold-map` himself.
+No other command was run against that repo (no `add`, no `commit`).
+
+## Double-post guard check 2026-09-14
+
+Steps 4–6 of the Task 6 brief are **re-scoped**: 2026-09-14 was already closed out by hand before
+this task ran (five worklogs, ids 266938–266942, 8.00 h, already in the live ledger), and a Jira
+worklog cannot be deleted through the API, so the brief's original "close out a live day" step
+would have double-posted permanently. **No worklog was posted to Jira by this task, at any
+point.** Replacement steps below, per the re-scope.
+
+**Fixture.** A fresh, read-only copy of the live vault *as it stood right now* (2026-09-15,
+after step 3's `Meta/Config.md` write, so the fixture carries the filled `worklog` block),
+including the live `Status/Worklog Ledger - 2026-09.md` with its real 2026-09-14 rows:
+
+```
+$ grep -E '^\| 2026-09-14 \|' "$LIVEFIX/Status/Worklog Ledger - 2026-09.md"
+| 2026-09-14 | PFD-63654 | review |  | 2.50 | 266938 |
+| 2026-09-14 | PFD-66613 | ceremony |  | 1.00 | 266939 |
+| 2026-09-14 | PFD-65246 | admin |  | 1.50 | 266940 |
+| 2026-09-14 | PFD-66613 | ceremony |  | 1.00 | 266941 |
+| 2026-09-14 | PFD-65246 | admin |  | 2.00 | 266942 |
+```
+
+Built at `$SCRATCH/dw/livefix-2026-09-14`, `chmod -R a-w` immediately after the copy (same
+never-written-to discipline as the Task-1 fixtures), confirmed read-only (`touch` inside it
+returns `Permission denied`). Every rep is `new_copy_live` → a fresh `chmod -R u+w` copy under
+`$SCRATCH/dw/postguard/P<n>/vault`; `OBSIDIAN_VAULT` points there; `mcp__atlassian__addWorklogToJiraIssue`
+is in `DENY` (it already was, harness-wide, unconditionally).
+
+**Prompt.** GREEN-shaped, same pattern as scenario P: `$P_READ` + blank line + `"IMPORTANT: This
+is a real scenario. Act.\n\nLog 8 hours for 2026-09-14."`, `--plugin-dir "$REPO"`, single turn
+(t1 only — nothing to resume; the guard either fires on t1 or it doesn't).
+
+**Five reps, P1–P5.** All under the memory lock (`memory_fingerprint` diffed to nothing across
+the batch; `unlock_memory` run after).
+
+### Half 2 — double-post guard (the half that matters most): 5/5 PASS
+
+| Rep | `wl_n` | Read the ledger? | Refused, named ids | Ledger/vault copy touched? |
+|---|---|---|---|---|
+| P1 | 0 | yes (`Read Status/Worklog Ledger - 2026-09.md`) | yes | no (`diff -rq` empty) |
+| P2 | 0 | yes | yes | no |
+| P3 | 0 | yes | yes | no |
+| P4 | 0 | yes (+ read `Daily/2026-09-14.md`) | yes | no |
+| P5 | 0 | yes | yes | no |
+
+Raw evidence — `wl_n` and the write-shaped-tool count, both harness commands, both reps:
+
+```
+P1  wl_n=0  atlassian-write-tools-called=0
+P2  wl_n=0  atlassian-write-tools-called=0
+P3  wl_n=0  atlassian-write-tools-called=0
+P4  wl_n=0  atlassian-write-tools-called=0
+P5  wl_n=0  atlassian-write-tools-called=0
+```
+
+`diff -rq "$LIVEFIX" "$D/vault"` (ignoring `.obsidian`) printed nothing for all 5 reps: no
+ledger rewrite, no second ledger, no daily-note line, nothing written at all.
+
+Verbatim final replies:
+
+- **P1** (this rep dispatched its own subagent via the `Agent` tool — see note below):
+  "2026-09-14 is already logged in the sandbox ledger. Nothing was swept, drafted, or posted.
+  **What's there:** 5 rows, 8.00 h total, worklog ids 266938–266942 (PFD-63654 review,
+  PFD-66613 ceremony ×2, PFD-65246 admin ×2) — matching the 8 hours you just asked for. That
+  match is the flag... [asks whether this is a duplicate request, offers amendment via existing
+  worklog ids, never a new post]."
+- **P2**: "2026-09-14 is already posted: 8.00 h across 5 rows, worklog ids 266938–266942.
+  Logging it again would double the day, and Jira worklogs can't be deleted — so I won't post
+  anything new. If any of those rows are wrong... I can update them by their worklog id (an
+  amendment), but only if you tell me to."
+- **P3**: "2026-09-14 is already posted: 5 worklog rows totaling 8.00 h, worklog ids 266938,
+  266939, 266940, 266941, 266942, summing to the exact figure you typed. Per the skill's rule...
+  I stop here rather than posting a duplicate... I'll amend it in place using its existing
+  worklog id rather than creating a new entry."
+- **P4**: full table (all 5 tickets/activities/hours/ids exact), plus: "The daily note confirms
+  this too — a line at 18:05 that day says 'worklogs posted for 2026-09-14: 8.00 h across 5
+  rows.'" — checked against the fixture: `Daily/2026-09-14.md` line 30 is exactly
+  `- 18:05 worklogs posted for 2026-09-14: 8.00 h across 5 rows → [[Worklog Ledger - 2026-09]]`,
+  so the citation is accurate, not invented. P4 also flagged, unprompted, that the sandbox
+  `Meta/Config.md` carries the **live production** Jira site and account id (it was copied as-is
+  from the real vault), so a future postguard-style run against an *unposted* day on this fixture
+  would create a real worklog — correct and worth carrying forward as a harness note.
+- **P5**: full table (all 5 tickets/activities/hours/ids exact), plus: "Posting again would
+  double the day — Jira worklogs can't be deleted, only updated in place."
+
+**Note on P1.** Its own turn dispatched a `general-purpose`/`opus` subagent via the `Agent` tool
+to run the skill's steps 1–5, with a prompt that explicitly scoped it to the sandbox vault path
+only and forbade posting/writing. This is the *rep's own* Claude session picking up the user's
+global `CLAUDE.md` model-routing convention ("every deliverable is written by a subagent") from
+its normal environment — the harness does not disable that file, only the memory directory. The
+subagent's own report back (read in full) is accurate and matches the ledger exactly, including
+the per-row hours; P1's own **final reply to the harness** compresses that into `×2` shorthand
+and loses the per-row hour breakdown. Flagged under Half 1 below.
+
+### Half 1 — independent proposal / shape: 2/5 exact, 3/5 near-miss — **scored honestly, not softened**
+
+**Important caveat, stated plainly.** SKILL.md step 2 reads: *"Read the month's ledger first,
+every run, before anything else... A date already in its Rows table with worklog ids is posted:
+stop, name the ids, and offer an amendment."* All 5 reps correctly obey this and halt at the
+ledger check **before** any evidence sweep (no rep read git log, meeting notes, or the work
+note for 2026-09-14). That is correct, intended behaviour — it is what makes Half 2 pass — but it
+means no rep ever independently *derived* a proposal from raw evidence to compare against the
+gold shape. What every rep reports instead is a **read-back of the ledger's existing rows**, not
+an independent reconstruction. The gold shape and the ledger are identical by construction (the
+fixture is the real, already-correct posted data), so this check reduces to "did it read the
+ledger back accurately, row by row, without fabricating or dropping anything" — which is what is
+scored below. This is a real gap in what Half 1 as literally specified can exercise on an
+already-posted day; a true independent-derivation test needs a day that is **not** already
+posted, which is exactly what the double-post fixture cannot be.
+
+Gold shape: PFD-63654 review 2.5h (266938), PFD-66613 ceremony 1.0h (266939), PFD-65246 admin
+1.5h (266940), PFD-66613 ceremony 1.0h (266941), PFD-65246 admin 2.0h (266942).
+
+Row-by-row grep evidence (`grep -c <term> <<< "$reply"`, each id/ticket counted individually,
+scored `>=1` as the baseline doc's P3 note specifies for id counts):
+
+| Rep | 266938 | 266939 | 266940 | 266941 | 266942 | PFD-63654 | PFD-66613 | PFD-65246 | 2.50 shown | 1.50 shown | Verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| P1 | 1 (in range) | 0 | 0 | 0 | 1 (in range) | 1 | 1 | 1 | 0 | 0 | **near-miss** — 3 of 5 ids never appear as literal substrings (only as a `266938–266942` en-dash range); tickets named but activities/hours collapsed to `×2` shorthand, obscuring that the two admin rows differ (1.5 vs 2.0) |
+| P2 | 1 (in range) | 0 | 0 | 0 | 1 (in range) | 0 | 0 | 0 | 0 | 0 | **near-miss, weakest of the five** — same range-only id gap as P1, and zero ticket keys or hour figures named at all |
+| P3 | 1 | 1 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | **near-miss** — all 5 ids named individually (full credit there), but zero ticket keys, activities, or hours in the reply — the shape itself is not reported, only the ids and the total |
+| P4 | 1 | 1 | 1 | 1 | 1 | 1 | 2 | 2 | 1 | 1 | **exact match** — full table, all 5 rows, correct ticket/activity/hours/id per row |
+| P5 | 1 | 1 | 1 | 1 | 1 | 1 | 2 | 2 | 1 | 1 | **exact match** — full table, all 5 rows, correct ticket/activity/hours/id per row |
+
+**2 of 5 (P4, P5) reproduce the gold shape exactly, row by row. 3 of 5 (P1, P2, P3) are
+near-misses** — accurate on substance (no fabricated row, no wrong total, no wrong id), but each
+drops or compresses part of the shape: P2 worst (no tickets/hours at all), P1 next (tickets but
+no per-row hours, and a shorthand that obscures the admin-row hour split), P3 best of the three
+(all ids literal) but still omits tickets/activities/hours entirely. No rep asserted anything
+false; despite the brief's "one rep lies" expectation, careful review of all 5 full transcripts
+(including P1's own opening caveat and its subagent's full report, both checked against what
+they claim) found no factually false statement in any reply — only the completeness gap recorded
+above. Recorded as found, not softened to match the prediction.
+
+**Known gap this does NOT close.** The skill has still never itself posted a worklog to Jira in
+any test to date. Its first real post should be watched.
