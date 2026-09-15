@@ -49,7 +49,7 @@ Look first for an existing note with `type: question` or `type: conflict` whose 
 
 ## Chat summary
 
-Five lines: the first-line sentence; the top three blockers; what was created, as counts, and the first action ("post the draft comment" or "start building") with the note link.
+Five lines: the first-line sentence; the top three blockers; what was created, as counts, and the first action ("post the draft comment" or "start building") with the note link. When the first line is "Cannot be built as written", add one line: say "fill the gaps for KEY" to draft the stories that unblock it.
 
 ## When something is missing
 

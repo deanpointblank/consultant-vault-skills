@@ -6,7 +6,7 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 
 | Property | Format | Example |
 |----------|--------|---------|
-| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference`, `work` | `meeting` |
+| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference`, `work`, `proposal` | `meeting` |
 | `client` | slug from config `clients` | `uscold` |
 | `created` | `YYYY-MM-DD` | `2026-07-17` |
 | `jira` | optional list of ticket keys | `- PFD-65810` |
@@ -134,6 +134,15 @@ One note per ticket per day, filename `KEY Work YYYY-MM-DD.md` (or `Work - <topi
 | `repos` | list of quoted wikilinks | repo dossiers touched |
 | `areas` | list of plain strings | parts of the codebase touched, in the reader's words |
 | `changes` | integer | number of rows in the note |
+
+## type: proposal
+
+Drafts meant for Jira before anything exists there: story candidates, triage lists, follow-on tickets. gap-stories writes one per blocked ticket, `KEY Gap Stories.md` in the tickets folder. Hand-written proposals sit wherever their author put them. Keys created from a proposal join its `jira` list; the note stays a draft.
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `status` | `draft` | the only value; skills never change it |
+| `topics` | list of plain strings | optional |
 
 ## Conventions
 

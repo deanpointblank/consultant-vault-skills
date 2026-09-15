@@ -46,6 +46,11 @@ against what we imagine the failures are.
    rationalization table or the recipe in the skill.
 6. **Variance is a metric.** Five reps producing five shapes means the baseline has no
    natural convention to lean on; the skill must supply a full recipe, not a nudge.
+7. **Deny file writes with `Edit(path)`, never `Write(path)`.** A `Write(path)` entry in
+   `--disallowedTools` does nothing — the CLI does not check it against file permissions, so
+   a Write to that path still goes through. `Edit(path)` is the one that is enforced, and it
+   covers every file-editing tool, Write included. If an older harness has a `Write(...)`
+   deny rule, it is inert; leave it if it is harmless, but do not add a new one and trust it.
 
 ## Scoring
 
