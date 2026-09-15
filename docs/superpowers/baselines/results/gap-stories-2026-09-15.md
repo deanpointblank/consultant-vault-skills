@@ -899,7 +899,7 @@ Repeat run total: **5 of 7 checks, 17 of 21 rep-checks** — the best of the thr
 | B8 | 0/3 | 3/3 | **3/3** | every rep changed exactly three files, 0 removed and 1 added in the intake note, answered question note untouched, no `Questions/` file |
 | B9 | 0/3 | 1/3 | 0/3 | the new A6 clause passes on all three (`deny` 0). C1 and C3 write **three and two separate `- vault proposals:` lines**, including `- vault proposals: none` interleaved, where the check counts one; C2 writes 2 quoted searches where 5 are wanted |
 | B10 | 0/3 | 0/3 | 0/3 | no rep drafted the V2 eligible-orders route as G5. C1's G5 is `re-scope PFD-66644` about Ordered Qty; C2 and C3 have no G5 |
-| B11 | 0/3 | 2/3 | 1/3 | JQL and searched-block halves pass on all three. **C1 passes** the reply half: `"G1 closes PFD-66644 (drafted) … the seeded order projection covers 'nothing to search' and most grid columns"`. C2's and C3's replies do not name PFD-66644 at all — see "two checks pull against each other" below |
+| B11 | 0/3 | 2/3 | 1/3 | JQL and searched-block halves pass on all three. **C1 passes** the reply half: `"G1 closes PFD-66644 (drafted) … the seeded order projection covers 'nothing to search' and most grid columns"`. C2's and C3's replies do not name PFD-66644 at all — see "Where a check and the skill disagree" below |
 
 Scenario B total: **5 of 13 checks, 19 of 39 rep-checks** — the best of the three rounds on both.
 

@@ -16,8 +16,8 @@ Built once in Task 1 of the plan, never given to an agent, never written to:
 
 Fixture A exists only as that cache directory. The live vault has moved on since 2026-09-11, so A
 cannot be built again from it, and there is no backup. Back it up before touching that directory,
-and never run the build block whole: the guard on its first line stops it, but the copy is worth
-more than the guard.
+and never run the build block whole: the guard runs before anything destructive and stops it, but
+the copy is worth more than the guard.
 
 - **A** is the live vault as it stood when the fixture was built, plus
   `jira_site: uscold.atlassian.net` in `Meta/Config.md`. PFD-66405's intake note says
