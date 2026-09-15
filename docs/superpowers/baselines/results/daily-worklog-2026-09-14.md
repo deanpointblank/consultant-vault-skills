@@ -364,12 +364,17 @@ rep's tool list entirely: the `system/init` event of every rep lists 188 tools, 
 Atlassian, and `addWorklogToJiraIssue` is not among them. `grep -c addWorklog` over the init
 event returns 0 in every rep.
 
-So **no rep can emit a worklog call**, and **D13, D14, D15, T6 and the whole comment contract
-C1–C4 are unmeasurable by construction** — `wl_n` is 0 on all 55 turns and
-`$SCRATCH/dw/green/all-comments.txt` is empty. T5 ("nothing invented") is likewise unscoreable
-as written, since it scores artifact ids inside worklog comments that do not exist. This is
-identical in RED, where `wl_n` was also 0 everywhere, so it introduces **no delta bias** — it
-just caps those six checks at their control value.
+So **no rep can emit a worklog call**, and **D13, D14, D15 and T6 are unmeasurable by
+construction** — they score the posting mechanics, and there is no artifact without a call.
+`wl_n` is 0 on all 55 turns and `$SCRATCH/dw/green/all-comments.txt` is empty. This is identical
+in RED, where `wl_n` was also 0 everywhere, so it introduces **no delta bias** — it just caps
+those four checks at their control value.
+
+**C1–C4 are not in that group.** The comment contract does not live only in the tool call: step
+5 shows the user a proposal table carrying the comment text for every row *before* any post, and
+that text is in the transcripts. C1–C4 are re-scored from it below. T5 ("nothing invented") stays
+unscoreable as written, since its command reads ids out of worklog comments that do not exist;
+it was checked by hand instead.
 
 Reps saw it clearly and said so, for example G5 · t1: *"No Atlassian MCP tool in this session
 can create or update a Jira worklog (only read scopes are exposed as tools). The ceremony row
@@ -499,10 +504,17 @@ the turn, not only in a soft spot, in a sentence of the given form.
 
 ## Checks left open, and why
 
-- **D13, D14, D15, T6 and C1–C4 — unmeasurable, not failing.** `addWorklogToJiraIssue` is
-  absent from every rep's tool list (confound 1), so no skill text can produce a worklog call.
-  They need a harness that stubs the tool rather than removes it. No edit was spent on them.
-- **T5 — unscoreable as written.** Same cause. Checked by hand instead: no id in any ledger is
+- **D13, D14, D15, T6 — unmeasurable by construction, not failing.** `addWorklogToJiraIssue`
+  is absent from every rep's tool list (confound 1), so no skill text can produce a worklog call,
+  and these four score the posting mechanics — the call's fields, its count, its `worklogId`.
+  There is no artifact to read without a call. **A future run must stub the tool rather than
+  remove it**: give the harness a no-op worklog tool that records its arguments and returns a
+  synthetic id, so the call is emitted, captured and scoreable while nothing reaches the site.
+  `--disallowedTools` cannot do this. No edit was spent on them.
+- **C1–C4 — measured from the proposals, not unmeasurable.** See the section below: 5 comments,
+  4 rep-turns, all four checks clean, no prohibition violated.
+- **T5 — unscoreable as written.** Its command reads artifact ids out of worklog comments,
+  which confound 1 prevents from existing. Checked by hand instead: no id in any ledger is
   invented.
 - **D6, D9, D10, G2, G4, G5 — confounded by live Jira (confound 2).** The days these scenarios
   describe are, in live Jira, already fully posted. The reps' behaviour is the skill's
@@ -541,3 +553,86 @@ the turn, not only in a soft spot, in a sentence of the given form.
 - **Failed reps.** None. 20 reps and 40 turns in the first batch, plus 5 + 5 + 5 reps and
   10 + 10 + 15 turns across the three refactor rounds: 55 turns, every one `subtype=success`,
   `is_error=false`, every `*.err` zero bytes.
+
+## C1–C4, measured from the proposals
+
+**How this was measured.** No new reps. The comment contract was re-scored against the comment
+text the reps put in front of the user at step 5, extracted from the transcripts already
+collected — every assistant reply in all 55 turns, plus the 30 turns of the three archived
+pre-refactor batches. Comment text was pulled two ways: the cell under a `Comment` column of any
+proposal table, and any line of the skill's own comment shape, `<activity>: …`. Quoted text was
+then separated from authored text, because several reps display the *pre-existing* Jira worklog
+comments (266663, 266668, 266669) inside their tables; those were written by the user on
+2026-09-11 and are not this skill's output. Corpus and extractor:
+`$SCRATCH/dw/green/{proposed-comments.txt,proposed-comments-archive.txt,rep-authored-comments.txt,extract_comments.py}`.
+
+**Evidence available.** Five rep-authored proposed comments, from four rep-turns — D5 · t1 (two),
+G4 · t1, and in the archived batches G4 · t1 and G5 · t2. **Of the twenty final-state reps, two
+produced comment text and eighteen produced none.** The eighteen are scored **no-evidence, not
+pass**: they proposed no comment because confound 2 left them nothing to post — the day was
+already fully covered by pre-existing worklogs — or because they stopped on an open question
+before reaching a proposal. Silence is not credited.
+
+The five, verbatim:
+
+```
+ceremony: Stride standup and Stride huddle, on-site day 3; PR order agreed (receipt linking merges before dispatch totals) and environment rebuild sequence walked through.
+review: started a /code-review pass on PR #141 (receipt linking; migration V37__appt_receipt_catalog_appt_id.sql); stopped partway, deferred to 2026-09-11.
+meeting: Stride Huddle covering PR sequencing and environment rebuilds; decided the receipt-linking PR (#141) merges before the dispatch-totals PR (#148), with the later branch renumbering its migration.
+meeting: Stride Huddle on PR sequencing and environment rebuilds; agreed receipt linking (PFD-63654) merges before dispatch totals, with the later branch renumbering its migration.
+ceremony: Stride standup, third on-site day; dispatch totals re-scoped to cases/pallets with weights split out, receipt linking noted in review.
+```
+
+| # | Check | Result | Measured how |
+|---|---|---|---|
+| C1 | Never the banned words | **0 hits / 5 clean** | `grep -ciwE 'v1\|oracle\|legacy'` over the rep-authored corpus = 0 |
+| C2 | No person names | **0 hits / 5 clean** | `grep -cwE "$NAMES"` = 0. `NAMES` = 19 first names from the fixture's `People/`. "Stride" is the firm, not a person; no comment names an individual, and the closest any comes is a role in the *ledger*, not the comment |
+| C3 | No cause tag, no judgment word | **0 hits / 5 clean** | `grep -ciwE 'blocked\|rework\|unplanned\|finally\|unfortunately\|significant\|substantial\|extensive\|frustrating\|painful\|great\|messy'` = 0 |
+| C4 | Every comment names something checkable | **5/5** | All five open with one of the eight activities and a colon. The three non-ceremony lines name PR #141, PR #148, migration `V37__appt_receipt_catalog_appt_id.sql` and PFD-63654 — all real, all present in the fixture or the rep's own reads. The two `ceremony` lines name the meeting and its outcome, which C4 explicitly allows in place of an artifact id. **No invented id in any of the five**, checked one by one |
+
+**No rep violated a prohibition.** Not a banned word, not a person's name, not a cause tag, not
+an invented id, and nothing written to influence or derail automated analysis of the worklogs.
+**No refactor round was spent**, per the coordinator's instruction: there is no defect here, only
+a thin evidence base.
+
+**What this does and does not establish.** It is real evidence on the five hard prohibitions the
+contract exists to protect, from text the skill actually produced. It is five comments from four
+rep-turns, not the eighty-plus a clean run would yield, so it is a spot check rather than a
+sample. The thinness is entirely confound 2's doing: on a day already fully posted there is
+nothing to write a comment about. Fixing the Jira side of the fixtures (below) fixes the comment
+evidence at the same time.
+
+## The Jira limitation, in the form the next reader needs
+
+**The fixtures freeze the vault but not Jira.** `$HOME/.cache/vault-skills-fixtures/daily-worklog`
+is a frozen copy of the vault, and the harness's `chmod -R a-w` keeps it frozen. Jira is read live
+over MCP on every rep and nothing freezes it.
+
+**2026-09-10 was already fully posted in Jira before this baseline was written.** Worklogs 266668
+(PFD-65246, 1.5 h) and 266669 (PFD-65947, 7.5 h) were posted by hand on 2026-09-11 and total
+exactly the 9.00 h the D and P prompts type. 2026-09-08 is the same story: 266663 and 266664,
+posted 2026-09-11, total the 8.50 h the T prompt types. Four more worklogs landed at 18:05 on
+2026-09-14, thirteen minutes before this batch.
+
+**So DAY and GAP behave as POSTED.** The skill's step 2 requires reading the user's existing
+worklogs for the date and counting them against the typed figure. Every GREEN rep did, correctly
+found the day already covered, wrote `pre-existing <id>` rows and refused to double-post. The
+scenario that was designed as an open day is, in the environment the reps actually run in, a
+closed one. **D6, D9, D10, G2, G4 and G5 are confounded by this** — they describe a day that no
+longer exists — and it is also why only two reps ever proposed a comment.
+
+**What a future run has to do.** Freeze or stub the Jira reads the way the vault is frozen. Either
+of these works:
+
+- **Stub the read tools.** Replace `getJiraIssue` / `searchJiraIssuesUsingJql` in `ALLOW` with a
+  fixture-backed MCP stub that serves the issue and worklog JSON captured at fixture-build time —
+  the 2026-09-14 snapshot the scenario file already records in prose. Deterministic, and it makes
+  the fixture self-contained.
+- **Re-date the scenario.** Point the prompts at a date that carries no posted worklogs, and
+  rebuild the vault fixture around it. Cheaper, but it rots again the next time the user logs that
+  week.
+
+Either way the same change is needed for the write side: **stub `addWorklogToJiraIssue` rather
+than removing it with `--disallowedTools`**, so the call is emitted and captured. One stubbed MCP
+server fixes confound 1 and confound 2 together, and restores D13–D15, T6, T5 and a full-strength
+C1–C4 in one move.
