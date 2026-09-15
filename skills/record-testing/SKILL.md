@@ -21,8 +21,8 @@ Follow the obsidian-vault skill's conventions. One test-run note per recording, 
 
 - Make a recording directory for the run — `mkdir -p "$TMPDIR/rec-<KEY>"` — and pass it to every call: `env -C "$TMPDIR/rec-<KEY>" playwright-cli -s=<KEY> …`. Bash calls reset the working directory, and the CLI drops a `.playwright-cli/` folder into whichever one it finds; unset, that is a client repo. Everything else is an absolute path.
 - `-s=<KEY>` on every call, named for the ticket. The session outlives the bash call, and `playwright-cli list` shows it.
-- The run in order: `open <url>`, `video-start`, the login, `video-show-actions`, the walkthrough, `video-stop`, `close-all`. The verbs in between are `goto`, `fill`, `click`, `find`, `eval`. Targets are CSS selectors — `fill "input[name=u]" qauser`, `click "button[type=submit]"`.
-- To see the page, `find <text>`: it prints the matching nodes with `[ref=eN]` inline. `snapshot` only prints the path of a `.yml` it wrote, so every look costs a file read.
+- The run in order: `open <url>`, `video-start`, the login, `video-show-actions`, the walkthrough, `video-stop`, `close-all`. If `open` says the browser is not installed, `playwright-cli install-browser chrome`. The verbs in between are `goto`, `fill`, `click`, `find`, `eval`. Targets are CSS selectors — `fill "input[name=u]" qauser`, `click "button[type=submit]"`.
+- To see the page, `find <text>`: it prints the matching nodes with `[ref=eN]` inline. `snapshot` prints the whole tree; `find` prints only what matches.
 - `video-start <absolute path>.webm --size=1280x800` writes exactly where it is told. `video-stop` prints a path relative to the working directory — ignore it and use the absolute one you passed.
 - On the first app page after the login ends, and never before it: `video-show-actions --duration=1500`. It names each action on screen, so one criterion's clip does not look like another's. Before the login it prints what was typed, password included.
 - Take the last criterion's end mark before `video-stop`, not after. The file carries a few seconds of frozen last frame while it finalises, and a mark inside that padding gives a clip of a still.

@@ -49,7 +49,7 @@ A constant 0.1 s offset, which is goto-to-paint lag, and no drift. Confirmed ind
 
 **Five CLI behaviours the skill does not describe today and must:**
 
-- **Use `find <text>`, not `snapshot`.** `find` prints the matching nodes with `[ref=eN]` inline. `snapshot` writes a `.yml` into `.playwright-cli/` and prints only its path, so every look costs an extra file read.
+- **Use `find <text>`, not `snapshot`.** `find` prints the matching nodes with `[ref=eN]` inline. `snapshot` prints the whole tree; `find` prints only what matches. (The `.yml` path is printed by the implicit snapshot on `open`/`goto` output, not by the explicit verb.)
 - **CSS selectors work as targets.** `fill "input[name=u]" qauser`, `click "button[type=submit]"`. No snapshot round trip for elements you already know.
 - **Sessions survive across separate bash invocations** through `-s=<name>`. `playwright-cli list` shows live sessions; `close-all` ends them. Agent bash calls reset cwd between invocations, so every call needs its own `cd` and absolute paths.
 - **`video-stop` prints the path relative to cwd** — it printed `../rec/smoke.webm`. The skill must use the absolute path it passed to `video-start`, not the printed one.
