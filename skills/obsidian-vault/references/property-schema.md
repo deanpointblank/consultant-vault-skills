@@ -70,6 +70,8 @@ One note per Jira ticket the engagement works, filename `KEY Short title.md` in 
 
 ## type: time-log
 
+time-logging's period notes, `Time Logging - Week of YYYY-MM-DD.md` and `Time Logging - Month YYYY Reconciliation.md`, and daily-worklog's month ledger, `Worklog Ledger - YYYY-MM.md` in the status folder. The ledger is appended one day at a time and holds one row per ticket per activity per day; no new type and no new properties.
+
 | Property | Format | Notes |
 |----------|--------|-------|
 | `period_start` | `YYYY-MM-DD` | |

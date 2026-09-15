@@ -11,6 +11,30 @@ Follow the obsidian-vault skill's conventions. One note per period, filename `Ti
 
 This skill drafts. Reading calendars, Jira worklogs, Granola, and git history is expected; writing a worklog, a comment, or a transition is not, even when the user asks for "logging". The user posts from the draft, and the draft's table has a column for the ids that come back.
 
+## What daily-worklog owns
+
+daily-worklog closes out one day: it sweeps the day's evidence, posts the rows after one
+confirmation, and owns the month ledger `Worklog Ledger - YYYY-MM.md` in the status folder.
+This skill does the weekly and monthly invoice reconciliation and the audit defence, and
+**reads that ledger instead of reconstructing the period from evidence**. The rows, the
+worklog ids and the soft spots are already there; the period note adds the invoice
+comparison, the attribution rate and the Not-in-Jira account, and sets the ledger's `status`
+to `posted` at month close, when every row carries a worklog id.
+
+Four rules below are superseded for daily work:
+
+| This skill's rule | For daily work | Still true here |
+|---|---|---|
+| Draft weekly or monthly | Superseded. One run per day. | This note is still per week or per month. |
+| Ceremonies fold into the day's main ticket | Retired from 2026-09-14 onward — the ceremony ticket exists now. | The month-end note still explains folded hours for days posted that way before 2026-09-14. |
+| One worklog per ticket per day | Superseded. One per ticket per activity per day. | The month-end note may group rows back to one line per ticket per day if the client asks for that shape; the worklogs stay split. |
+| Never post | Superseded there, after confirmation. | This skill still never posts. It reads ids from the ledger. |
+
+One rule differs rather than being superseded: daily-worklog treats a Closed or someone
+else's ticket as the right home, because that is where the work went and Jira attributes the
+worklog to its author regardless. The soft spot is still recorded, and this skill still names
+the alternative home at month end.
+
 ## The record
 
 Frontmatter per the property schema: `type: time-log`, `period_start`, `period_end`, `status: draft` until every row has a worklog id, then `posted`; `jira` lists every ticket in the table.
@@ -26,8 +50,8 @@ Body sections, in this order:
 
 ## Rules that survive audits
 
-- One worklog per ticket per day; two tasks on the same ticket merge into one row.
-- Ceremonies (standup, huddle, refinement) fold into the day's main ticket; they do not get their own row unless the client asks for it.
+- One worklog per ticket per activity per day, as daily-worklog posts them; group rows back to one line per ticket per day in this note only if the client asks for that shape. Days posted before 2026-09-14 are one per ticket per day and stay that way.
+- Ceremonies get their own rows on the ceremony ticket from config `worklog.ceremony_ticket`. Days before 2026-09-14 have them folded into the day's main ticket; say so in Not in Jira rather than restating them.
 - A ticket that is Closed or belongs to someone else is a soft spot, not a home. Say which open ticket should carry the hours and, if none exists, which one to raise and who should raise it.
 - Attribution rate (ticketed hours over billed hours) goes in the summary line at the top, next to the target the client set.
 - Log a line in the daily note linking the draft.

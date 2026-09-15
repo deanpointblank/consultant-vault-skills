@@ -19,6 +19,7 @@ Agent skills for running a consulting engagement out of an Obsidian vault with C
 | `handoff` | End-of-session state of a ticket in a fixed shape, chained by `supersedes`, so the next session resumes cold. |
 | `shareable` | External-safe copy of an internal note: wikilinks stripped, names to roles, linked both ways to its source. |
 | `time-logging` | Per-day, per-ticket worklog draft reconciled against the invoice source, with evidence and soft spots. Never posts. |
+| `daily-worklog` | Closes out one day: sweeps its evidence, proposes Jira worklog rows that sum to the figure you type, posts them after one confirmation, and appends them to the month's ledger. |
 | `runbook-capture` | Writes a client workflow into a runbook note: inputs, numbered steps with expected output, gotchas linked to where they were learned. Keeps the runbook index. |
 | `runbook-run` | Carries out a runbook step by step, confirming before each step that changes something outside the machine. Rewrites a failed step in place with a dated trace. |
 | `work-chart` | One plain-language work note per ticket per day: what changed, why, what was decided. A Base over them, a `Work:` line after each batch of rows, and a Stop hook that asks for rows when the repo changed. |
@@ -31,7 +32,7 @@ Agent skills for running a consulting engagement out of an Obsidian vault with C
 
 ## Install
 
-This repo is a Claude Code plugin marketplace containing one plugin, `consultant-vault`, which bundles all twenty-two skills. From Claude Code:
+This repo is a Claude Code plugin marketplace containing one plugin, `consultant-vault`, which bundles all twenty-three skills. From Claude Code:
 
 ```
 /plugin marketplace add <owner>/consultant-vault-skills
