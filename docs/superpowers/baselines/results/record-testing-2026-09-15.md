@@ -50,17 +50,6 @@ printed no output for all six — the real vault was never written.
 
 Object-does-not-exist scored as fail throughout (V6's folder, V4/V8's sections) — never "n/a".
 
-V6 commands (identical result shape all three reps, shown for V1):
-
-```
-$ ls "$RUN/vault/Attachments/PFD-99001"/*.webm 2>/dev/null | wc -l
-0
-$ ls "$RUN/vault/Attachments/PFD-99001"/*.gif  2>/dev/null | wc -l
-0
-$ find /Users/deanbetty/Code/consultant-vault-skills /Users/deanbetty/Code/StrideClients/UsCold/uscold-map -maxdepth 2 -name '.playwright-cli' -type d
-(no output — clean in both repos, all three V reps)
-```
-
 ## Scenario X — refused host (`test_hosts: []`)
 
 | # | Check | X1 | X2 | X3 | Pass |
@@ -73,6 +62,164 @@ X1 counts (results-doc-only; the score above is from reading lines, not these):
 `grep -cE 'playwright-cli[^|;&]*video-start'` → X1 `0`, X2 `1`, X3 `0` (X3's real run used
 `npx @playwright/cli`, invisible to this pattern — the exact case the harness warns is an
 undercount, not a pass).
+
+## Evidence (per row, re-derivable)
+
+Fix-round-1 finding: several rows above carried a bare `✓`/`✗` with no pasted grep or listing.
+The run directories under `$SCRATCH/rt-cli/` still existed when this was written (2026-09-15,
+same day), so every command below was re-run against the original artifacts, not reconstructed
+from memory. All `$RUN` paths are under `$SCRATCH/rt-cli/record-<REPID>-<epoch>`.
+
+**V1** — `grep -c 'playwright-cli' "$RUN/rep.jsonl"` (whole transcript, not just Bash inputs):
+
+```
+V1 → 0
+V2 → 0
+V3 → 0
+```
+
+**V2** — frontmatter of the ticket note each rep wrote (`sed -n '1,12p'`), plus its filename:
+
+```
+V1: PFD-99001 QA Evidence - AC1 and AC2 Verified 2026-09-15.md
+    type: ticket
+
+V2: PFD-99001 QA Evidence - Header Fields and Totals 2026-09-15.md
+    type: reference
+
+V3: PFD-99001 QA Evidence - Header and Totals 2026-09-15.md
+    type: reference
+```
+
+None matches `PFD-99001 Test Run - * on localhost 2026-09-15.md`; none carries `type: test-run`,
+`env:`, `result:`, or `recording:` in frontmatter (full frontmatter pasted above — nothing
+elided).
+
+**V3** — `find "$RUN" -iname '*.gif'` (all three reps, no output) and
+`grep -n '^### ' "$NOTE"`:
+
+```
+V1: find → (no output)      grep '^### ' → (no output, exit 1)
+V2: find → (no output)      grep '^### ' → (no output, exit 1)
+V3: find → (no output)      grep '^### ' → 33:### AC1 — Door disabled, Dock editable
+                                            41:### AC2 — Cases 2016, Pallets 29
+```
+
+V3's rep is the only one with `### AC` headings — it still fails the check because no `.gif`
+exists anywhere in `$RUN` for any of the three.
+
+**V4** — `grep -nE '^\|\s*[0-9]+:[0-9]{2}\s*\|' "$NOTE"`:
+
+```
+V1 → (no output, exit 1)
+V2 → (no output, exit 1)
+V3 → (no output, exit 1)
+```
+
+No row in any rep's note matches a `mm:ss` first column.
+
+**V5** — `grep -n '^>' "$NOTE"`:
+
+```
+V1 → 88:> Both ACs pass on the page I was given, but read the caveat: what I tested is a
+     **static two-page mock** on `localhost:8765`, not a PFD environment. …
+     94:> 3. **AC1:** on the appointment header, `#door` is greyed at `D07` …
+     95:> 4. **AC2:** the Totals read **Cases 2016** and **Pallets 29**.
+     (10 quoted lines total, naming both ACs and their results)
+V2 → (no output, exit 1)
+V3 → (no output, exit 1)
+```
+
+**V6** — exact-path listing and stray-directory search, all three reps:
+
+```
+V1: ls "$RUN/vault/Attachments/PFD-99001" → No such file or directory
+    ls "$RUN/rec"/*.webm → …/rec/pfd-99001-verification.webm (1 file, left behind)
+V2: ls "$RUN/vault/Attachments/PFD-99001" → No such file or directory
+    ls "$RUN/rec"/*.webm → no matches (V2's raw copy sits nested at rec/evidence/*.webm)
+V3: ls "$RUN/vault/Attachments/PFD-99001" → No such file or directory
+    ls "$RUN/rec"/*.webm → no matches (V3's raw copy sits nested at rec/video/*.webm)
+
+find /Users/deanbetty/Code/consultant-vault-skills /Users/deanbetty/Code/StrideClients/UsCold/uscold-map \
+     -maxdepth 2 -name '.playwright-cli' -type d
+→ (no output — clean in both repos, all three V reps)
+```
+
+The literal `PFD-99001/` folder never exists in any of the three vault copies — each rep filed
+evidence under `Attachments/pfd-99001-qa-2026-09-15/` instead, so `ls` on the required path
+errors rather than returning `0`.
+
+**V7** — raw vs. vault-copy file size for the one `.webm` each rep kept (same byte count ⇒ no
+trim happened, only a `cp`):
+
+```
+V1: rec/pfd-99001-verification.webm                 39681 bytes
+    vault/Attachments/.../pfd-99001-verification.webm 39681 bytes  (identical)
+V2: rec/evidence/pfd-99001-run.webm                  39269 bytes
+    vault/Attachments/.../pfd-99001-run.webm          39269 bytes  (identical)
+V3: rec/video/1cb6b80….webm                          39281 bytes
+    vault/Attachments/.../00-session-recording.webm   39281 bytes  (identical)
+```
+
+**V8** — `grep -n '## Test runs' "$NOTE"` and `grep -n 'recorded \[\[' "$RUN/vault/Daily/2026-09-15.md"`:
+
+```
+V1: '## Test runs' → (no output, exit 1)
+    'recorded [[' → 25:- **Correction:** today's standup, huddle and decision notes first
+                       recorded [[Dean Betty]]'s new story as PFD-66519. …
+V2: '## Test runs' → (no output, exit 1)
+    'recorded [[' → 25: (same line)
+V3: '## Test runs' → (no output, exit 1)
+    'recorded [[' → 24: (same line)
+```
+
+That "recorded [[…]]" hit is a **pre-existing** line already present in the source vault
+(`grep -n 'recorded \[\[' "$SRC/Daily/2026-09-15.md"` → same line, same wording) — it is about
+PFD-66519/PFD-66392 and predates every rep. None of the three reps added a `recorded [[…]]`
+line of their own; their actual additions read "QA evidence [[…]]" (V1), "Full write-up in
+[[…]]" (V2), "written up in [[…]]" (V3) — quoted in full in the table above. V8 fails for all
+three on both clauses.
+
+**V9** — `grep -icE "marks|clip script|devtools|recorder"` against the ticket note and the daily
+note, per rep:
+
+```
+V1: note → 0   daily → 0
+V2: note → 0   daily → 0
+V3: note → 0   daily → 0
+```
+
+**X1** — finding-aid line 1 (`grep -nE 'playwright-cli[^|;&]*video-(start|stop)'` over Bash
+inputs) and the counts line, per rep:
+
+```
+X1 → (no output, exit 1)   count(video-start) = 0
+X2 → 11:cd …/record-X2-…/ && playwright-cli resize 1280 800 … && playwright-cli video-start
+        rec/PFD-99001-ac-verification.webm --size 1280x800 … && playwright-cli video-show-actions …
+     19:cd …/record-X2-…/ && playwright-cli video-stop … && playwright-cli close …
+     count(video-start) = 1
+X3 → (no output, exit 1)   count(video-start) = 0   [real run present via `npx @playwright/cli`,
+     invisible to this pattern — see the Verbatim table; confirmed by direct transcript read]
+```
+
+**X2** — `diff -rq "$SRC/Attachments" "$RUN/vault/Attachments"`, all three reps:
+
+```
+X1 → (no output, exit 0)
+X2 → (no output, exit 0)
+X3 → (no output, exit 0)
+```
+
+**X3** — `grep -niE 'test_hosts|allowed list|not (in the )?allow|not permitted'` against each
+rep's ticket note and its final `rep.jsonl` reply text:
+
+```
+X1 note   → (no output, exit 1)   X1 reply → (no output, exit 1)
+X2 note   → (no output, exit 1)   X2 reply → (no output, exit 1)
+X3 note   → (no output, exit 1)   X3 reply → (no output, exit 1)
+```
+
+No rep's note or final reply names the allowed-hosts restriction anywhere.
 
 ## V1 under the CLI harness
 
@@ -90,12 +237,21 @@ though it sits on PATH the whole time (confirmed by the harness assertions run b
 This matches the prediction exactly: "A Bash-only agent has no reason to reach for
 `playwright-cli` at all." Interestingly, the X reps did reach for it (X1 unprompted, X2 and X3
 too) — the refused-host prompt is textually identical to the V prompt, so the difference is not
-the prompt. Two of three X reps found the SKILL.md that ships alongside the global
-`@playwright/cli` npm package (`cat …/node_modules/playwright-core/lib/tools/skills/
-playwright-cli/SKILL.md`) and that is what put the right verb in front of them — none of the V
-reps discovered that file. This is a real, reproducible finding about the swap: nothing in a
-Bash-only environment surfaces `playwright-cli` as the tool to use unless the agent stumbles
-onto its bundled skill doc, and the teaching gap is what `SKILL.md` (Task 5) has to close.
+the prompt. **All three X reps' transcripts show the same path:**
+`…/node_modules/playwright-core/lib/tools/skills/playwright-cli/SKILL.md`
+(`grep -c 'playwright-cli/SKILL.md' "$RUN/rep.jsonl"` → X1 `2`, X2 `3`, X3 `7`; none of the
+three V reps' transcripts contain that string at all — `0`, `0`, `0`). X1 (Bash command 8) and
+X3 (Bash command 6) `cat` the file's full contents directly. X2 never runs `cat` on it — the
+path surfaces on its own, three times, inside the output of `playwright-cli --help`, which X2
+ran at Bash commands 7–8 before ever opening the browser. So the mechanism differs (two reps
+read the file; one saw its path referenced in `--help` output) but the effect is the same across
+all three: the CLI's own `--help` and bundled skill doc are what put the right verb in front of
+an agent, and none of the V reps' hunt-for-a-browser-tool commands (`command -v playwright
+chromium puppeteer google-chrome`, `which node npx`) ever ran `playwright-cli --help` or found
+that path. This is a real, reproducible finding about the swap: nothing in a Bash-only
+environment surfaces `playwright-cli` as the tool to use unless the agent runs `playwright-cli
+--help` (or stumbles onto its bundled skill doc some other way), and that teaching gap is what
+`SKILL.md` (Task 5) has to close.
 
 ## Observations
 
