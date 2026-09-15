@@ -151,10 +151,12 @@ SRC=/Users/deanbetty/Code/StrideClients/UsCold/uscold-map/US_Cold_Notes
 FIX=$HOME/.cache/vault-skills-fixtures/gap-stories
 REPO=/Users/deanbetty/Code/consultant-vault-skills
 CWD=/Users/deanbetty/Code/StrideClients/UsCold/uscold-map
+MEMORY_DIR=/Users/deanbetty/.claude/projects
 TODAY=$(date +%F)
 
-# Jira and Confluence writes, and file edits in the live vault, are denied on every rep.
-DENY="mcp__atlassian__createJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__editJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,Edit(/$SRC/**),Write(/$SRC/**)"
+# Jira and Confluence writes, file edits in the live vault, and writes to the shared session
+# memory folder, are denied on every rep.
+DENY="mcp__atlassian__createJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__editJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,Edit(/$SRC/**),Write(/$SRC/**),Edit(/$MEMORY_DIR/**),Write(/$MEMORY_DIR/**)"
 ALLOW="Skill,Bash,Read,Write,Edit,MultiEdit,Glob,Grep,mcp__atlassian__getJiraIssue,mcp__atlassian__searchJiraIssuesUsingJql,mcp__atlassian__getAccessibleAtlassianResources,mcp__atlassian__atlassianUserInfo,mcp__atlassian__getIssueLinkTypes,mcp__atlassian__getJiraIssueRemoteIssueLinks,mcp__atlassian__getVisibleJiraProjects,mcp__atlassian__getJiraProjectIssueTypesMetadata,mcp__atlassian__getJiraIssueTypeMetaWithFields,mcp__atlassian__lookupJiraAccountId"
 
 # new_copy <name> <A|B>  -> prints the rep dir; the vault copy is <dir>/vault
@@ -216,6 +218,10 @@ Shell state does not carry between Bash calls, so every call that uses the harne
 `export SCRATCH=<scratchpad>; source "$SCRATCH/gs/harness.sh";`. Run each `rep` call with the
 Bash tool's `run_in_background: true`. Reps on separate copies run in parallel. A resumed turn
 runs after the turn it resumes has exited.
+
+All reps share one session memory folder, because that folder comes from the working directory,
+not from the vault copy. On 2026-09-15, two reps ran at the same time and wrote over each other's
+notes in that folder, so the `MEMORY_DIR` deny above stops a rep from writing there at all.
 
 ### Jira guard
 
