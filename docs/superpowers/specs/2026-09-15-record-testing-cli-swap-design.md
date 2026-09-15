@@ -196,6 +196,8 @@ The honest target, which is the one the skill was written for and has never been
 
 **Whether the action overlay obscures content on a real client page.** The overlay is proven to work and proven useful on the fixture, but the fixture is sparse. This is settled the first time the skill records a real PFD walkthrough: look at the GIFs, and if the callouts cover what the criterion is about, move them with `--position` or drop them per the fallback in Decision 2.
 
+**Settled 2026-09-15:** `default position holds`. Measured on a dense fixture page — top nav, a top-right summary card, a ten-row table, a bottom action bar — recorded with `video-show-actions --duration=1500` and cut to an 800px 8fps GIF by the unmodified clip script. Every callout (`find`, both `hover`s, the `fill`) rendered as a single line pinned inside the top nav strip, clear of the summary card below it, so `Cases 2016` stayed legible in every GIF frame; the longest label, `Fill "South" locator('#dock')`, still fit on one line and covered only nav chrome. The one thing that briefly covers a value is the red action marker, which lands on the targeted element itself rather than in a corner and fades within a second — `--position` would not move it, so it is not a reason to relocate or drop the overlay. A real client page is confirmed against this rule by the live run in Task 7.
+
 Nothing else is open. Every other question from the 2026-09-15 idea note is answered by the spike findings or by Decisions 1 to 5 above.
 
 ## Risks
