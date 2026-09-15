@@ -20,7 +20,14 @@ Built once in Task 1 of the plan, never given to an agent, never written to:
   `Checked 2026-09-11`. Both 2026-09-11 question notes are `status: open`. The triage note is
   `Status/Sprint To-Do Triage - 2026-09-09.md` (`type: proposal`), gap 1 "Seed the V2 order
   projection". No `*Gap Stories*` note exists.
-- **B** is A with the order-search question answered as the V2 projection.
+- **B** is A with the order-search question answered as the V2 projection, and with the day's
+  other notes saying so too. The question note is `status: answered`, `answered_on: 2026-09-11`,
+  with an `## Answer` section. The 2026-09-11 daily note logs the answer at 14:05, after the 13:47
+  intake line and the 13:48 line that logged both questions as open. The PFD-66405 handoff records
+  the answer, leaves only the Submit question open, and says the intake note was written before the
+  answer and has not been re-run. The intake note itself is the same file as in A: its blockers stay
+  unticked, because that list is what the skill reads, and the note is meant to be the older
+  snapshot. Three files differ between A and B.
 
 sha256 of the fixture notes (step 4 of Task 1):
 
@@ -29,6 +36,11 @@ sha256 of the fixture notes (step 4 of Task 1):
 - A `Questions/2026-09-11 Is PFD-66407 now the only Submit story for outbound order linking.md`: fb00784b18dfd1ab8beb8a11f7bfae7bf2b9f879a09841be2cdb2f04a737e0d3
 - A `Status/Sprint To-Do Triage - 2026-09-09.md`: 2faf7d0eb7577b69d068ccc78937598a5213f0da68e2c4907cca63fecd9fa044
 - B `Questions/2026-09-11 Does the outbound order search read V1 live or a V2 order projection.md`: e3ca67bff198f1c766bcc2f769b2209fe8fd622e87544570c87054a6a17ffa43
+
+The other two notes B changes, added 2026-09-15 when B was made to agree with itself:
+
+- B `Daily/2026-09-11.md`: f4191192a8c143eb93705c96540e6fd861cd64abaf2e33d3254f6df76cd0ab12
+- B `Tickets/PFD-66405 Handoff - Chosen Next and Intake Done 2026-09-11.md`: a589276a0a2f4ed95ea51a50f9afa2f3c3ef34261e7920eeb17d28860d741150
 
 Jira as read on 2026-09-15 (cloudId `uscold.atlassian.net`, reads only):
 
@@ -94,6 +106,11 @@ The flag is the only way in to the exception. Without it, A17, A18 and B8 stand.
 
 ### Build the fixtures
 
+The first half of this block copies the live vault, and the live vault has moved on since the
+fixtures were built on 2026-09-11. Running the block whole today would build a different A and
+break every sum and every check in this file. To rebuild B, set `FIX`, make it writable, and run
+the block from the `# --- B is built from A below here ---` line down; A is left alone.
+
 ```bash
 SRC=/Users/deanbetty/Code/StrideClients/UsCold/uscold-map/US_Cold_Notes
 FIX=$HOME/.cache/vault-skills-fixtures/gap-stories
@@ -101,7 +118,10 @@ FIX=$HOME/.cache/vault-skills-fixtures/gap-stories
 rm -rf "$FIX" && mkdir -p "$FIX"
 cp -R "$SRC" "$FIX/A"
 perl -0pi -e 's/^(timezone: .*)$/$1\njira_site: uscold.atlassian.net/m' "$FIX/A/Meta/Config.md"
+# --- B is built from A below here ---
+rm -rf "$FIX/B"
 cp -R "$FIX/A" "$FIX/B"
+chmod -R u+w "$FIX/B"
 QB="$FIX/B/Questions/2026-09-11 Does the outbound order search read V1 live or a V2 order projection.md"
 perl -0pi -e 's/^status: open$/status: answered\nanswered_on: 2026-09-11/m' "$QB"
 cat >> "$QB" <<'EOF'
@@ -112,6 +132,23 @@ The acting scrum master ([[Rob Park]]), 2026-09-11: a V2 order projection, seede
 the same pattern as the receipt catalog. V2 does not call the V1 endpoint. The seeding comes out
 of PFD-66407 as its own story, so PFD-66405 can start first.
 EOF
+
+# The rest of B's 2026-09-11 notes have to say the same thing, or the fixture argues with itself.
+DB="$FIX/B/Daily/2026-09-11.md"
+perl -0pi -e 's{(\n- 13:48 \[\[PFD-66405\]\][^\n]*\n)}{${1}- 14:05 [[PFD-66405]] The acting scrum master ([[Rob Park]]) answered the order-search question: a V2 order projection seeded from Oracle, the same pattern as the receipt catalog, and no V1 call from V2. The seeding comes out of PFD-66407 as its own story so PFD-66405 can start first. [[2026-09-11 Does the outbound order search read V1 live or a V2 order projection]] marked answered. The Submit-story question is still open. Nothing posted to Jira.\n}' "$DB"
+
+HB="$FIX/B/Tickets/PFD-66405 Handoff - Chosen Next and Intake Done 2026-09-11.md"
+perl -0pi -e 's{\Qdoes not exist in any branch." The next person\E}{does not exist in any branch." The acting scrum master answered the order-search question at 14:05, after intake was written: a V2 order projection seeded from Oracle, no live V1 call, and the seeding out of PFD-66407 as its own story. That leaves one open question, the Submit one. The next person}' "$HB"
+perl -0pi -e 's{\QPost it, or take the two questions to the acting scrum master directly.\E}{Post a rewritten draft comment, or take that question to the acting scrum master directly.}' "$HB"
+perl -0pi -e 's{\QThen get the seeding split out of PFD-66407 so the block cycle breaks.\E}{Then get that seeding story written so the block cycle breaks.}' "$HB"
+perl -0pi -e 's{\Q| Open questions | [[2026-09-11 Does the outbound order search read V1 live or a V2 order projection]] and [[2026-09-11 Is PFD-66407 now the only Submit story for outbound order linking]]. Both open, both owned by the acting scrum master |\E}{| Open questions | [[2026-09-11 Does the outbound order search read V1 live or a V2 order projection]] was answered at 14:05 today: a seeded V2 order projection, no V1 call, and the seeding split out of PFD-66407 as its own story. [[2026-09-11 Is PFD-66407 now the only Submit story for outbound order linking]] is still open. Both are owned by the acting scrum master |\n| Intake note is older than the answer | Intake ran at 13:47 and the answer landed at 14:05, so the note still lists the order-search question as what clears its second blocker. The note has not been re-run |}' "$HB"
+perl -0pi -e 's{\QThe alternative is taking the two questions to the acting scrum master directly.\E}{The order-search question in it is answered now, so the text needs a pass before it goes anywhere. The alternative is taking the one open question to the acting scrum master directly.}' "$HB"
+perl -0pi -e 's{\Qon the two open questions: [[2026-09-11 Does the outbound order search read V1 live or a V2 order projection]] and [[2026-09-11 Is PFD-66407 now the only Submit story for outbound order linking]].\E}{on the one question still open: [[2026-09-11 Is PFD-66407 now the only Submit story for outbound order linking]]. The order-search question is answered.}' "$HB"
+perl -0pi -e 's{\Qon splitting the order-projection seeding out of PFD-66407, and on breaking the PFD-66405 and PFD-66407 block cycle. Neither story can start while each blocks the other.\E}{on writing the seeding story the 14:05 answer calls for, and on breaking the PFD-66405 and PFD-66407 block cycle. The split is settled, the story does not exist yet, and neither story can start while each blocks the other.}' "$HB"
+perl -0pi -e 's{\QSend the two open questions to the acting scrum master.\E}{Send the one open question, the Submit one, to the acting scrum master.}' "$HB"
+perl -0pi -e 's{\QAsk the acting scrum master for the seeding split and the Jira link fix\E}{Ask the acting scrum master for the seeding story and the Jira link fix}' "$HB"
+perl -0pi -e 's{\QOnce the projection answer is in, brainstorm and spec the popup as new work.\E}{The projection answer is in, so brainstorm and spec the popup as new work.}' "$HB"
+
 chmod -R a-w "$FIX"
 ```
 
@@ -123,6 +160,8 @@ N="$FIX/A/Tickets/PFD-66405 Order search popup.md"
 QA1="$FIX/A/Questions/2026-09-11 Does the outbound order search read V1 live or a V2 order projection.md"
 QA2="$FIX/A/Questions/2026-09-11 Is PFD-66407 now the only Submit story for outbound order linking.md"
 QB="$FIX/B/Questions/2026-09-11 Does the outbound order search read V1 live or a V2 order projection.md"
+DB="$FIX/B/Daily/2026-09-11.md"
+HB="$FIX/B/Tickets/PFD-66405 Handoff - Chosen Next and Intake Done 2026-09-11.md"
 TRI="$FIX/A/Status/Sprint To-Do Triage - 2026-09-09.md"
 awk 'NR==1&&/^---$/{f=1;next} f&&/^---$/{f=0;b=1;next} b&&/^# /{t=1;next} t&&NF{print;exit}' "$N" | grep -c '^Cannot be built as written:'   # 1
 grep -c '^- \[ \] ' "$N"                     # 5
@@ -133,11 +172,19 @@ grep -h '^status:' "$QA1" "$QA2"             # status: open (twice)
 grep -c '^status: answered$' "$QB"           # 1
 grep -c '^answered_on: 2026-09-11$' "$QB"    # 1
 grep -c '^## Answer$' "$QB"                  # 1
+grep -c '^- 14:05 \[\[PFD-66405\]\] The acting scrum master' "$DB"   # 1
+grep -c '^- 13:48 \[\[PFD-66405\]\] Two open questions' "$DB"       # 1
+grep -c 'Both open, both owned by the acting scrum master' "$HB"    # 0
+grep -c 'was answered at 14:05 today' "$HB"                         # 1
+grep -c '^| Intake note is older than the answer |' "$HB"           # 1
+grep -c 'the two questions to the acting scrum master' "$HB"        # 0
+grep -c '^- \[ \] ' "$FIX/B/Tickets/PFD-66405 Order search popup.md"   # 5, B's blockers stay unticked
 grep -c '^type: proposal$' "$TRI"            # 1
 grep -c 'Seed the V2 order projection' "$TRI"   # 1
 grep -c '^jira_site: uscold.atlassian.net$' "$FIX/A/Meta/Config.md" "$FIX/B/Meta/Config.md"   # 1 each
 find "$FIX" -name '*Gap Stories*' | wc -l    # 0
-diff -rq "$FIX/A" "$FIX/B"                   # one line: the order-search question note differs
+diff -rq "$FIX/A" "$FIX/B" | wc -l           # 3
+diff -rq "$FIX/A" "$FIX/B"                   # three lines: Daily/2026-09-11.md, the order-search question note, the PFD-66405 handoff
 ```
 
 ### Harness
@@ -270,7 +317,7 @@ In the check tables, `\|` is a pipe escaped for the table. Type it as `|` in the
 | A3 | `jira` order | `fm_jira "$G"` starts `PFD-66405 PFD-66391`, contains PFD-66407 and PFD-66644, and every later key appears in a `\| G` row | fail |
 | A4 | First line exact | `first_line "$G"` = `Buildable after 2 changes and 2 rulings.` | fail |
 | A5 | Summary links the intake note and its date | `section "$G" Summary \| grep -c 'PFD-66405 Order search popup'` ≥ 1 and `section "$G" Summary \| grep -cE "2026-09-11\|$TODAY"` ≥ 1. The date is the intake note's `Checked` date, 2026-09-11; today's date instead means the rep ran a fresh intake | fail |
-| A6 | `Tickets searched:` block, one line per search place | `searched "$G" \| grep -c '^- epic PFD-66391 children:'` = 1, and that line holds PFD-66644: `searched "$G" \| grep '^- epic PFD-66391 children:' \| grep -c PFD-66644` = 1; `searched "$G" \| grep -c '^- "'` ≥ 4 (one per gap); `searched "$G" \| grep '^- vault proposals:' \| grep -c 'Sprint To-Do Triage - 2026-09-09'` = 1 | fail |
+| A6 | `Tickets searched:` block, one line per search place, and the proposals line records a real hit | `searched "$G" \| grep -c '^- epic PFD-66391 children:'` = 1, and that line holds PFD-66644: `searched "$G" \| grep '^- epic PFD-66391 children:' \| grep -c PFD-66644` = 1; `searched "$G" \| grep -c '^- "'` ≥ 4 (one per gap); `searched "$G" \| grep '^- vault proposals:' \| grep -c 'Sprint To-Do Triage - 2026-09-09'` = 1; and the A6 command under this table prints 0. Naming the note is not enough: the triage note is in every copy at `Status/Sprint To-Do Triage - 2026-09-09.md`, so a proposals line that says it is missing, or that it could not be checked, fails | fail |
 | A7 | Gaps table, G numbers and kinds as the worked example | header `grep -cE '^\| *# *\| *Gap *\| *Kind *\| *Blockers it clears *\| *Existing ticket *\| *State *\|' "$G"` = 1; `grep -cE '^\| *G[0-9]+ *\|' "$G"` = 4; `grow "$G" 1` contains `waiting`, `Does the outbound order search read V1 live or a V2 order projection`, and PFD-66644 as Existing ticket; `grow "$G" 2` contains `re-scope PFD-66405`; `grow "$G" 3` contains `link fix`; `grow "$G" 4` contains `waiting` and `Is PFD-66407 now the only Submit story` | fail |
 | A8 | Blockers it clears (read) | G1: blockers 1, 2, 3; G2: blocker 4 and the Closed PFD-66409 item; G3: blocker 5; G4: the acceptance-scenario-1 and PFD-63653-link items | fail |
 | A9 | Held gaps have no story block | `grep -cE '^### G(1\|4)( \|$)' "$G"` = 0; `grep -cE '^### G(2\|3)( \|$)' "$G"` = 2 | fail |
@@ -287,6 +334,8 @@ In the check tables, `\|` is a pipe escaped for the table. Type it as `|` in the
 | A20 | The stale intake note is noticed | Read the fresh-intake flag, `grep -c "^Checked $TODAY" "$(INTAKE "$D")"`. Flag 1: pass, a fresh intake ran. Flag 0: pass only if `reply "$D/t1.jsonl"` or `section "$G" Summary` says PFD-66405 changed in Jira after the note's `Checked 2026-09-11`; silence fails | fail |
 
 ```bash
+# A6: the proposals line must not deny the triage note or duck it. Expected: 0.
+searched "$G" | grep '^- vault proposals:' | grep -ciE 'does not exist|does n.t exist|doesn.t exist|no such note|not found|could not find|couldn.t find|cannot find|can.t find|is missing|not in this vault|not in the vault|nowhere in this vault|nowhere in the vault|unverifiable|unverified|cannot verify|can.t verify|could not verify|couldn.t verify|could not read|couldn.t read|no access'
 # A3: every jira key after the first two appears in a gaps-table row. Expected: no output.
 for k in $(fm_jira "$G" | cut -d' ' -f3-); do grep -E '^\| *G[0-9]+ *\|' "$G" | grep -q "$k" || echo "missing $k"; done
 # A15: every backticked string with a line number is `repo path:line`. Expected: 0.
