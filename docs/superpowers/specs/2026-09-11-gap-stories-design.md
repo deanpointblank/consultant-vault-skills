@@ -121,6 +121,9 @@ Blocker 2 joins blockers 1 and 3 here, because it is the question that gap waits
 
 The seeding story appears on the first run after the acting scrum master answers, if the answer is the V2 projection. The vault's accepted decisions point that way. It will be `split PFD-66407`, since the seeding section sits inside that ticket today.
 
+> **Amended 2026-09-15.** PFD-66644 "View an outbound appointment with its linked Orders (order catalog projection + seeding)" was created on 2026-09-15 and now covers the seeding gap. Fixture B no longer yields a creatable `split PFD-66407` story; the duplicate check should find PFD-66644 instead. The re-baselined expected results live in `docs/superpowers/baselines/gap-stories.md` (commit 2f78cd6), which is the source of truth for every check. The check tables below are superseded where the two disagree.
+
+
 ## The gap note
 
 ### File and frontmatter
@@ -285,6 +288,9 @@ Follows `docs/superpowers/baselines/README.md` and the writing-skills RED and GR
 1. **Baseline (RED).** A subagent without the skill gets "fill the gaps for PFD-66405". Record its failures. Expected: stories only in chat, held gaps drafted anyway, and the re-scope treated as a new story.
 2. **With the skill (GREEN).** Same prompt. Check the note's shape, each gap's kind, the hold rule, and the `Tickets searched` block. The expected result is the worked example above.
 3. **Create step.** Run with the Jira write tools blocked. Pass: a correct preview, and nothing created. PFD-66405 has no gap that can be created today. So this test uses a second vault copy, with the order search question marked answered as the projection. That copy yields a `split PFD-66407` story to preview.
+
+> **Amended 2026-09-15.** PFD-66644 "View an outbound appointment with its linked Orders (order catalog projection + seeding)" was created on 2026-09-15 and now covers the seeding gap. Fixture B no longer yields a creatable `split PFD-66407` story; the duplicate check should find PFD-66644 instead. The re-baselined expected results live in `docs/superpowers/baselines/gap-stories.md` (commit 2f78cd6), which is the source of truth for every check. The check tables below are superseded where the two disagree.
+
 4. **Trigger tests with sonnet.** "What's blocking KEY" goes to ticket-intake. "What stories do we need to unblock KEY" goes to gap-stories.
 
 No test ever creates a ticket on the client site. The first real create happens live, with the user watching.
