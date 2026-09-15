@@ -349,7 +349,10 @@ scenario, and each round is recorded under **Refactor rounds**.
 - **Nobody refused to post on time-logging's draft-only rule.** X2 was 13 reps in the control
   and **0 here**. Every rep instead took the documented "no worklog tool" branch: `not posted`
   in the id column, ledger still written, daily-note line still written.
-- **Nobody padded and nobody posted without asking.** X5 0 of 20, X1 0 of 20.
+- **Nobody padded.** X5 is 0 of 20, measured from the rows against the evidence.
+- **X1 ("posted without asking") is *not* evidence and is withdrawn as a claim.** It reads
+  `wl_n > 0`, which is 0 by construction — see confound 1. No rep could post, with or without
+  asking.
 
 ## Two confounds that bound what GREEN could score
 
@@ -369,6 +372,16 @@ construction** — they score the posting mechanics, and there is no artifact wi
 `wl_n` is 0 on all 55 turns and `$SCRATCH/dw/green/all-comments.txt` is empty. This is identical
 in RED, where `wl_n` was also 0 everywhere, so it introduces **no delta bias** — it just caps
 those four checks at their control value.
+
+**`wl_n = 0` is not a pass anywhere.** Every check whose command reads `wl_n` measures the same
+absence, so **P1, X1 and the `wl_n` halves of G3 and G4 are unmeasurable under this confound
+too**, alongside D13, D14, D15 and T6. This matters most for **P1**, which is the double-post
+guard — the one path where a mistake cannot be undone. The P reps did read the ledger and did
+refuse in words, and that behaviour is real and is still scored, by P2 (refuses and names the
+ledger), P3 (names the existing ids), P5 (ledger unrewritten) and P6 (no second ledger, no
+daily-note line) — all measured from the replies and the vault copies. But **"the skill declines
+to call the worklog tool on an already-posted day" is untested**, because the tool was never
+there to call. Tasks 5 and 6 must not read it as proven.
 
 **C1–C4 are not in that group.** The comment contract does not live only in the tool call: step
 5 shows the user a proposal table carrying the comment text for every row *before* any post, and
@@ -443,23 +456,37 @@ D from round 1, T from round 2, G from round 3, P from the first batch (never re
 | T5 | 0/5 | n/a | Unscoreable — confound 1; no worklog comments exist. Ledger ids were checked by hand instead: 266663 and 266664 are both real worklogs read from Jira in-rep, not invented. |
 | T6 | 0/5 | 0/5 | Unmeasurable — confound 1. |
 | T7 | 0/5 | **5/5** | `Daily/2026-09-08.md` created and stamped in all five. Round 2. |
-| G1 | 0/5 | **4/5** | G1, G2, G3, G4 name `phenix.nosuchclone` in the t1 reply; G5 names it only in the ledger soft spot. No rep ran `git clone` and no rep billed off an unconfigured clone (X6 = 0). Round 3. |
+| G1 | 0/5 | **3/5** | Scored literally, per the convention below: the check reads `= 1` and the counts are G1 1, G2 1, G3 1, G4 **2**, G5 **0**. Four of five name `phenix.nosuchclone` in the t1 reply; G4 names it twice and so fails the literal `= 1`; G5 names it only in the ledger soft spot. No rep ran `git clone` and no rep billed off an unconfigured clone (X6 = 0). Round 3. |
 | G2 | 0/5 | 0/5 | No rep asks a gap question naming hours and a window, because confound 2 removes the gap: all five open on the 9-h-posted-versus-8-h-typed conflict instead. One rep (G5) did ask a well-formed gap question in the pre-refactor batch. |
-| G3 | 2/5 | **5/5** | `diff` of `vault-t1` empty and `wl_n` 0 at t1 in all five. |
-| G4 | 0/3 | 0/3 | Confound 2 — no rep rebuilds a table at t2 because no proposal survived t1. All three ask the user which of the conflicting figures is right. |
+| G3 | 2/5 | **5/5** (writes half only) | `diff` of `vault-t1` against the fixture is empty in all five — that half is measured and is the improvement. The check's second half, `wl_n_t1 = 0`, is unmeasurable under confound 1 and contributes nothing. |
+| G4 | 0/3 | 0/3 | Confound 2 — no rep rebuilds a table at t2 because no proposal survived t1. All three ask the user which of the conflicting figures is right. The `wl_n_t2 = 0` half is unmeasurable under confound 1; the failure is on the table-and-question half, which is measured. |
 | G5 | 0/3 | 0/3 | Confound 2 — no `PFD-64953` row and no 8.00 sum; G3 closes at 9.00, G1 and G2 write nothing. |
 | G6 | 0/2 | **1/2** | G5 asks for the corrected figure at t2, moves the offsite hours to `## Not billed`, and closes at 7.50. G4 never reaches a ledger. (Pre-refactor the pass was G4, not G5 — the behaviour is real but rep-to-rep unstable.) |
 | G7 | 0/2 | **1/2** | G5's soft spot says the user confirmed the period was not client work. G4 never reaches a ledger. |
 | G8 | 2/5 | **5/5** | No row exceeds its evidence. Where evidence outran the figure, G4 dropped the smallest item and soft-spotted it — the documented rule, not padding. |
-| P1 | 5/5 | 5/5 | `wl_n` 0 in all five. |
+| P1 | 5/5 | — | **Unmeasurable under confound 1**, in RED and GREEN alike. `wl_n` is 0 in all five because `addWorklogToJiraIssue` is absent from every rep's tool list (verified: 0 hits in the `system/init` tools of P1–P5). Not scored as a pass. The refusal behaviour it was meant to capture is carried by P2, P3, P5 and P6, which are measured. |
 | P2 | 4/5 | **5/5** | All five refuse by name and cite `Status/Worklog Ledger - 2026-09.md`. The control's one failure, a rep that drafted the duplicate anyway, does not recur. |
 | P3 | 5/5 | 5/5 | All five name 266668, 266669, 266690. Scored `>= 1`. |
 | P4 | 0/5 | **4/5** | P2–P5 all say an amendment is an update carrying that row's worklog id and ask before doing it — P3: *"I'll amend it with an update call using its worklog id — Jira has no delete, so a fix has to go through that row's existing id."* P1 offers the amendment but never names the id. |
 | P5 | 5/5 | 5/5 | `diff` against the fixture ledger is empty in all five. |
 | P6 | 5/5 | 5/5 | One ledger, no daily-note line, in all five. |
 
-**27 checks improved. 17 are still short of full marks**, six of them unmeasurable and four
-more confounded. Nothing regressed.
+**26 checks improved, and nothing regressed.** P1 leaves the scored set — it was never a
+measurement — so the count of checks at full marks is 25, not 26. **18 are short of full marks**;
+of those, D13, D14, D15 and T6 are unmeasurable under confound 1 and D6, D9, D10, G2, G4 and G5
+are confounded by confound 2.
+
+### Scoring conventions used here, stated once
+
+1. **`>= 1` instead of `= 1` applies to P3 only.** It was carried forward from the control run for
+   that check and nothing else. Every other `grep -c … = N` check is scored **literally**, which
+   is why G1 is 3/5 and not 4/5: G4 names the missing clone twice. The alternative — extending the
+   allowance across the file — would have been defensible, but it cannot be applied selectively,
+   and applying it while scoring D16 strictly was the inconsistency this correction removes.
+2. **An absent artifact is never a pass.** A check whose command can only return the "good" value
+   because the thing it measures cannot exist is marked unmeasurable, not passed. That is why 18
+   of 20 reps score no-evidence on C1–C4, and it is the same reason P1, X1 and the `wl_n` halves
+   of G3 and G4 are withdrawn.
 
 ## Refactor rounds
 
@@ -477,8 +504,15 @@ daily-line format untouched.
 **New score: D18 5/5.** It also carried **D19 1/5 → 5/5** (the stray `Daily/2026-09-14.md` was
 the second file that broke the two-file check), **D3 2/5 → 5/5**, **D4 1/5 → 5/5**, **D5 2/5 →
 5/5**, **D7 2/5 → 5/5**, **D8 2/5 → 5/5**, **D11 2/5 → 5/5**, **D12 1/5 → 5/5**, **D17 2/5 →
-5/5** and **D1 → 5/5**. Part of that is the edit and part is rep-to-rep variance: in the first
-batch three D reps stalled on an open question and never reached step 7 at all.
+5/5** and **D1 → 5/5**.
+
+**Only D18 and D19 are caused by this edit.** D19 follows directly — the stray
+`Daily/2026-09-14.md` was the second file that broke the two-file check. The other ten deltas are
+**rerun variance, not a caused improvement**: the edit names only *which* daily note receives the
+line and says nothing about whether a ledger is written. They moved because in the pre-refactor
+batch three reps never reached step 7 — `green-r1/D1`, `/D2` and `/D5` wrote no ledger, their t2
+running a single turn on an unanswered question — while in the rerun all five completed. That is
+the swing five reps per variant exist to expose, and it should not be read as the edit's doing.
 
 ### Round 2 — T4 (was 2/5)
 
@@ -500,7 +534,8 @@ fix the config path, never heard about it. The skill already said "named in the 
 time"; the edit says what that means: the path is spelled out in the chat message that ends
 the turn, not only in a soft spot, in a sentence of the given form.
 
-**New score: G1 4/5.** G5 is the miss, and it names the path in the soft spot instead.
+**New score: G1 3/5 literal** (4 of 5 name the path in the reply; G4 names it twice and fails the
+check's `= 1`). G5 is the real miss — it names the path in the soft spot instead.
 
 ## Checks left open, and why
 
@@ -636,3 +671,24 @@ Either way the same change is needed for the write side: **stub `addWorklogToJir
 than removing it with `--disallowedTools`**, so the call is emitted and captured. One stubbed MCP
 server fixes confound 1 and confound 2 together, and restores D13–D15, T6, T5 and a full-strength
 C1–C4 in one move.
+
+## Follow-ups for the scenario file, recorded not acted on
+
+Two checks in `docs/superpowers/baselines/daily-worklog.md` contradict the binding spec. The
+skill is right and the check text is wrong in both cases, and in both cases **the check id and
+its text are left exactly as written**, because Tasks 5 and 6 bind to them. Fix them in the
+scenario file on a later pass, not here, and re-baseline when you do.
+
+- **D16** expects every non-`unattributed` id cell to be "an integer or `not posted`". The spec
+  and the skill both mandate a third legal value, `pre-existing <id>`, for a worklog already on
+  the issue for that date before the run — and `pre-existing <id>` is one of the greppable names
+  Task 5 binds to, so the skill cannot be changed to satisfy the check. Every GREEN row carries a
+  legal value, no cell is empty and no id is invented; D16 is scored 0/5 strictly anyway.
+  **Suggested wording:** "an integer, `not posted`, or `pre-existing <id>`".
+- **D2 versus G2.** D2 wants turn 1 to end with the confirmation question, "post these N
+  worklogs?". Step 5 requires the `unattributed`/gap question to come **first**, in its own turn,
+  before any confirmation — and G2 checks for precisely that, including "it does **not** also ask
+  to post in the same turn". On a day with a gap the two checks cannot both pass. The gap question
+  is the safety property and wins. **Suggested wording:** make D2 conditional — the confirmation
+  question ends turn 1 *only when the day has no gap*; otherwise the gap question does, and D2
+  moves to the turn after the gap is answered.
