@@ -302,3 +302,293 @@ does not exhibit.
   *devtools*, *recorder*.
 - **X2** (3/3) — no rep, including the two that recorded on the refused host, changed anything
   under `Attachments/`.
+
+# record-testing — GREEN run, 2026-09-15 (skill loaded)
+
+Task 6. Same harness, same fixtures, same six-rep procedure as the control above. The only
+change: `--plugin-dir` points at the checkout itself
+(`/Users/deanbetty/Code/consultant-vault-skills`, not a pruned copy), no `--settings` disables
+the installed plugin, and `$RUN/prompt.txt` opens with "Read and follow
+`skills/record-testing/SKILL.md`…" before the two `OBSIDIAN_VAULT` lines. Scored from the vault
+copy, `Attachments/`, `$RUN/rec`, and `rep.jsonl` — never the rep's own summary.
+
+## Reverse control-gate probe (run before any rep)
+
+Proves `record-testing` **is** visible under the GREEN config — the opposite assertion from the
+control gate, run once, before the first rep:
+
+```
+$ grep -c 'record-testing' probe.txt   → 1     (the gate — present)
+$ grep -c 'granola-sync'   probe.txt   → 1
+$ wc -l < probe.txt                    → 71
+$ grep -n 'record-testing' probe.txt   → 12:consultant-vault:record-testing
+```
+
+All expected values held. The GREEN reps ran.
+
+## Round 0 — first GREEN run (skill as delivered by Task 5)
+
+| Rep | `$RUN` | Wall time | Exit |
+|---|---|---|---|
+| V1 | `record-V1-1789505262` | 312 s | 0 |
+| V2 | `record-V2-1789505580` | 403 s | 0 |
+| V3 | `record-V3-1789505989` | 503 s | 0 |
+| X1 | `record-X1-1789506499` | 349 s | 0 |
+| X2 | `record-X2-1789506855` | 328 s | 0 |
+| X3 | `record-X3-1789507189` | 371 s | 0 |
+
+Live-vault check after every rep (`find … -newer "$RUN/rep.jsonl" … -not -path
+'*/.obsidian/*'`) printed no output for all six.
+
+### GREEN, scenario V (round 0)
+
+| # | Check | V1 | V2 | V3 | Pass |
+|---|---|---|---|---|---|
+| V1 | `playwright-cli … video-start`/`video-stop`, real runs | ✓ | ✓ | ✓ | **3/3** |
+| V2 | `PFD-99001 Test Run - * on localhost 2026-09-15.md`, `type: test-run`, `env: localhost`, etc | ✗ `… on test …`, `env: test` | ✓ `… on localhost …`, `env: localhost` | ✗ `… on test …`, `env: test` | **1/3** |
+| V3 | `### AC1`/`### AC2`, each with a `.gif` under `Attachments/PFD-99001/` | ✓ | ✓ | ✓ | **3/3** |
+| V4 | Steps table, `when` column `^\d+:\d\d$` | ✓ | ✓ | ✓ | **3/3** |
+| V5 | Draft comment blockquote naming both criteria + results | ✓ | ✓ | ✓ | **3/3** |
+| V6 | `Attachments/PFD-99001/` exactly 1 `.webm` + 2 `.gif`; nothing left in `$RUN/rec`; no stray `.playwright-cli/` | ✓ | ✓ | ✓ | **3/3** |
+| V7 | Trimmed `.webm` shorter than raw by ≥ login range | ✓ | ✓ | ✓ | **3/3** |
+| V8 | `## Test runs` line on ticket note; daily note gains a `recorded [[…]]` line | ✓ | ✓ | ✓ | **3/3** |
+| V9 | No *marks*, *clip script*, *devtools*, *recorder* | ✓ | ✓ | ✓ | **3/3** |
+
+**Evidence — V1** (finding aid, real Bash inputs, not echoed/quoted — one pair per rep):
+
+```
+V1: env -C "$R" playwright-cli -s=PFD-99001 video-start "$R/raw-PFD-99001.webm" --size=1280x800 …
+    env -C "$R" playwright-cli -s=PFD-99001 video-stop …
+V2: env -C "$REC" playwright-cli -s=PFD-99001 video-start "$REC/raw.webm" --size=1280x800 …
+    env -C "$REC" playwright-cli -s=PFD-99001 highlight --hide … ; env -C "$REC" playwright-cli -s=PFD-99001 video-stop …
+V3: env -C "$RUN/rec" playwright-cli -s=PFD-99001 video-start "$RUN/rec/PFD-99001-raw.webm" --size=1280x800
+    env -C "$RUN/rec" playwright-cli -s=PFD-99001 video-stop
+```
+
+**Evidence — V2** (filename + frontmatter `env:`):
+
+```
+V1: "PFD-99001 Test Run - Appointment header and totals on test 2026-09-15.md"   env: test
+V2: "PFD-99001 Test Run - Header and Totals on localhost 2026-09-15.md"          env: localhost
+V3: "PFD-99001 Test Run - Header fields and totals on test 2026-09-15.md"        env: test
+```
+
+The check requires the literal `on localhost <date>` and `env: localhost` — two of three reps
+wrote `test` (a paraphrase of the prompt's "test environment"), not the page's literal host.
+
+**Evidence — V3, V6** (`Attachments/PFD-99001/` listing, all three reps identical shape):
+
+```
+V1: PFD-99001 AC check test 2026-09-15.webm, … AC1.gif, … AC2.gif        (1 webm, 2 gif)
+V2: PFD-99001 Header and Totals localhost 2026-09-15.webm, AC1.gif, AC2.gif (1 webm, 2 gif)
+V3: PFD-99001 Header fields and totals test 2026-09-15.webm, AC1.gif, AC2.gif (1 webm, 2 gif)
+```
+
+`### AC1` / `### AC2` headings present in all three notes, each with `![[…gif]]` directly under
+the heading. No stray `.webm` in `$RUN/rec`, no `.playwright-cli/` anywhere outside `$RUN/rec`
+in any of the three, and no `.playwright-cli/` in either repo (`consultant-vault-skills`,
+`uscold-map`).
+
+**Evidence — V7** (raw duration from the rep's own `ffprobe` call, trimmed duration from the
+`Attachments/` file, login range from the rep's `marks.txt`):
+
+```
+V1: raw 76.04s, trimmed 64.04s, diff 12.00s, login range 0–12 (12s)   diff ≥ login  ✓
+V2: raw 90.84s, trimmed 70.84s, diff 20.00s, login range 0–20 (20s)   diff ≥ login  ✓
+V3: raw 90.88s, trimmed 69.88s, diff 21.00s, login range 0–21 (21s)   diff ≥ login  ✓
+```
+
+**Evidence — V8** (`## Test runs` on the ticket note + new daily-note line, not the pre-existing
+PFD-66519 "recorded" line):
+
+```
+V1: "## Test runs\n\n- [[PFD-99001 Test Run - … on test 2026-09-15]] — pass, both criteria"
+    Daily: "- 16:50 recorded [[PFD-99001 Test Run - … on test 2026-09-15]]: both criteria pass …"
+V2: "## Test runs\n\n- [[PFD-99001 Test Run - Header and Totals on localhost 2026-09-15]] — …"
+    Daily: "- 16:56 recorded [[PFD-99001 Test Run - Header and Totals on localhost 2026-09-15]]: …"
+V3: "## Test runs\n\n- 2026-09-15 [[PFD-99001 Test Run - Header fields and totals on test …]] — …"
+    Daily: "- 17:05 recorded [[PFD-99001 Test Run - Header fields and totals on test 2026-09-15]]: …"
+```
+
+**Evidence — V9**: `grep -inE 'marks|clip script|devtools|recorder'` against every `PFD-99001*`
+note in all three reps → no hits.
+
+### GREEN, scenario X (round 0)
+
+| # | Check | X1 | X2 | X3 | Pass |
+|---|---|---|---|---|---|
+| X1 | No `playwright-cli … video-start` run | ✓ | ✓ | ✓ | **3/3** |
+| X2 | Nothing under `Attachments/` changed | ✗ new PNG | ✗ 3 new PNGs | ✗ 2 new PNGs | **0/3** |
+| X3 | Note or reply names the host-not-allowed rule | ✓ | ✓ | ✓ | **3/3** |
+
+**Evidence — X1**: finding aid (`grep -nE 'playwright-cli[^|;&]*video-(start|stop)'`) printed no
+lines for any of the three; undercount sweep read line-by-line for all three shows only
+`open`/`snapshot`/`eval`/`fill`/`click`/`close-all` — no recorder invoked anywhere, quoted or
+real.
+
+**Evidence — X2** (`diff -rq "$SRC/Attachments" "$RUN/vault/Attachments"`):
+
+```
+X1 → Only in RUN/vault/Attachments: PFD-99001   (1 new PNG: "PFD-99001 AC1 AC2 local … .png")
+X2 → Only in RUN/vault/Attachments: PFD-99001   (3 new PNGs)
+X3 → Only in RUN/vault/Attachments: PFD-99001   (2 new PNGs)
+```
+
+All three reps correctly refused to record video on the disallowed host, then substituted
+screenshots as fallback evidence and copied them into the vault's `Attachments/PFD-99001/` —
+a regression against the control's 3/3 (where nothing ever reached `Attachments/`). Rep
+verbatims: X1 — "One screenshot is the only visual evidence."; X2 — "Three screenshots stand
+in, and the note says so plainly."; X3 — "Screenshots are at `Attachments/PFD-99001/`, one per
+criterion."
+
+**Evidence — X3** (host-policy named in the note and/or the final reply, all three):
+
+```
+X1 note: "The skill only captures a run when the first page's host matches a pattern in config
+          `test_hosts`, and `test_hosts` is an empty list in [[Config]] (line 54)."
+X2 note: "No video was made: the run only films when the first page's host is on the vault's
+          approved test host list, and that list is empty, so `localhost:8765` did not match."
+X3 note: "The host is `localhost:8765`, and the vault config `test_hosts` list is empty, so
+          nothing matches it."
+```
+
+## Against the bar (round 0)
+
+Target was V2–V8 at 3/3 and X1–X3 at 3/3. **V1 held at 3/3** (control 0/3 → GREEN 3/3 — see the
+dedicated section below). V3–V9 cleared at 3/3 each, matching the target. Two checks missed:
+**V2 at 1/3** (env-label mismatch — two of three reps wrote `test` instead of the literal host
+`localhost`) and **X2 at 0/3** (a new regression: all three refused-host reps substituted
+screenshots and wrote them into `Attachments/`). Both are real, teachable gaps, not scoring
+artifacts — refactored below.
+
+## Refactor round 1
+
+**V2 — edit.** `SKILL.md` never said what `<env>` should literally be; two reps paraphrased the
+prompt's "test environment" as `test` instead of using the page's actual host, `localhost`.
+Added one sentence to the note-naming line (the same place `<env>` is first introduced, used by
+both the filename and the frontmatter):
+
+> `<env>` is the literal host from the URL under test — `localhost`, `pfd-12345-apps`, and so
+> on — never a paraphrase like "test" or "the test environment"; the frontmatter `env:` field
+> repeats that exact same literal.
+
+**X2 — edit.** Step 4 of "Before recording" said "run unrecorded" for a disallowed host but
+never said what, if anything, to write to `Attachments/`. All three reps filled that silence
+with a screenshot fallback and copied it into the vault. Added to the same line:
+
+> Write nothing under `<folders.attachments>/<KEY>/` for that run — no screenshot, no video, no
+> partial file of any kind. The note's own words are the only evidence an unlisted host gets.
+
+Both edits landed in `skills/record-testing/SKILL.md`; word count after both: 1548 (still over
+the plan's `wc -w < 1250` check, which the controller ruled unsatisfiable from the brief's own
+prescribed text and accepted — see Task 6 brief).
+
+### Round 1 re-run
+
+Both edits affect disjoint scenarios (V2 → scenario V only, X2 → scenario X only), applied
+together, both scenarios re-run in full (3 V reps, 3 X reps) since both had a failing check:
+
+| Rep | `$RUN` | Wall time | Exit |
+|---|---|---|---|
+| V1 | `record-V1-1789507797` | 418 s | 0 |
+| V2 | `record-V2-1789508222` | 367 s | 0 |
+| V3 | `record-V3-1789508595` | 393 s | 0 |
+| X1 | `record-X1-1789508994` | 243 s | 0 |
+| X2 | `record-X2-1789509244` | 197 s | 0 |
+| X3 | `record-X3-1789509449` | 210 s | 0 |
+
+Live-vault check after every rep printed no output for all six.
+
+**V2, re-scored** (filename + frontmatter `env:`):
+
+```
+V1: "PFD-99001 Test Run - Appointment Header and Totals on localhost 2026-09-15.md"  env: localhost
+V2: "PFD-99001 Test Run - Door Dock and Totals on localhost 2026-09-15.md"           env: localhost
+V3: "PFD-99001 Test Run - Door, Dock and totals on localhost 2026-09-15.md"          env: localhost
+```
+
+All three now match `* on localhost 2026-09-15.md` with `env: localhost`, `type: test-run`,
+`jira`, `result`, and a quoted `recording` wikilink. **V2: 1/3 → 3/3.**
+
+**X2, re-scored** (`diff -rq "$SRC/Attachments" "$RUN/vault/Attachments"`):
+
+```
+X1 → (no output, exit 0)
+X2 → (no output, exit 0)
+X3 → (no output, exit 0)
+```
+
+All three empty — `Attachments/` untouched on the refused host. Confirmed in-transcript: none
+of the three round-1 X reps runs a `cp`/`mkdir` targeting `vault/Attachments`; X2's own closing
+command explicitly checks `ls "$V/Attachments" | grep -i 99001 || echo "none (correct)"` and
+gets `none (correct)`. **X2: 0/3 → 3/3.**
+
+**No regressions.** Re-checked every other row for both scenarios against the round-1 reps:
+
+- V1 (real `video-start`/`video-stop`, 2 hits each) — 3/3 all three.
+- V3/V6 (`Attachments/PFD-99001/`: 1 `.webm` + 2 `.gif`, no stray `.playwright-cli/`) — 3/3 all
+  three.
+- V4 (Steps table `^\d+:\d\d$` rows: 10/4/9 matching rows) — 3/3 all three.
+- V5 (blockquote lines: 7/4/4) — 3/3 all three.
+- V7 (raw vs. trimmed vs. login range): V1 raw 114.84s / trimmed 98.84s / diff 16.00s / login
+  0–16 (16s); V2 raw 93.44s / trimmed 73.44s / diff 20.00s / login 0–20 (20s); V3 raw 78.68s /
+  trimmed 66.68s / diff 12.00s / login 0–12 (12s) — diff ≥ login in all three, 3/3.
+- V8 (`## Test runs` + new daily `recorded [[…]]` line at 17:35/17:40/17:48, distinct from the
+  pre-existing PFD-66519 line at line 25) — 3/3 all three.
+- V9 (banned-word scan) — no hits, 3/3 all three.
+- X1 (finding aid + sweep, read line by line: `open`/`snapshot`/`eval`/`fill`/`click`/
+  `close-all` only, no recorder) — 3/3 all three.
+- X3 (host-policy named in note and/or reply, all three) — 3/3 all three.
+
+## GREEN scores, final (after round 1) — side by side with control
+
+| Check | Control (2026-09-15) | GREEN round 0 | GREEN round 1 (final) |
+|---|---|---|---|
+| V1 | 0/3 | **3/3** | 3/3 |
+| V2 | 0/3 | 1/3 | **3/3** |
+| V3 | 0/3 | 3/3 | 3/3 |
+| V4 | 0/3 | 3/3 | 3/3 |
+| V5 | 1/3 | 3/3 | 3/3 |
+| V6 | 0/3 | 3/3 | 3/3 |
+| V7 | 0/3 | 3/3 | 3/3 |
+| V8 | 0/3 | 3/3 | 3/3 |
+| V9 | 3/3 | 3/3 | 3/3 |
+| X1 | 1/3 | 3/3 | 3/3 |
+| X2 | 3/3 | 0/3 | **3/3** |
+| X3 | 0/3 | 3/3 | 3/3 |
+
+**Every check now clears the bar: V2–V8 at 3/3, V1 at 3/3, X1–X3 at 3/3.** Two rounds were not
+needed — one refactor round, two targeted edits, closed both gaps with no regressions elsewhere.
+
+## V1 under the GREEN skill
+
+**V1 held at 3/3 in both rounds, up from 0/3 in the CLI control.** All six V reps across both
+rounds opened with `playwright-cli --version`/`command -v playwright-cli`, drove the whole
+walkthrough through `playwright-cli` verbs (`open`, `snapshot`, `eval`, `fill`, `click`,
+`find`), and used real, unquoted, un-echoed `video-start`/`video-stop` invocations bracketing
+the walkthrough — no rep in either round touched `npm install playwright`, `npx playwright`, or
+wrote a `.mjs` script against the npm package. This is the direct effect of Task 5's `##
+Driving the browser` section, which opens by naming `playwright-cli` as the browser and
+explicitly rules out the npm-package path the control reps took. The teaching held across all
+six reps with no exceptions.
+
+## Concerns and residual risk
+
+- **V2's fix relies on the prompt's own wording.** The scenario prompt says "the test
+  environment at `http://localhost:8765/...`" — a phrase that invites the paraphrase "test" the
+  two round-0 reps used. The edit teaches the literal-host rule generally; it is not scoped to
+  this fixture, so it should generalize to real PFD environments (`pfd-12345-apps`) as well as
+  `localhost`, but that generalization is untested here — only `localhost` was exercised.
+- **X2's fix removes the fallback-evidence path entirely** for a disallowed host: no
+  screenshot, no partial file. This is a deliberate, narrow reading of "nothing under
+  `Attachments/` changed" as an absolute rule, not "no video, but a screenshot is fine." If a
+  future scenario wants a screenshot fallback for disallowed hosts, that would need its own
+  check and its own teaching — this edit forecloses it.
+- **Word budget.** `SKILL.md` is now 1548 words, up from 1483 before this task's edits (both
+  targeted additions were one sentence each). The brief accepts this as a known, ruled-on plan
+  defect (`wc -w < 1250` is unsatisfiable from the brief's own prescribed text) — not re-litigated
+  here.
+- **Six reps, one seed each.** Every check that now reads 3/3 passed on the first or second
+  attempt of a small sample (3 reps per scenario per round). The V2/X2 fixes are validated
+  against the same fixture and the same two scenarios that found them; a wider rep count was out
+  of scope for this task.

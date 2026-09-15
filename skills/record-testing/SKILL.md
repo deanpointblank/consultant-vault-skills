@@ -5,14 +5,14 @@ description: Record a Playwright walkthrough that verifies a ticket's acceptance
 
 # Record testing
 
-Follow the obsidian-vault skill's conventions. One test-run note per recording, `KEY Test Run - <what> on <env> YYYY-MM-DD.md` in `folders.tickets` (key missing: `Tickets`). Files in `<folders.attachments>/<KEY>/` (key missing: `Attachments`; tell the user to add it). Template: vault templates folder first, else this skill's `templates/Test Run.md`. Jira is read-only: the note holds the draft comment; the user posts it and attaches the files.
+Follow the obsidian-vault skill's conventions. One test-run note per recording, `KEY Test Run - <what> on <env> YYYY-MM-DD.md` in `folders.tickets` (key missing: `Tickets`). `<env>` is the literal host from the URL under test — `localhost`, `pfd-12345-apps`, and so on — never a paraphrase like "test" or "the test environment"; the frontmatter `env:` field repeats that exact same literal. Files in `<folders.attachments>/<KEY>/` (key missing: `Attachments`; tell the user to add it). Template: vault templates folder first, else this skill's `templates/Test Run.md`. Jira is read-only: the note holds the draft comment; the user posts it and attaches the files.
 
 ## Before recording
 
 1. `command -v playwright-cli` must succeed, at 0.1.20 (`playwright-cli --version`). There is no `playwright` on PATH; do not check for one. Missing: say the recording needs `@playwright/cli`, print `npm install -g @playwright/cli@0.1.20`, and run the walkthrough unrecorded.
 2. Driving the browser is one bash call per action — about 20 for a two-criterion walkthrough — so without an allowlist entry the user confirms every one. Say so once, before starting: add `"Bash(env -C * playwright-cli *)"` to `permissions.allow` in the project's `.claude/settings.local.json`. Run each call as `env -C <recording dir> playwright-cli …` so it is a single command and the entry matches.
 3. ffmpeg must be installed (`command -v ffmpeg`). Missing: ask, then `brew install ffmpeg` on yes. On no: record anyway, keep the raw video in the scratch folder, write the note without clips, and say what to install.
-4. The first page's host must match a pattern in config `test_hosts`. No match: run unrecorded; the note names the host and says why.
+4. The first page's host must match a pattern in config `test_hosts`. No match: run unrecorded; the note names the host and says why. Write nothing under `<folders.attachments>/<KEY>/` for that run — no screenshot, no video, no partial file of any kind. The note's own words are the only evidence an unlisted host gets.
 5. Exploring is never recorded. Recording is for verifying acceptance criteria or a parity check for a ticket, or when the user asks.
 
 ## Driving the browser
