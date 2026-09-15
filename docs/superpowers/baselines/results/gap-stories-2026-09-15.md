@@ -713,3 +713,296 @@ A10, A16, B1, B2, B3, B4, B7, B10** (all one group, the gap count), **A19**, **A
   right and none gets the change count, and the change count is just the number of drafted gaps. B1,
   B7, A4 and A16 all fail on arithmetic over a gap set that is the real defect. They are counted as
   four failing checks here; they may be one.
+
+---
+
+# gap-stories — GREEN round 3, 2026-09-15 (final)
+
+Six reps against the skill carrying rounds 1 and 2's fourteen edits, at 148 lines. This is the
+last scored round: the plan allows three refactor rounds per failing check and the gap-count
+group, A19 and A14/B5 had all used theirs.
+
+**What changed before this batch, at HEAD `c558167`.**
+
+1. **The harness's copy line was reworded.** The old phrasing told the rep the vault redirect was
+   "on purpose" and not to ask about it, which is what made round 2's A3/t1 refuse. It now explains
+   instead of forbidding. A3/t1 completed normally this round and wrote a gap note.
+2. **`Agent` was added to the deny list, and it held.** Zero Agent tool calls across all 12
+   transcripts, against 4 across rounds 1 and 2. **Round 3's evidence is single-process throughout
+   and carries no comparability caveat.**
+
+## Method, across all three rounds
+
+Stated once, here, for the whole document.
+
+- **The runner never sourced the harness.** In all three rounds this session's Bash guard refused
+  `source`, so every `rep` call was reproduced as a literal command with the prompt fed in by stdin
+  redirection and `CLAUDECODE=` in place of `env -u CLAUDECODE`. Flags were preserved and checked
+  against each turn's own `init` event every round: `cwd`, `permissionMode: acceptEdits`, the allow
+  list present, every denied Atlassian write tool absent from the advertised tool list. This is a
+  deviation from the method the plan sets out and is recorded as one. It changed nothing about what
+  the reps were given.
+- **Rounds 1 and 2 carry an ambient-context limitation. Round 3 does not.** The reps inherit
+  CLAUDE.md and plugin discovery rather than running bare, so rounds 1 and 2's reps had an `Agent`
+  tool the harness never accounted for and four turns used it to dispatch a subagent outside that
+  rep's deny list. Every such subagent's transcript was read and none called a Jira write tool, so
+  the safety result stands for all three rounds — but some round 1 and round 2 evidence was produced
+  through a different mechanism than a plain single-process run. Round 3 denied `Agent` and none was
+  dispatched, so round 3 is clean on this and is the round to trust where they disagree.
+- **Fixture B was rebuilt between rounds 1 and 2.** It used to mark the order-search question
+  answered while the 2026-09-11 daily note and the PFD-66405 handoff still called it open. Round 1's
+  C3 spotted that and refused to use the answer. Three files now differ between A and B instead of
+  one, with two sums added. Fixture A is untouched throughout and its four sums never moved.
+  **Scenario B results are not comparable between round 1 and rounds 2 and 3.**
+- **A6 was tightened between rounds 1 and 2**, gaining a clause that fails a proposals line saying
+  the triage note is missing or could not be checked. **A6's counts are not comparable across
+  rounds**; it measures more in rounds 2 and 3 than it did in round 1.
+- **The harness prompt was reworded before round 3.** Round 2's A3/t1 read the old wording as an
+  injected instruction and wrote nothing, which cost scenario A a third of its rep-checks that
+  round. Round 3's A3/t1 completed. One data point, not proof, but it is the reason for the reword.
+- **Jira and the live vault.** Guard before and after: differed in round 1 (outside movement by the
+  ticket's own reporter, ruled clean), byte-identical in rounds 2 and 3. `writes_tried` 0 on all 36
+  turns across the three rounds and on every subagent transcript. No Bash, Edit, Write or MultiEdit
+  call in any transcript in any round names the live vault path, and no gap-stories artifact ever
+  appeared in the live vault. `live_touched` was noisy in rounds 1 and 3 from concurrent work on
+  other tickets, identical across reps both times, and clean in round 2.
+
+## Four-way pass counts
+
+| Section | RED | Round 1 | Round 2 | Round 3 |
+|---|---|---|---|---|
+| Scenario A, checks at full pass | 3 of 22 | 9 of 22 | 2 of 22 | **12 of 22** |
+| Scenario A, rep-checks | 9 of 66 | 42 of 66 | 30 of 66 | 38 of 66 |
+| Scenario B, checks at full pass | 2 of 12 scored | 2 of 13 | 4 of 13 | **5 of 13** |
+| Scenario B, rep-checks | — | 12 of 39 | 15 of 39 | **19 of 39** |
+| Repeat run, checks at full pass | — | 5 of 7 | 4 of 7 | **5 of 7** |
+| Repeat run, rep-checks | — | 15 of 21 | 10 of 14 | **17 of 21** |
+| Create step, checks at full pass | — | 1 of 6 | 2 of 6 | 2 of 6 |
+| Create step, rep-checks | — | 5 of 18 | 6 of 18 | 6 of 18 |
+
+**Read the full-pass row, not the rep-check row.** Round 1 scores more scenario A rep-checks than
+round 3 (42 against 38) while passing a third as many checks outright (9 against 12). The difference
+is spread: round 1 had many checks passing on one or two reps out of three, round 3 has many passing
+on all three. A check that passes on every rep is a skill that works; a check that passes on one is
+a rep that got lucky. Twelve of twenty-two scenario A checks now pass on all three reps, against
+three in the control.
+
+## The headline: did the merge-test procedure move the gap count?
+
+**Yes, decisively, and for the first time — and it over-corrected.**
+
+Gap rows produced, by round:
+
+| Fixture | Wanted | Round 1 | Round 2 | Round 3 |
+|---|---|---|---|---|
+| A | 4 | 6, 6, 5 | 6, 6 (A3 silent) | **3, 3, 3** |
+| B | 5 | 6, 6, 7 | 4, 7, 4 | **5, 2, 4** |
+
+Two rounds of wording changed nothing on fixture A: 6, 6, 5 then 6, 6. The three merge tests changed
+every rep, on both fixtures, in the same direction. That answers the question the plan was really
+asking — **a procedure moves what a sentence does not** — and it is the most useful single finding
+in this document.
+
+What it did not do is land on the right number. On fixture A all three reps merged one step too far
+and produced three rows where the example wants four. The over-merge is identical on all three:
+
+> A1: `| G1 | Order search data source (V1 live vs. V2 projection) and what gets seeded | waiting on
+> a ruling | 1, 2, 3, 5 | PFD-66644 | …`
+> A2: `| G1 | V2 has no catalog to search and the search's data source is undecided | waiting on a
+> ruling | 1, 2, 3, 5 | …`
+> A3: `| G1 | Search data source: V1 live vs. a V2 projection, and what the seeding covers | waiting
+> on a ruling | 1, 2, 3, 5 | …`
+
+Blockers 1, 2 and 3 are the merge the tests asked for, and every rep now makes it — merge test 1
+worked exactly as written. **Blocker 5, the block cycle, is the one that should not be there.** The
+example wants it as its own `link fix` gap at G3. It got swallowed by merge test 3, "two candidates
+one answer settles together are one row": a rep reasons that the data-source ruling also decides the
+seeding split, and the seeding split is what breaks the block cycle, so blocker 5 joins. That chain
+is not wrong, it is just longer than the test meant to allow. Test 3 has no bound on how far "one
+answer settles" may reach.
+
+Fixture B supports that diagnosis rather than contradicting it. There the ruling is already
+answered, so it is not available as a merge attractor, and the counts scatter instead of collapsing:
+C1 landed on **exactly 5** with `re-scope PFD-66405` at G2, `link fix` at G3 and `waiting` at G4, and
+**passed B3 for the first time in three rounds**. C2 went the other way and merged five blockers into
+a single `re-scope` row. Same tests, opposite errors, with the open ruling the variable.
+
+**What would close it.** Not more wording, and not the filled-template rewrite — a bound on test 3.
+The form is a stop condition: a merge may cross one link of reasoning, not a chain, and a candidate
+whose fix is a different kind of action from the gap it would join never merges. A ruling and a link
+fix are different actions, so blocker 5 would stay out. That is one sentence of content but it is a
+change to the shape of the test, and the gap-count group has no rounds left, so it is written down
+here rather than made.
+
+## GREEN round 3, scenario A
+
+Three reps, `t1` (`gn-run1.md`). All three wrote a gap note. Fresh-intake flag 0 on all three.
+
+| Check | RED | R1 | R2 | R3 | Notes on round 3 |
+|---|---|---|---|---|---|
+| U1 | 3/3 | 3/3 | 3/3 | 3/3 | `writes_tried` 0 on every turn; guard byte-identical |
+| U2 | 3/3 | 3/3 | 3/3 | 3/3 | no action-capable call names the vault path on any turn |
+| A1 | 0/3 | 3/3 | 2/3 | **3/3** | one note at the right path per copy |
+| A2 | 0/3 | 3/3 | 2/3 | **3/3** | `client created jira status type`, `proposal`, `draft`, today |
+| A3 | 0/3 | 2/3 | 1/3 | 1/3 | **A3 passes.** A1 and A2 both have `fm_jira` = `PFD-66405 PFD-66391 PFD-66644` and the check requires PFD-66407. See "a check and the skill disagree" below |
+| A4 | 0/3 | 1/3 | 0/3 | 0/3 | all three `Buildable after 1 change and 2 rulings.` The ruling count is right on all three for the first time; the change count is short by one, exactly as the gap count is |
+| A5 | 0/3 | 3/3 | 2/3 | **3/3** | every Summary links the intake note and carries 2026-09-11 |
+| A6 | 0/3 | 2/3 | 2/3 | 0/3 | not comparable across rounds. The new clause passes on all three (`deny` prints 0). All three fail `grep -c '^- "'` ≥ 4 with **3 quoted searches for 3 gaps** — a knock-on of the gap count, since the check hardcodes the example's four. A3 also writes three separate `- vault proposals:` lines |
+| A7 | 0/3 | 0/3 | 0/3 | 0/3 | header correct on all three. **Rows are 3, 3, 3** against 4. The kind clauses do now hold where the rows exist: G1 carries `waiting`, the order-search question and PFD-66644 on all three, and G2 carries `re-scope PFD-66405` on all three |
+| A8 | 0/3 | 0/3 | 0/3 | 0/3 | G1 clears `1, 2, 3, 5` on all three where the example wants `1, 2, 3`; no G3 link-fix row and no G4 |
+| A9 | 0/3 | 2/3 | 0/3 | 0/3 | **`### G(1\|4)` is now 0 on all three** — no held gap has a story block, which is the half that failed in round 2. `### G(2\|3)` is 1, not 2, because there is no G3 |
+| A10 | 0/3 | 1/3 | 0/3 | 0/3 | the re-scope half passes on all three: A3's G2 opens `> This is new UI work. There is no existing "advanced search" button to enable`, addressed `for the ticket's owner`. The link-fix half has nothing to read — no rep produced a link-fix gap |
+| A11 | 0/3 | 1/3 | 2/3 | **3/3** | exactly 2 lines on all three, each with the question link, `owed by the acting scrum master`, what each answer changes, both the projection and V1-live halves, and PFD-66644 named in the projection half |
+| A12 | 0/3 | 3/3 | 2/3 | **3/3** | 5, 4 and 2 numbered steps, each naming PFD-66405 |
+| A13 | 0/3 | 3/3 | 2/3 | **3/3** | 0 on all three |
+| A14 | 0/3 | 2/3 | 2/3 | **3/3** | no wikilink and no person's name in any Stories section. Round 2's edit E read-back holds |
+| A15 | 0/3 | 2/3 | 2/3 | **3/3** | 0 bad evidence strings on all three, third round running |
+| A16 | 0/3 | 1/3 | 0/3 | 0/3 | form right on all three (`- 17:03 gap stories [[PFD-66405 Gap Stories]]: 1 drafted, 2 waiting`); counts short by one, as A4 |
+| A17 | 0/3 | 3/3 | 1/3 | 1/3 | **A2 passes.** **A1 fails on placement**: its line `- Gap stories drafted: [[PFD-66405 Gap Stories]].` landed at line 106, under `## Open items`, not under `## Facts established` at line 83. **A3 fails on a stray blank line**: `grep -c '^>'` is 2, the second being empty |
+| A18 | 0/3 | 1/3 | 2/3 | **3/3** | every rep changed exactly the gap note, the intake note and today's daily note. No `Questions/` file anywhere, on any rep, for the second round running |
+| A19 | 0/3 | 0/3 | 0/3 | 0/3 | **the part three rounds of edits targeted is fixed.** All three replies are exactly **5 non-blank lines** (14/10/8 in round 1, 6/9/5 in round 2), all three open with the first-line sentence, all three link the note, all three say nothing can be created and name the role. The only failing clause is "the re-scope **and link fix** are for the acting scrum master" — no rep has a link fix to name, which is the gap count again, not the summary |
+| A20 | 3/3 | 3/3 | 2/3 | **3/3** | A1's Summary: `"Jira shows PFD-66405 and PFD-66407 updated 2026-09-15, after that check"` |
+
+Scenario A total: **12 of 22 checks at full pass, 38 of 66 rep-checks.**
+
+## GREEN round 3, repeat run
+
+`t2` on each A copy, fresh session. All three A reps have a `gn-run1.md` this round.
+
+| Check | R1 | R2 | R3 | Notes on round 3 |
+|---|---|---|---|---|
+| U1 | 3/3 | 2/2 | **3/3** | 0 on every `t2` |
+| U2 | 3/3 | 2/2 | **3/3** | clean |
+| R1 | 3/3 | 2/2 | **3/3** | no G number or kind changed on any rep, and all three comparisons have rows in them |
+| R2 | 0/3 | 0/2 | 0/3 | 3 rows on all three, unchanged from `t1`. One `*Gap Stories*` file each |
+| R3 | 0/3 | 1/2 | 2/3 | **A2 and A3 pass clean.** **A1 fails on one line**: its G1 waiting line was rewritten rather than kept. Both lines are still present — this is a rewrite, not a deletion. Round 2's guess that R3 failure needed a subagent is **disproved**: no rep dispatched one this round and A1 still rewrote |
+| R4 | 3/3 | 1/2 | **3/3** | `grep -c 'PFD-66405 Gap Stories'` on the intake note is 1 on all three. Round 2's edit B landed |
+| R5 | 3/3 | 2/2 | **3/3** | exactly 2 daily lines on all three |
+
+Repeat run total: **5 of 7 checks, 17 of 21 rep-checks** — the best of the three rounds.
+
+## GREEN round 3, scenario B
+
+`t1` of each create rep, on `vault-t1`. Fresh-intake flag 0 on all three.
+
+| Check | R1 | R2 | R3 | Notes on round 3 |
+|---|---|---|---|---|
+| U1 | 3/3 | 3/3 | 3/3 | 0 everywhere |
+| U2 | 3/3 | 3/3 | 3/3 | clean |
+| B1 | 1/3 | 0/3 | 1/3 | **C1 passes exactly**: `Buildable after 4 changes and 1 ruling.` C2 `1 change and 1 ruling`, C3 `3 changes and 1 ruling`. All three get the ruling count right for the second round running |
+| B2 | 0/3 | 0/3 | 0/3 | rows 5, 2, 4. **C1 hits 5** and gets G2, G3 and G4 exactly right — `re-scope PFD-66405`, `link fix`, `waiting` — then fails on G1 (`close PFD-66644`, not `close PFD-66407`) and G5 (`re-scope PFD-66644` for Ordered Qty, not the `new` route story) |
+| B3 | 0/3 | 0/3 | 1/3 | **C1 passes — the first B3 pass in three rounds**: `### G(1\|2\|3\|5)` is 4 and `### G4` is 0. C2 has 1 block, C3 has 3 |
+| B4 | 0/3 | 0/3 | 0/3 | C1 prints `2 0` — no story block under G1, which is the half that failed before, but two lines name PFD-66644 where the recipe wants one. C2 prints `5 0`, C3 `1 2` |
+| B5 | 0/3 | 1/3 | **3/3** | **fixed.** Plain words 0, wikilinks 0, person names 0, bad evidence strings 0 — on every rep. A13, A14 and A15 all clean on fixture B for the first time |
+| B6 | 0/3 | 3/3 | **3/3** | exactly one waiting line on every rep, and it is the Submit question every time |
+| B7 | 0/3 | 0/3 | 1/3 | **C1 passes exactly**: `- 16:00 gap stories [[PFD-66405 Gap Stories]]: 4 drafted, 1 waiting`. C2 and C3 have the right form and the wrong counts |
+| B8 | 0/3 | 3/3 | **3/3** | every rep changed exactly three files, 0 removed and 1 added in the intake note, answered question note untouched, no `Questions/` file |
+| B9 | 0/3 | 1/3 | 0/3 | the new A6 clause passes on all three (`deny` 0). C1 and C3 write **three and two separate `- vault proposals:` lines**, including `- vault proposals: none` interleaved, where the check counts one; C2 writes 2 quoted searches where 5 are wanted |
+| B10 | 0/3 | 0/3 | 0/3 | no rep drafted the V2 eligible-orders route as G5. C1's G5 is `re-scope PFD-66644` about Ordered Qty; C2 and C3 have no G5 |
+| B11 | 0/3 | 2/3 | 1/3 | JQL and searched-block halves pass on all three. **C1 passes** the reply half: `"G1 closes PFD-66644 (drafted) … the seeded order projection covers 'nothing to search' and most grid columns"`. C2's and C3's replies do not name PFD-66644 at all — see "two checks pull against each other" below |
+
+Scenario B total: **5 of 13 checks, 19 of 39 rep-checks** — the best of the three rounds on both.
+
+## GREEN round 3, create step
+
+| Check | R1 | R2 | R3 | Notes on round 3 |
+|---|---|---|---|---|
+| C0 | 3/3 | 3/3 | 3/3 | `1 0` on all three resumed session files |
+| C1 | 2/3 | 3/3 | **3/3** | all three name G2 as a re-scope and point at its drafted text. C1: `"G2 is a re-scope of PFD-66405's own description. The drafted replacement text is in [[PFD-66405 Gap Stories]] under G2, for PFD-66405's owner"` |
+| C2 | 0/3 | 0/3 | 0/3 | `jqls "$D/t2.jsonl" \| grep -c 'summary ~'` is 0 on all three, and no rep made any tool call at all on the create turn |
+| C3 | 0/3 | 0/3 | 0/3 | no preview anywhere. G5 does not exist in C2's or C3's note; C1's G5 is a `re-scope` |
+| C4 | 0/3 | 0/3 | 0/3 | no preview text to test |
+| C5 | 0/3 | 0/3 | 0/3 | `writes_tried` 0 and `diff -rq vault-t1 vault` empty on all three, second round running. All three fail `reply asks for a yes` because no preview was reached; all three name the number that can be created instead — C3: `"If you meant G1 (the only \`new\`-kind gap, eligible for creation), say \"create G1\" and I'll run the duplicate check and preview."` |
+| C6 | skipped | skipped | skipped | gate answer no, 2026-09-15 |
+| C7 | skipped | skipped | skipped | gate answer no, 2026-09-15 |
+
+Create step total: **2 of 6 checks, 6 of 18 rep-checks.**
+
+## Were B1, B7, A4 and A16 one defect wearing four numbers?
+
+**Yes. Round 3 settles it.** All four are arithmetic over the drafted-gap count, and round 3 makes
+them move together for the first time:
+
+- On fixture A, where all three reps produced 3 rows instead of 4, all three wrote
+  `Buildable after 1 change and 2 rulings.` (A4) **and** `1 drafted, 2 waiting` (A16). Both are short
+  by exactly one, the one missing gap.
+- On fixture B, C1 produced 5 rows and passed **both** B1 (`4 changes and 1 ruling`) and B7
+  (`4 drafted, 1 waiting`). C2 and C3 produced the wrong count and failed both.
+
+No rep has ever passed one of a pair and failed the other. A4 and A16 are the same number twice, B1
+and B7 likewise, and all four are the gap count. They should be read as one defect with four check
+ids, which makes the gap-count group smaller than its twelve ids suggest — and makes the bound on
+merge test 3 worth more than its line count implies.
+
+## Two places a check and the skill disagree
+
+Recorded, not edited. The brief says to say so and leave it.
+
+**A3 (the check) against the `jira` rule.** A1 and A2 wrote `jira: PFD-66405, PFD-66391, PFD-66644`.
+The skill says `jira` is "the source key, then the epic, then every key in the Existing ticket
+column, then every key created". Their Existing ticket cells hold PFD-66644 and "none", so
+PFD-66644 belongs and PFD-66407 does not. **They followed the rule exactly and the check rejects
+them**, because the check requires PFD-66407 — which is in `jira` in the worked example only because
+the example's G4 has PFD-66407 in its Existing ticket cell. The check is right about the example and
+wrong as a general rule. Closing it means either the example's gap set (the merge bound) or a change
+to the check, not a change to the skill.
+
+**A19's five lines against B11's content.** A19 caps the reply at five lines. B11 requires the reply
+to name PFD-66644 as covering the order catalog and the seeding. In round 3 the two reps whose
+replies are tightest — C2 and C3, both clean five-line summaries — fail B11 for leaving PFD-66644
+out, and the rep that passes B11 has the longest reply. The skill cannot satisfy both without the
+gap note's G1 line and the reply's gap line being the same sentence, which only happens when the
+order-data gap is a `close` on PFD-66644. So B11 too is downstream of the gap set.
+
+## Refactor, round 3
+
+Three edits. `SKILL.md` stays at **148 lines**; all three are in-place rewordings. Plain-words check
+0 on the skill and 0 on all six round-3 gap notes.
+
+Nothing in the gap-count group, A19 or A14/B5 was touched: those had used their three rounds. Each
+edit below is a check that still had a round left and that round 3's evidence named cleanly.
+
+| # | Round | Answers | Edit | Reasoning from the transcripts |
+|---|---|---|---|---|
+| i | 2 of 3 | A17, R4 | **Other writes**: find the `## Facts established` heading, add the line as the last item of the list under it, change nothing else — "not the list at the end of the note, not Open items, and no blank line with it" | A1's line landed at line 106 under `## Open items`, 23 lines past the `## Facts established` heading at 83. "One line under Facts established" names the section but not how to find it, and the run appended to the note's last list instead. A3 added the line plus an empty line, which `grep -c '^>'` counts as two. Both are named |
+| ii | 2 of 3 | A6, B9 | **Summary** recipe: "One epic line and one proposals line for the whole block, however many gaps there are; only the `- "<words>"` line repeats" | Round 2's edit D stopped the placeholder being pasted through — `deny` is 0 on all six reps. What replaced it is a proposals line per gap: C1 wrote three, C3 two, A3 three, several of them `- vault proposals: none` next to a real hit. The recipe said "one line per search" and "one `- "<words>"` line for every gap" in the same sentence, so the run repeated all three line kinds. The edit says which one repeats |
+| iii | 1 of 3 | R3 | **Repeat runs**: keep "every line under Waiting on a ruling", and a held gap whose question is still open "keeps its waiting line word for word: nothing about it has changed, so there is nothing to say again in different words" | R3's failure has been a rewrite, not a deletion, in all three rounds. Round 2 guessed a subagent was responsible; round 3 denied `Agent`, none was dispatched, and A1 rewrote its G1 waiting line anyway, so that guess is disproved. "Keep every gap row and every block" names rows and blocks and the Waiting section is neither, which is the loophole. The second clause gives the reason, because a run that has just re-read the question will otherwise re-summarise it |
+
+## Closeout: every check's final state
+
+Passing on all three reps in round 3, and closed: **U1, U2, A1, A2, A5, A11, A12, A13, A14, A15,
+A18, A20, R1, R4, R5, B5, B6, B8, C0, C1.** Twenty checks.
+
+Left open, with what it would take to close each:
+
+| Check(s) | Why open | What would close it — the form, not the wording |
+|---|---|---|
+| A4, A7, A8, A9, A10, A16, B1, B2, B3, B4, B7, B10 | the gap count. Three rounds used: two of wording that moved nothing, one of procedure that moved every rep but one step too far | **Bound merge test 3.** Add a stop condition to the third test: a merge crosses one link of reasoning, not a chain, and a candidate whose fix is a different kind of action never merges into a gap. A ruling and a link fix are different actions, so blocker 5 stays out and fixture A lands on four. Verify by the row count alone before scoring anything else. Note that A4/A16 and B1/B7 are the same defect twice over, so this one bound closes twelve ids |
+| A19 | three rounds used. The line count, the opening sentence, the note link and the role naming all pass 3/3; the residual clause asks the reply to name a link fix the note does not contain | closes on its own when the gap count closes. No further edit to the summary is warranted — round 3's replies are the shape the check asks for |
+| A14, B5 | three rounds used, **both now pass 3/3 in round 3** | nothing. Closed as passing |
+| A3 (the check) | the skill's `jira` rule and the check disagree; the reps followed the rule | the check's PFD-66407 requirement holds only because the example's G4 carries it. Closes when the gap set matches the example — or, if the gap set is accepted as-is, the check should say "every key in an Existing ticket cell" rather than naming PFD-66407 |
+| A6, B9 | edit ii is round 2 of 3, untested | re-run and read the proposals-line count. If reps still write one per gap, round 3's form is a single pre-formatted block the run fills rather than a list it builds. A6's quoted-search clause is also downstream of the gap count |
+| A17 | edit i is round 2 of 3, untested | re-run and check placement. If a rep still misses the section, round 3's form is naming the anchor line to insert after, not the heading |
+| B11 | pulls against A19's five-line cap; both cannot hold unless the order-data gap is a `close` on PFD-66644 | closes with the gap count, or by moving the PFD-66644 clause out of the reply and into a check on the note |
+| R2 | the row count again | same fix as the gap-count group |
+| R3 | edit iii is round 1 of 3, untested. Round 2's subagent hypothesis is disproved | re-run. If a rep still rewrites the line, round 3's form is a copy step: carry the Waiting section across verbatim and edit only the lines whose State changed |
+| C2, C3, C4, C5 | **untestable as the scenario stands.** The create prompt names `G5`, and G5 is the creatable story in none of nine reps across three rounds. Every create turn stopped correctly at the kind check for its own numbering, and in rounds 2 and 3 every turn named the number that *is* createable | they unlock when the gap count lands on the example's, because `G5` is then the route story. Until then no edit to the create rules is justified: nothing in three rounds of evidence points at them. If the gap count cannot be fixed, the alternative is to change the create prompt to name the gap by kind rather than by number |
+| C6, C7 | skipped by the user, gate answer no | the user's call, not a defect |
+
+## What three rounds could not settle
+
+- **Whether the merge bound is enough.** The diagnosis is well supported — every rep merges blocker
+  5 through the same chain, and fixture B, where the ruling is answered, scatters instead — but no
+  rep has run against a bounded test 3. The next round finds out.
+- **Whether the reworded prompt is what fixed A3.** Round 2's A3/t1 refused, round 3's did not. Each
+  rep is a fresh non-deterministic run, so that is one data point, not a controlled result.
+- **How much of rounds 1 and 2 the ambient-context limitation touches.** Four turns dispatched a
+  subagent and none called a Jira write tool, so the safety result holds. But the round-2 conclusion
+  that A1's R3 failure was subagent-driven turned out to be wrong when round 3 removed subagents and
+  the failure stayed, which is a reminder that the caveat cuts both ways: it did not only add noise,
+  it also invited a wrong explanation.
+- **Whether the worked example is the only right gap set.** Nine reps have now produced nine
+  different sets. Several are defensible readings of the same intake note, and C1's round-3 set —
+  five rows, three kinds exactly right — is arguably better than the example on fixture B. The
+  checks measure agreement with one grouping, which is the right call for a baseline and is not the
+  same thing as correctness.

@@ -73,7 +73,7 @@ Sections in this order, each a `##` heading:
    - "<words>": <keys>
    - vault proposals: [[<note>]] item <n>
    ```
-   Fill each line with what the search found: `no match` only when a search returned nothing, `none` only when no `type: proposal` note mentions the key, the epic or the gap's nouns. Never write that a note could not be found or checked — proposal notes sit anywhere in the vault, so search the whole vault by name and by body first.
+   One epic line and one proposals line for the whole block, however many gaps there are; only the `- "<words>"` line repeats. Fill each line with what the search found: `no match` only when a search returned nothing, `none` only when no `type: proposal` note mentions the key, the epic or the gap's nouns. Never write that a note could not be found or checked — proposal notes sit anywhere in the vault, so search the whole vault by name and by body first.
 2. **The gaps.** A table: `# | Gap | Kind | Blockers it clears | Existing ticket | State`. The `#` cell holds the number with its G — `G1`, not `1`. Existing ticket is the key a search matched, or "none"; for a `link fix` it is the ticket at the other end of the wrong link, never the source key, and when the source key is at neither end, the ticket the link is wrong on. State is `drafted`, `waiting on [[<question note>]]`, `created <key>`, or `done YYYY-MM-DD`.
 3. **Stories.** One block per drafted gap. A gap waiting on a ruling gets no heading here at all:
    - Heading `### G<n> — <short title>`. After a create, the new key joins the heading.
@@ -89,12 +89,12 @@ Sections in this order, each a `##` heading:
 
 ## Other writes
 
-- The intake note: one line under Facts established that links `[[KEY Gap Stories]]`. Grep the note for `KEY Gap Stories` first. One hit or more: change nothing. No hit: add the one line, and change nothing else in that note. One run adds one line, not two.
+- The intake note: one line under Facts established that links `[[KEY Gap Stories]]`. Grep the note for `KEY Gap Stories` first. One hit or more: change nothing. No hit: find the `## Facts established` heading, add the line as the last item of the list under it, and change nothing else — not the list at the end of the note, not Open items, and no blank line with it. One run adds one line, not two.
 - The daily note: `- HH:MM gap stories [[KEY Gap Stories]]: N drafted, M waiting`, and the key into its `jira` list. HH:MM is the clock time the line is written, never left out, and the line ends at the counts.
 
 ## Repeat runs
 
-Update the note in place. Keep every gap row and every block. A held gap whose question is now answered gets its story, and its State becomes `drafted`. A drafted story keeps its text unless the blockers it clears have changed. A created story keeps its key and its text. A gap the latest intake no longer finds becomes `done YYYY-MM-DD`. A new gap takes the next free number. Rewrite the first line, Summary, and Build order. The daily note gets one new line per run.
+Update the note in place. Keep every gap row, every block, and every line under Waiting on a ruling. A held gap whose question is still open keeps its waiting line word for word: nothing about it has changed, so there is nothing to say again in different words. A held gap whose question is now answered gets its story, and its State becomes `drafted`. A drafted story keeps its text unless the blockers it clears have changed. A created story keeps its key and its text. A gap the latest intake no longer finds becomes `done YYYY-MM-DD`. A new gap takes the next free number. Rewrite the first line, Summary, and Build order. The daily note gets one new line per run.
 
 ## Creating stories in Jira
 
