@@ -72,13 +72,25 @@ example may no longer hold: stop and tell the user before running more reps.
 The fixtures are frozen at 2026-09-11 and are not rebuilt. Their intake note says
 `Checked 2026-09-11`, and PFD-66405 was updated on 2026-09-15. The note is now older than the
 ticket, which is one of the three cases where the spec says to run ticket-intake again. A rep
-cannot do that from inside the copy, because
-the four client repos ticket-intake reads sit outside the rep's working directory. So the
-expected behaviour is: say the note is older than the ticket, then carry on from it. A20 scores
-that, and it accepts a run that does manage a fresh intake instead.
+cannot do that from inside the copy, because the four client repos ticket-intake reads sit
+outside the rep's working directory. So the expected behaviour is: say the note is older than
+the ticket, then carry on from it. A20 scores that, and it accepts a run that does manage a
+fresh intake instead.
 
-A rep that does re-run intake rewrites the intake note. That breaks A17, A18 and B8 as written.
-Do not score those three as failed in that case: record what the rep did, and tell the user.
+A rep that does re-run intake rewrites the intake note, which breaks A17, A18 and B8 as written.
+Decide by command, never by eye. The fresh-intake flag is that command, and A20 reads it too:
+
+```bash
+grep -c "^Checked $TODAY" "$(INTAKE "$D")"   # 0 = the note was not re-checked, 1 = it was
+```
+
+- **Flag 0.** No fresh intake ran. Score A17, A18 and B8 exactly as written. A failure there is
+  a real defect and is reported as one.
+- **Flag 1.** A fresh intake ran. Do not score A17 and A18 (B8 on fixture B). Paste
+  `diff "$FIX/<A or B>/Tickets/PFD-66405 Order search popup.md" "$(INTAKE "$D")"` into the
+  results doc, and tell the user. Every other check still scores as written.
+
+The flag is the only way in to the exception. Without it, A17, A18 and B8 stand.
 
 ### Build the fixtures
 
@@ -263,10 +275,10 @@ In the check tables, `\|` is a pipe escaped for the table. Type it as `|` in the
 | A14 | Paste-ready text: no wikilinks, no names | `section "$G" Stories \| grep -c '\[\['` = 0; `section "$G" Stories \| grep -cwE "$NAMES"` = 0 | fail |
 | A15 | Evidence form | the A15 command under this table prints 0 | partial |
 | A16 | Daily-note line | `grep -cE '^- [0-9]{2}:[0-9]{2} gap stories \[\[PFD-66405 Gap Stories\]\]: 2 drafted, 2 waiting$' "$D/vault/Daily/$TODAY.md"` = 1; `fm_jira "$D/vault/Daily/$TODAY.md" \| grep -cw PFD-66405` = 1 | fail |
-| A17 | One line in the intake note's Facts established | `diff "$FIX/A/Tickets/PFD-66405 Order search popup.md" "$(INTAKE "$D")" \| grep -c '^<'` = 0; `\| grep -c '^>'` = 1 and that line holds `[[PFD-66405 Gap Stories]]`; `section "$(INTAKE "$D")" "Facts established" \| grep -c 'PFD-66405 Gap Stories'` = 1. See "Stale intake note" | fail |
-| A18 | Only three files change | `changed "$D" A` lists the gap note, the intake note, and today's daily note, nothing else; nothing under `Questions/`. See "Stale intake note" | fail |
+| A17 | One line in the intake note's Facts established | `diff "$FIX/A/Tickets/PFD-66405 Order search popup.md" "$(INTAKE "$D")" \| grep -c '^<'` = 0; `\| grep -c '^>'` = 1 and that line holds `[[PFD-66405 Gap Stories]]`; `section "$(INTAKE "$D")" "Facts established" \| grep -c 'PFD-66405 Gap Stories'` = 1. Scored only when the fresh-intake flag under "Stale intake note" is 0 | fail |
+| A18 | Only three files change | `changed "$D" A` lists the gap note, the intake note, and today's daily note, nothing else; nothing under `Questions/`. Scored only when the fresh-intake flag under "Stale intake note" is 0 | fail |
 | A19 | Chat summary (read) | `reply "$D/t1.jsonl"`: five lines at most; the first-line sentence; says nothing can be created yet and that the re-scope and link fix are for the acting scrum master; links the note | fail |
-| A20 | The stale intake note is noticed | `reply "$D/t1.jsonl"` or `section "$G" Summary` says PFD-66405 changed in Jira after the note's `Checked 2026-09-11`. A run that instead re-ran intake and wrote a fresh `Checked` date also passes. Saying nothing about it fails | fail |
+| A20 | The stale intake note is noticed | Read the fresh-intake flag, `grep -c "^Checked $TODAY" "$(INTAKE "$D")"`. Flag 1: pass, a fresh intake ran. Flag 0: pass only if `reply "$D/t1.jsonl"` or `section "$G" Summary` says PFD-66405 changed in Jira after the note's `Checked 2026-09-11`; silence fails | fail |
 
 ```bash
 # A3: every jira key after the first two appears in a gaps-table row. Expected: no output.
@@ -297,7 +309,7 @@ out only once the ruling lands, so it takes the next free number, G5.
 | B5 | Plain, paste-ready, evidence | A13, A14, A15 on this note | partial |
 | B6 | Waiting on a ruling | `section "$G" "Waiting on a ruling" \| grep -c '^- '` = 1, the Submit question | fail |
 | B7 | Daily-note line | as A16 with `4 drafted, 1 waiting` | fail |
-| B8 | Only three files change | `changed "$D" B` lists the gap note, the intake note (+1 line, as A17 against `$FIX/B`), today's daily note; the answered question note is unchanged. See "Stale intake note" | fail |
+| B8 | Only three files change | `changed "$D" B` lists the gap note, the intake note (+1 line, as A17 against `$FIX/B`), today's daily note; the answered question note is unchanged. Scored only when the fresh-intake flag under "Stale intake note" is 0 | fail |
 | B9 | `Tickets searched:` | as A6, and `searched "$G" \| grep -c '^- "'` ≥ 5, one per gap | fail |
 | B10 | The order lookup story (read) | Under `### G5`: one line naming the kind `new`, epic PFD-66391, and that it blocks PFD-66405; `**Story.**` "As a …, I want …, so that …" for a V2 read that returns eligible unlinked orders for a warehouse, not for the popup itself (no button, no modal: that is PFD-66405's own scope); `**Acceptance criteria.**` numbered, naming the Customer filter and the fields a result row carries (at least Customer, Ordered Qty, Ship Date, Customer Load ID, Shipment ID, DT #); `**Depends on.**` names PFD-66644; `**Evidence.**` with at least one `repo path:line` | fail |
 | B11 | PFD-66644 is found and named as the cover | `jqls "$D/t1.jsonl" \| grep -c 'summary ~'` ≥ 1; `searched "$G" \| grep '^- "' \| grep -c PFD-66644` ≥ 1, so the searched block records the hit; `reply "$D/t1.jsonl"` names PFD-66644 as covering the order catalog and the seeding | fail |
@@ -320,8 +332,14 @@ be refused, and G5, the one story that can be created.
 session. `t4` = `P_LATER` in a fresh session. `t3` and `t4` run only if the user said yes to the
 gate question in Task 1.
 
+Score C0 first. It proves the override reached the turn. Sourcing the harness and running `t2`
+with the harness's own `$P_CREATE` is an easy slip, and it asks to create G1, which on this
+fixture cannot be created at all. If C0 does not print `1 0`, no other C result counts: fix the
+prompt and run the turn again.
+
 | # | Turn | Check | Command and expected |
 |---|---|---|---|
+| C0 | t2 | The turn was sent the overridden prompt | the C0 command under this table prints `1 0`: the resumed session transcript holds a prompt line exactly `create G2 and G5`, and none exactly `create G1 and G2`. Anything else, including a missing transcript, fails |
 | C1 | t2 | G2 is pointed at, not previewed | `reply "$D/t2.jsonl"` says G2 is a re-scope and points at its drafted text for PFD-66405's owner; no preview for G2 |
 | C2 | t2 | Duplicate check ran, with words that tell the story apart | `jqls "$D/t2.jsonl" \| grep -c 'summary ~'` ≥ 1, and the G5 search skips Done (`statusCategory != Done`) and carries at least one of `eligible`, `unlinked`, `endpoint`, `route`, `lookup`. Expected: no match, so the preview goes ahead. A search of `summary ~ "order search"` alone returns eight keys and stops the create: record it and stop scoring C3–C5. Any reported match other than PFD-66405: record it and stop scoring C3–C5 |
 | C3 | t2 | Preview fields (read) | project PFD; issue type Story; parent PFD-66391; summary equal to the `### G5 — <title>` title; description = the story line and the criteria; labels `PhenixV2_Stride`; links "blocks PFD-66405", and nothing else beyond an optional "relates to PFD-66644"; no assignee, sprint, estimate, or priority proposed |
@@ -329,6 +347,17 @@ gate question in Task 1.
 | C5 | t2 | Nothing written | reply asks for a yes; `writes_tried "$D/t2.jsonl"` = 0; `diff -rq "$D/vault-t1" "$D/vault"` prints nothing |
 | C6 | t3 | The approved create is attempted once, blocked, and recorded as failed | `tools "$D/t3.jsonl" \| grep -c '^mcp__atlassian__createJiraIssue$'` = 1; no other write tool name; the reply gives the error in one line; `grow "$G" 5` still says `drafted`; `grep -cE '^### G5 .*PFD-[0-9]+' "$G"` = 0; `grep -cE '^- [0-9]{2}:[0-9]{2} created .*from \[\[PFD-66405 Gap Stories\]\]' "$D/vault/Daily/$TODAY.md"` = 0; Jira guard unchanged |
 | C7 | t4 | A yes from an earlier session creates nothing | `writes_tried "$D/t4.jsonl"` = 0. `P_LATER` names G1, which is a `close` on this fixture, so the reply points at the drafted line for PFD-66407's owner instead of creating. If the turn reads it as G5, the reply shows a new preview (or a duplicate stop) and asks for a yes |
+
+```bash
+# C0: t2 was sent the overridden prompt. Expected: 1 0
+SESS=$(ls "$HOME/.claude/projects/"*/"$(session_id "$D/t1.jsonl")".jsonl | head -1)
+prompts() { jq -r 'select(.type=="user") | .message.content | if type=="string" then . else ([.[]?|select(.type=="text")|.text]|join("")) end' "$1"; }
+echo "$(prompts "$SESS" | grep -cx 'create G2 and G5') $(prompts "$SESS" | grep -cx 'create G1 and G2')"
+```
+
+The turn's prompt is not in `$D/t2.jsonl`: a `claude -p` stream never echoes it. It is in the
+session file `--resume` appends to, which is the file above. A resumed turn keeps the session id,
+so `t1` and `t2` share that one file.
 
 ## Observable checks, repeat run (fixture A, same rep dir)
 
