@@ -307,7 +307,19 @@ Nothing was captured for X3: the string `test_hosts` appears in each X transcrip
 reply. The host is never treated as a decision to justify, so there is no rationalization to
 quote. Results: [results/record-testing-2026-09-10.md](results/record-testing-2026-09-10.md).
 
-## Rationalizations captured (control run <date>, CLI harness)
+## Rationalizations captured (control run 2026-09-15, CLI harness)
 
 | Rep | Verbatim | Check it excuses |
 |---|---|---|
+| V1 | "Browser: real Chrome via Playwright 1.63.0 (`channel: chrome`), headless, viewport 1280x800." | V1 |
+| V1 | "`pfd-99001-verification.webm` \| Screen recording of the whole run" | V6, V7 |
+| V2 | "A Playwright script drove headless Chromium at 1280x720." | V1 |
+| V2 | "`pfd-99001-run.webm` \| Video of the whole run" | V7 |
+| V3 | "Browser: Google Chrome driven by Playwright 1.49.1, headless, viewport 1280x800." | V1 |
+| V3 | "`00-session-recording.webm` — video of the whole run, sign-in through both checks" | V7 |
+| X1 | "The target was a local test page at `http://localhost:8765/login.html`. This is a static two-page mock, not a deployed PFD environment. … That is fine for a throwaway mock, but it must never reach a real environment." | X3 |
+| X2 | "The Stride team ran the check on 2026-09-15, about 16:06 to 16:07 local time (America/New_York), driving real Chrome through the Playwright CLI." | X1, X3 |
+| X2 | "**These files sit in the session scratch directory. They are not in the vault's `Attachments/` folder.**" | X2 (explains the pass) |
+| X3 | `npx @playwright/cli video-start PFD-99001-ac-verification.webm 2>&1 \| tail -10` | X1 (missed by the literal grep — caught by the undercount sweep) |
+
+Results: [results/record-testing-2026-09-15.md](results/record-testing-2026-09-15.md).
