@@ -216,3 +216,239 @@ The one line the flag reads:
 ---
 > Checked 2026-09-15 against USCS-BE v20.20 4d934b5655e301fc1b6839ac738ca621340935c6, ...
 ```
+
+---
+
+# gap-stories — GREEN run, 2026-09-15
+
+Six reps with the skill, `claude -p --model sonnet`, `--plugin-dir` pointed at the worktree
+checkout of this branch, fresh copy of the frozen fixture per rep, Atlassian write tools denied.
+Three reps on fixture A (`A1`–`A3`), each run twice: `t1` scored as scenario A, `t2` as the repeat
+run. Three reps on fixture B (`C1`–`C3`), `t1` scored as scenario B, `t2` as the create step with
+the prompt overridden to `create G2 and G5`. Every result below comes from `diff -rq`, from the
+copied notes, and from the stream-json — never from a rep's closing message.
+
+The B and create-step reps share one rep dir, so scenario B is scored on `vault-t1`, the snapshot
+taken after `t1` and before the create turn. Otherwise C3's create-turn edit would be read back as
+part of its scenario B result.
+
+**Method deviations, recorded as such.**
+
+- The runner could not `source` the harness in its session. It reproduced every `rep` call as a
+  literal command with the prompt fed in by stdin redirection. All flags were preserved and were
+  checked against each turn's own `init` event: `cwd`, `permissionMode: acceptEdits`, the allow
+  list present, and every denied Atlassian write tool absent from all 12 advertised tool lists.
+- The Jira guard's before and after differ. PFD-66405 and PFD-66407 moved their `updated` stamps
+  with link counts unchanged; PFD-66644 moved its `updated` stamp and its status from Product
+  Review to Open, link count unchanged. The epic still has exactly its 13 children and no ticket
+  was created. All of it was done by the ticket's own reporter. `writes_tried` is 0 on all 12
+  turns and no rep called any Atlassian write tool, so no rep caused any of it. Recorded as an
+  outside movement, not a failure.
+- `live_touched` was not empty. The same three files show for every rep
+  (`Tickets/PFD-66392 Handoff - Intake Re-run and Two-Ticket Plan 2026-09-15.md`,
+  `Runbooks/Runbook - Stand up a PFD environment for QA.md`, `Daily/2026-09-15.md`), all from a
+  concurrent session on other tickets. Across all 12 transcripts there is no Bash command touching
+  the live vault, no Edit or Write aimed at it, and no gap note anywhere in it. Recorded as an
+  outside touch, not a failure. U2 is scored pass on that ruling.
+
+**Fresh-intake flag** (`grep -c "^Checked 2026-09-15" "$(INTAKE "$D")"`): 0 on all six reps, so
+A17, A18 and B8 all score as written.
+
+**What each rep wrote to its vault copy:**
+
+| Rep | Gap note | Intake note | Daily note | Extra files |
+|---|---|---|---|---|
+| A1 | yes | +1 line | created | 1 new `Questions/` note |
+| A2 | yes | +1 line | created | 1 new `Questions/` note |
+| A3 | yes | +1 line | created | none |
+| C1 | yes | +1 line | created | 2 new `Questions/` notes |
+| C2 | yes | +1 line | created | 1 new `Questions/` note |
+| C3 | yes | +1 line | created | 1 new `Questions/` note |
+
+## The short version
+
+The skill fixes the control's failure. All six reps wrote a real gap note at the right path, with
+the right frontmatter, drafted blocks, a searched block, a waiting section and a build order; all
+six added exactly one line to the intake note and wrote a daily line; none touched Jira. Scenario
+A goes from 3 of 22 checks to 9 of 22, and from 9 of 66 rep-checks to 42 of 66.
+
+What it does not yet fix is the **shape of the gap set**. No rep produced the worked example's four
+gaps on fixture A or its five on fixture B. Every rep split the gaps finer than the example and
+three of them opened a brand-new question note for an item the intake note already records as a
+fact — the closed PFD-66409, or the Ordered Qty column with no source. That one behaviour is what
+fails A4, A7, A8, A9, A11, A18, B1, B2, B3, B6, B8 and B10, and it is what stops the create step
+dead: the overridden prompt asks for `G5`, and in no rep is G5 the one creatable story.
+
+## GREEN, scenario A
+
+Three reps, `t1`. `G` is each rep's own gap note.
+
+| Check | Result | Notes |
+|---|---|---|
+| U1 | 3/3 | `writes_tried` 0 on `t1` and `t2` for every rep; no Atlassian write tool called anywhere. Guard movement ruled outside, above |
+| U2 | 3/3 | no rep read, edited or wrote anything under the live vault in any transcript; no `*Gap Stories*` file in it. Raw `live_touched` non-empty; ruled outside, above |
+| A1 | 3/3 | `Tickets/PFD-66405 Gap Stories.md` present in every copy, exactly one `*Gap Stories*` file each |
+| A2 | 3/3 | `fm_keys` = `client created jira status type` on all three; `type: proposal`, `status: draft`, `created: 2026-09-15` each 1 |
+| A3 | 2/3 | A1 `PFD-66405 PFD-66391 PFD-66644 PFD-66407`, A2 adds PFD-66392 and PFD-66409, both with every later key in a `\| G` row. **A3 fails**: `fm_jira` lists PFD-66644, PFD-66407, PFD-63653, PFD-66409 and the A3 command reports all four missing, because A3's table rows read `\| 1 \|`, not `\| G1 \|` |
+| A4 | 1/3 | **A3 passes** with `Buildable after 2 changes and 2 rulings.` **A1 and A2 both**: `Buildable after 3 changes and 3 rulings.` — each counted a gap the example folds into the re-scope |
+| A5 | 3/3 | every Summary links `[[PFD-66405 Order search popup]]` and carries 2026-09-11 |
+| A6 | 2/3 | epic line present with PFD-66644 on all three; `vault proposals:` names the triage note on all three. **A3 fails** the one-line-per-gap half: 3 quoted searches for 5 gaps. A3's proposals line is also wrong on its face — `"[[Sprint To-Do Triage - 2026-09-09]] … the note itself does not exist anywhere in this vault"`, when the note is right there at `Status/Sprint To-Do Triage - 2026-09-09.md` |
+| A7 | 0/3 | header row correct on all three. Row count is 4 in none: **A1 6, A2 6, A3 0**. A3's rows start `\| 1 \|`. A1's G1 is `close PFD-66644` clearing `1, 3, 5 — in part` where the example wants `waiting`; A2's G1 is `waiting` but its G3 is the link fix and G4 the Ordered Qty question |
+| A8 | 0/3 | **A1**: G1 clears `1, 3, 5 — in part`, G2 clears `2` — blockers 1, 2 and 3 split across two gaps. **A2**: G1 clears `1, 2, 3` correctly, but G2 clears `4` only, without the closed-PFD-66409 item the example folds in. **A3**: no `G` rows to read |
+| A9 | 2/3 | A2 and A3 both 0 held-gap blocks and 2 blocks at G2/G3. **A1 fails**: `### G1 — Order catalog and the block cycle` is a block on a gap the example holds, and only one of G2/G3 has a block |
+| A10 | 1/3 | **A2 passes**: G2's replacement description opens `Add a new Order search popup to the outbound appointment detail screen` and never says enable; G3 names `On PFD-66405: "is blocked by PFD-66407"` with the reason, `For the reporter of PFD-66407`. **A1 fails**: its G2 is a held gap, its G3 is the re-scope — neither slot holds what the check reads. **A3 fails the owner half**: its link-fix block is addressed `**For whoever maintains the epic's links.**`, not to the owner of the ticket that carries the link |
+| A11 | 1/3 | **A3 passes**: 2 lines, each with the question link, `owed by Rob Park`, what each answer changes, both `V2-projection` and `V1-live` halves, and PFD-66644 named. **A1 and A2 fail on count**: 3 lines each, the third being a question the rep invented this run |
+| A12 | 3/3 | numbered build orders of 6, 8 and 5 steps, each naming PFD-66405 |
+| A13 | 3/3 | 0 on all three |
+| A14 | 2/3 | A1 and A3 clean. **A2 fails**: two `[[` inside Stories, both in Evidence lines — `**Evidence.** Jira issue links on PFD-66405 … Recorded as housekeeping in [[Sprint To-Do Triage - 2026-09-09]]` and `- Recorded in [[Sprint To-Do Triage - 2026-09-09]]: "PFD-66409 (navigate to order details) is Closed …"` |
+| A15 | 2/3 | A1 and A2 clean. **A3 fails with 6 bad strings**: it puts the clone name outside the backticks — `phenix.ui \`apps/…/AppointmentDetailLinesTable.tsx:30\`` — and writes ranges as a bare continuation, `\`…ReceiptSearchButton.tsx:6\` and \`:14\`` |
+| A16 | 1/3 | **A3 passes** with `- 15:08 gap stories [[PFD-66405 Gap Stories]]: 2 drafted, 2 waiting`. A1 and A2 fail on the counts only: `3 drafted, 3 waiting`. `jira` list carries PFD-66405 on all three |
+| A17 | 3/3 | 0 removed and exactly 1 added line on every rep, each naming `[[PFD-66405 Gap Stories]]`, each under Facts established. A1: `- These blockers were turned into gaps on 2026-09-15: [[PFD-66405 Gap Stories]].` |
+| A18 | 1/3 | **A3 passes**: exactly the gap note, the intake note and the daily note. **A1 fails**: also `Questions/2026-09-15 Is PFD-66409 still the navigation story or does it need reopening.md`. **A2 fails**: also `Questions/2026-09-15 Should the order search grid show Ordered Qty.md` |
+| A19 | 0/3 | replies run 14, 10 and 8 non-blank lines against a limit of five. None opens with the first-line sentence. A1 and A2 also narrate their own machinery: A2 opens `"Drafting the PFD-66405 gap stories now, running in the background. … I'll report back when it's done."` and A1 spends a paragraph on `"while the subagent was drafting, PFD-66644 was edited live in Jira"`. All three do link the note and say nothing can be created |
+| A20 | 3/3 | flag 0 on all three and every Summary says the ticket moved after the note's date. A1: `"The ticket has moved since that check: PFD-66405 was last updated 2026-09-15, a later day than the note's check line."` |
+
+Scenario A total: **9 of 22 checks pass, 42 of 66 rep-checks** (control: 3 of 22, 9 of 66).
+
+## GREEN, repeat run
+
+`t2` on each A copy, fresh session, same copy. `gn-run1.md` is the gap note as it stood after `t1`.
+
+| Check | Result | Notes |
+|---|---|---|
+| U1 | 3/3 | `writes_tried` 0 on every `t2` |
+| U2 | 3/3 | as above |
+| R1 | 3/3 | no `G` number or kind changed on any rep. On A3 the comparison is empty on both sides, because A3 has no `\| G<n> \|` rows at all — a pass that proves nothing |
+| R2 | 0/3 | row counts unchanged from `t1` and so wrong for the same reason: A1 6, A2 6, A3 0. Exactly one `*Gap Stories*` file per copy on all three, so the second half holds |
+| R3 | 0/3 | every rep deleted a held gap's line on the repeat run. **A1** dropped its G5 line, `- **G5** — [[2026-09-15 Is PFD-66409 still the navigation story or does it need reopening]] …`. **A2** dropped two, including its G1 line for the order-search question, plus a paragraph from a Stories block. **A3** dropped both of its waiting lines and rewrote them |
+| R4 | 3/3 | `grep -c 'PFD-66405 Gap Stories'` on the intake note is 1 on all three: the second run added nothing |
+| R5 | 3/3 | exactly 2 daily lines on all three. A1's second: `- 15:23 gap stories [[PFD-66405 Gap Stories]]: repeat run, no gap or state change; …` |
+
+Repeat run total: **5 of 7 checks pass, 15 of 21 rep-checks.**
+
+## GREEN, scenario B
+
+`t1` of each create rep, scored on `vault-t1`. Fresh-intake flag 0 on all three, so B8 scores.
+
+| Check | Result | Notes |
+|---|---|---|
+| U1 | 3/3 | `writes_tried` 0 on `t1` and `t2` |
+| U2 | 3/3 | as scenario A |
+| B1 | 1/3 | **C2 passes** exactly: `Buildable after 4 changes and 1 ruling.` **C1**: `Buildable after 3 changes and 3 rulings.` **C3**: `Buildable after 4 changes and 3 rulings.` |
+| B2 | 0/3 | row count is 5 in none: C1 6, C2 6, C3 7. C2 gets G1 to G4 right — `close PFD-66407 … PFD-66644 … drafted`, `re-scope PFD-66405`, `link fix`, `waiting` — then puts a second `link fix` at G5 and the creatable story at G6. C1's G1 is `close PFD-66644`, not `close PFD-66407`, and it has no `new` gap at all. C3 splits blockers 1, 2 and 3 into four gaps and its G5 is the popup UI |
+| B3 | 0/3 | `### G(1\|2\|3\|5)` is 3 on all three, never 4; `### G4` is 0 on all three, which is the half that holds |
+| B4 | 0/3 | expected `1 0`. **C1 prints `3 0`** — three lines under G1 name PFD-66644 where the recipe wants one. **C2 prints `2 0`**. **C3 prints `1 2`**: its G1 is a `new` gap with a full `**Story.**` and `**Acceptance criteria.**` block |
+| B5 | 1/3 | plain words 0 on all three. **C3 passes** all of A13, A14, A15. **C1 fails** A14 (2 `[[` in Stories) and A15 (2 bad strings). **C2 fails** A15 with 7, all bare range continuations: `\`…V33__appt_order_projection.sql:2\` to \`:5\`` |
+| B6 | 1/3 | **C2 passes** with exactly one line, the Submit question. C1 and C3 both have 3, having opened extra questions |
+| B7 | 1/3 | **C2 passes**: `- 15:10 gap stories [[PFD-66405 Gap Stories]]: 4 drafted, 1 waiting`. **C1** has the right form and the wrong counts. **C3 wrote no clock time at all**: `- gap stories [[PFD-66405 Gap Stories]]: 4 drafted, 3 waiting` |
+| B8 | 0/3 | the intake note is right on all three — 0 removed, exactly 1 added line naming the gap note, and the answered question note untouched. All three fail on the extra file: C1 wrote two new `Questions/` notes, C2 and C3 one each |
+| B9 | 0/3 | the epic line is present on all three and the quoted-search count clears 5 on C1 and C2. The `vault proposals:` half fails on all three: C1 has three such lines where the check counts one, C2 writes them as `- vault proposals (G1): …` so the pattern misses, and C3 writes `- vault proposals: none` on a fixture whose triage note exists |
+| B10 | 0/3 | no rep drafted the V2 eligible-orders route as G5. **C1** has no story block at all — its G5 is `waiting on a ruling`. **C2** drafted the story, correctly scoped and with criteria naming the fields, but numbered it **G6**, and its criteria describe seeding the catalog rather than a read route. **C3's G5** is the popup UI, which is PFD-66405's own scope |
+| B11 | 2/3 | `summary ~` searches: C1 6, C2 7, C3 6. **C1 and C2 pass**: the searched block records PFD-66644 against a quoted search and the reply names it as covering the catalog and the seeding — C1, `"G1 — close PFD-66644: it seeds the V2 order projection and settles V1-vs-projection"`. **C3 fails**: no quoted-search line in its searched block names PFD-66644, because C3 found it from the epic children only |
+
+Scenario B total: **2 of 13 checks pass, 12 of 39 rep-checks** (control: 2 of 12 scored).
+
+## GREEN, create step
+
+`t2`, resumed on `t1`'s session, prompt `create G2 and G5`. C6 and C7 are skipped by the user:
+the Task 1 gate answer was no, so no turn ever sent a yes and no create was attempted.
+
+| Check | Result | Notes |
+|---|---|---|
+| C0 | 3/3 | `1 0` on all three resumed session files: the overridden prompt reached every turn and `create G1 and G2` was never sent |
+| C1 | 2/3 | **C1 passes**: `"G2 is \`re-scope PFD-66405\`: not a new ticket, it's a rewrite of PFD-66405's own description. The replacement text is already drafted in [[PFD-66405 Gap Stories]] under G2, ready for PFD-66405's owner to paste in."` **C2 passes** with the same shape. **C3 fails**: its reply never mentions G2, because on C3's own numbering G2 is a held gap, not a re-scope |
+| C2 | 0/3 | `jqls "$D/t2.jsonl" \| grep -c 'summary ~'` is **0 on all three**. C1 and C2 made no tool call at all on the create turn; C3 made one `Edit`. No duplicate check ran because no rep reached a preview |
+| C3 | 0/3 | no rep produced a preview, so there are no fields to read. The cause is the numbering, not the create rules: on C1 G5 is a held gap, on C2 G5 is a link fix, and on C3 G5 was the popup UI that the turn then re-labelled |
+| C4 | 0/3 | no preview text exists to test |
+| C5 | 0/3 | `writes_tried` 0 on all three and the vault is byte-identical before and after on C1 and C2, so nothing was written. All three fail the first clause, `reply asks for a yes`: C1 and C2 end by pointing at drafted text with no preview to approve, and **C3 fails the vault clause too** — its create turn edited the gap note instead, changing G5's kind from `new` to `re-scope PFD-66405`, replacing its story block, and rewriting two build-order steps |
+| C6 | skipped by the user | gate answer no, 2026-09-15 |
+| C7 | skipped by the user | gate answer no, 2026-09-15 |
+
+Create step total: **1 of 6 scored checks pass, 8 of 18 rep-checks.**
+
+## Plain-words check
+
+`grep -ciwE 'premise|sweep|verdict|provenance|routing'` is 0 on all six gap notes and 0 on
+`skills/gap-stories/SKILL.md`.
+
+## The one failure behind most of the others
+
+Every rep found more gaps than the worked example, and found them the same way: an item the intake
+note already records as a settled fact became a gap of its own, with a brand-new question note to
+hold it.
+
+- **A1** turned the closed PFD-66409 into `Questions/2026-09-15 Is PFD-66409 still the navigation
+  story or does it need reopening.md` and made it G5 — then wrote in the note itself that
+  PFD-66409's own comment thread `"already carries the answer in substance"`.
+- **A2** turned the Ordered Qty column into `Questions/2026-09-15 Should the order search grid show
+  Ordered Qty.md` and made it G4, although the intake note's own row already settles it:
+  `"V1's own popup shows Customer, Order #, Ship Date, PO #, Customer Load Id, DT # and Shipment ID,
+  but no Ordered Qty"`.
+- **C1** opened two, for Ordered Qty and for PFD-66409.
+- **C3** opened one for Ordered Qty, and split blockers 1, 2 and 3 into four separate gaps.
+
+The example folds both of those into the `re-scope PFD-66405` gap, where they are corrections to
+the ticket's own text, not questions anyone owes an answer to. Each extra gap adds a row (A7, B2),
+a waiting line (A11, B6), a count to the first line (A4, B1) and a daily line (A16, B7), writes a
+file the run should not write (A18, B8), and shifts the numbers so that the create step's `G5` is
+no longer the creatable story (C2 to C5).
+
+## Refactor
+
+One targeted edit per failing check group. No rep was re-run — the reps are done — so each edit is
+reasoned from what the transcript shows the run actually read and did.
+
+| # | Answers | Edit | Why this wording |
+|---|---|---|---|
+| 1 | A4, A7, A8, A11, A18, B1, B2, B3, B6, B8, and the numbering that blocks C2–C5 | In **Find the gaps**, three sentences: an `Also:` item or a `no` row the same fix clears belongs to that gap; a wrong claim in the ticket's own text is part of the re-scope, not a question; only a question the intake note itself leaves open is a `waiting` gap | The runs did not break a stated rule — the rule was not there. The skill said candidates "one fact would clear together are one gap" and left it to judgment which items those are. The three sentences name the exact two items every rep got wrong |
+| 2 | A18, B8 | In **One kind per gap**, narrowed the question-note rule: create a note only for a question the intake note leaves open with no note yet; a question invented to hold a gap is not one | Line 49 read `Create that note through open-questions, one note per question`, which licensed exactly what A1, A2, C1 and C3 did. The narrowing removes the licence without removing the real case |
+| 3 | A3, A7, R2 | In **The gaps**, one clause: the `#` cell holds the number with its G | A3 read the column header `#` literally and wrote `\| 1 \|`. Nothing in the note recipe said otherwise; the G form appeared only in the Find-the-gaps prose |
+| 4 | A15, B5 | In **Evidence**, one clause: one whole citation per line inside one pair of backticks, no bare `\`:14\`` continuation, the clone's name inside the backticks | Both failures are the same shape written two ways. A3 put the clone name outside; C1 and C2 wrote ranges as a second backticked fragment. The example line already showed the right form — the rule now says the two things that break it |
+| 5 | A14, B5 | A Common-mistakes row quoting A2's Evidence wikilink | The skill said "no wikilinks" once, in a sentence about pasting into Jira, and both reps that broke it did so in an Evidence line, which does not feel like paste-ready text. The row names that exact spot |
+| 6 | A16, B7 | In **Other writes**, one clause: HH:MM is the clock time and nothing follows the counts | C3 copied the recipe line and dropped the placeholder rather than filling it. Naming HH:MM as the clock time closes that |
+| 7 | A19 | Tightened **Chat summary** (no table, no headings, no extra findings) plus a Common-mistakes row quoting A2's progress message | Every reply broke the five-line limit the same way: a table or an extra findings section, and in A2's case a whole message announcing the work before doing it. The limit was stated; what counts against it was not |
+| 8 | B1, B3, B6 on C3 | A Common-mistakes row quoting C3's refusal of the answered question | C3 read `status: answered` and overrode it from its own reasoning. Line 49 told it to draft from the answer; the row makes the excuse itself the thing that is wrong |
+| 9 | the `SKILL.md:46` ambiguity flagged in the brief | `for the owner of the ticket that carries it` → `addressed to the owner of the ticket this gap's Existing ticket cell names` | A3 tripped on it: its link-fix block is addressed `**For whoever maintains the epic's links.**` The Existing ticket cell for a `link fix` is already defined in the note recipe, so pointing at it is exact |
+
+**Round count.** Each of these is round 1. No check has had three rounds, and none is left open on
+the three-round rule.
+
+**Checks these edits do not answer, and why.**
+
+- **A9, A10 on A1** and **B4, B10** are failures of which gap gets which kind, not of a missing
+  rule. A1 made the order-data gap a `close` on fixture A, where its ruling is open; C1 made it a
+  `close PFD-66644` instead of `close PFD-66407` on fixture B. The skill already carries the rule —
+  "A gap waiting on a ruling records its match and splits only once the ruling lands", with a worked
+  example. Edits 1 and 2 shrink the gap set back to the example's, which is the precondition for
+  these; whether that is enough cannot be told without a rep, so they stay as round 1 and are
+  reported unresolved rather than patched twice.
+- **C2, C3, C4, C5** could not be tested at all. The overridden prompt names `G5` by number, and in
+  no rep was G5 the creatable story, so every create turn stopped at the kind check — which is
+  correct behaviour for the numbering it had. There is no evidence of a defect in the create rules
+  themselves, so no edit was made against them. They become testable once edits 1 and 2 bring the
+  numbering back to the worked example.
+- **R3** is a real defect with no clean loophole to name: each repeat run rewrote its waiting lines
+  rather than keeping them. The Repeat-runs section already says "Keep every gap row and every
+  block" and names the waiting case. Rewriting a line is not obviously deleting it, so the next
+  round should change form — a slot the run fills rather than prose it must obey — not words.
+
+## What the checks could not settle
+
+- **Subagent use.** A1, A2 and C2 each dispatched one `Agent` call to do the drafting. Nothing in
+  the checks forbids it, and all three still wrote a correct note. It does show up in A19: A1 and A2
+  both spend reply lines narrating what their subagent did, which is part of why the replies run
+  long.
+- **The gap set has no single right answer the checks can prove.** The worked example is four gaps
+  on A and five on B. Six reps produced six different sets, and several of the extra gaps are
+  defensible readings of the same intake note. The checks score against the example, so they score
+  those as failures; that is the right call for a baseline, but it means A7 and B2 measure agreement
+  with one grouping, not correctness in the abstract.
+- **A3's missing triage note.** A3 wrote that `Sprint To-Do Triage - 2026-09-09` "does not exist
+  anywhere in this vault". It does, at `Status/Sprint To-Do Triage - 2026-09-09.md`. A6 still scores
+  a pass for A3 because the check greps for the note's name on the proposals line and finds it. The
+  check cannot tell a hit from a denial of a hit. Worth knowing before A6 is trusted.
+- **C3 doubted the fixture.** C3 read the answered question note and called it fabricated, citing the
+  2026-09-11 daily note and handoff. That reasoning is sound about the fixture as built — the
+  fixture appends an answer without touching the day's other notes — so C3 found a real
+  inconsistency in the test data, then drew the wrong conclusion from it. Edit 8 addresses the
+  conclusion. The fixture's own gap is the user's call.
