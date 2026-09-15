@@ -23,6 +23,7 @@ against what we imagine the failures are.
 | [ticket-intake.md](ticket-intake.md) | `ticket-intake` | Omission and wrong shape: cited paths not resolved, stored-vs-computed not checked, ticket note absent or a status paragraph |
 | [record-testing.md](record-testing.md) | `record-testing` | Omission (no recording, no note, no step log) and unsafe action (recording on a host not allowed) |
 | [daily-worklog.md](daily-worklog.md) | `daily-worklog` | Wrong shape and unsafe action: a weekly note instead of a month ledger, ceremonies folded, padding, posting without a yes or refusing to post, a re-post over a posted day |
+| [gap-stories.md](gap-stories.md) | `gap-stories` | Wrong shape and unsafe action: stories only in chat, held gaps drafted, a re-scope drafted as a new story, Jira writes without a preview and a yes |
 
 ## Harness (same for every scenario)
 
@@ -46,6 +47,11 @@ against what we imagine the failures are.
    rationalization table or the recipe in the skill.
 6. **Variance is a metric.** Five reps producing five shapes means the baseline has no
    natural convention to lean on; the skill must supply a full recipe, not a nudge.
+7. **Deny file writes with `Edit(path)`, never `Write(path)`.** A `Write(path)` entry in
+   `--disallowedTools` does nothing — the CLI does not check it against file permissions, so
+   a Write to that path still goes through. `Edit(path)` is the one that is enforced, and it
+   covers every file-editing tool, Write included. If an older harness has a `Write(...)`
+   deny rule, it is inert; leave it if it is harmless, but do not add a new one and trust it.
 
 ## Scoring
 

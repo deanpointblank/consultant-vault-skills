@@ -29,7 +29,7 @@ Sections in this order. Summary is in the template; fill it. Insert 2 to 4 after
 
 1. **Summary** — one short paragraph: what, for whom, how many acceptance criteria, status, reporter, assignee, sprint. Then one line: `Checked YYYY-MM-DD against <repo> <branch> <sha>, <repo> <branch> <sha>.` Then `Meetings checked: <the nouns>` with the script's output under it, pasted unchanged — its hit lines, or its one no-match line. Replaced whole on every run.
 2. **What the ticket says vs what's there** — a table with columns `Ticket says | Actually | OK?`. `OK?` is yes, no, or couldn't check. Every piece of evidence is written out in full, `repo path:line`, including a second line in the file the row just cited — never `:152` on its own. Replaced whole on every run. Nothing to check: one row saying so.
-3. **Blockers** — a checklist of plain sentences, no category tags, each ending with who or what clears it, as a wikilink where a note exists. Order: false claims that stop the build, then Jira findings, then vault contradictions, then code readiness. Five in the list; the rest on one line starting `Also:`.
+3. **Blockers** — a checklist of plain sentences, no category tags, each ending with who or what clears it, as a wikilink where a note exists. Order: false claims that stop the build, then Jira findings, then vault contradictions, then code readiness. Five in the list; the rest on one line starting `Also:`. When the first line is "Cannot be built as written", one line under the list: say "fill the gaps for KEY" to draft the stories that unblock it.
 4. **Draft comment** — one blockquote addressed to the reporter: the first-line sentence, each false claim with one line of evidence, the questions that need an answer. No proposed re-scope.
 5. **Handoffs** — untouched.
 6. **Facts established** — short lines, appended and deduped: repos touched with clone paths; each named field and where its value comes from; siblings sharing a false claim; terms the vault does not know.
@@ -49,7 +49,7 @@ Look first for an existing note with `type: question` or `type: conflict` whose 
 
 ## Chat summary
 
-Five lines: the first-line sentence; the top three blockers; what was created, as counts, and the first action ("post the draft comment" or "start building") with the note link.
+Five lines: the first-line sentence; the top three blockers; what was created, as counts, and the first action ("post the draft comment" or "start building") with the note link. When the first line is "Cannot be built as written", add one line: say "fill the gaps for KEY" to draft the stories that unblock it.
 
 ## When something is missing
 
