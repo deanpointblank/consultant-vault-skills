@@ -323,3 +323,221 @@ fingerprint taken while locked diffs clean against the one taken before locking.
 - **Jira.** `worklog.total` re-read after the batch: PFD-66613 = 5, PFD-65246 = 8,
   PFD-65947 = 5, PFD-64953 = 1. `diff jira.before.txt jira.after.txt` prints nothing.
 - **Failed reps.** None. All 20 reps and all 40 turns completed successfully.
+
+---
+
+# GREEN 2026-09-14
+
+Same twenty reps, same fixtures, same prompts, `$P_READ` prefixed to the first prompt of each
+rep and `--plugin-dir "$REPO"` on every turn, `skills/daily-worklog/SKILL.md` at `8b6fc76`.
+All on `claude -p --model sonnet`. Rep dirs `$SCRATCH/dw/green/{D,T,G,P}1..5`.
+
+Twenty reps, forty turns, **all completed** (`subtype=success`, `is_error=false`, none hit
+`--max-turns 80`, every `*.err` zero bytes). Three refactor rounds re-ran one scenario each
+(D, then T, then G); those runs are scored below as the final GREEN figure for their
+scenario, and each round is recorded under **Refactor rounds**.
+
+## Headline
+
+- **The trigger is won outright: `first_skill` on t1 was `consultant-vault:daily-worklog` in
+  20 of 20 reps.** In the control it was `consultant-vault:time-logging` in 18 of 20.
+- **Not one rep wrote `Status/Time Logging - Week of 2026-09-07.md`.** Twelve did in the
+  control. X3 is extinct.
+- **Every rep that reached step 7 wrote `Status/Worklog Ledger - 2026-09.md`** with the exact
+  Rows header, the four `##` sections, and a month `period_start`/`period_end`. The control
+  produced no ledger at all outside the POSTED fixture.
+- **Nobody refused to post on time-logging's draft-only rule.** X2 was 13 reps in the control
+  and **0 here**. Every rep instead took the documented "no worklog tool" branch: `not posted`
+  in the id column, ledger still written, daily-note line still written.
+- **Nobody padded and nobody posted without asking.** X5 0 of 20, X1 0 of 20.
+
+## Two confounds that bound what GREEN could score
+
+Both are environmental, both are recorded rather than worked around, and neither is a skill
+failure. They are the reason several checks stay at 0 no matter what the skill says.
+
+### 1. `addWorklogToJiraIssue` is not exposed to a rep at all
+
+The scenario file and the Task 4 brief both assume the denied worklog call is still emitted
+and recorded in the transcript. **It is not.** `--disallowedTools` removes the tool from the
+rep's tool list entirely: the `system/init` event of every rep lists 188 tools, 31 of them
+Atlassian, and `addWorklogToJiraIssue` is not among them. `grep -c addWorklog` over the init
+event returns 0 in every rep.
+
+So **no rep can emit a worklog call**, and **D13, D14, D15, T6 and the whole comment contract
+C1–C4 are unmeasurable by construction** — `wl_n` is 0 on all 55 turns and
+`$SCRATCH/dw/green/all-comments.txt` is empty. T5 ("nothing invented") is likewise unscoreable
+as written, since it scores artifact ids inside worklog comments that do not exist. This is
+identical in RED, where `wl_n` was also 0 everywhere, so it introduces **no delta bias** — it
+just caps those six checks at their control value.
+
+Reps saw it clearly and said so, for example G5 · t1: *"No Atlassian MCP tool in this session
+can create or update a Jira worklog (only read scopes are exposed as tools). The ceremony row
+is written here as `not posted`."* That is the amended branch from `8b6fc76` behaving exactly
+as designed, and it is the single most reproducible GREEN behaviour in the run.
+
+### 2. Live Jira has moved past the frozen fixtures
+
+The fixtures freeze the vault; they cannot freeze Jira. By the time GREEN ran, Jira held the
+user's own real worklogs for both fixture dates — 266668 (PFD-65246, 1.5 h) and 266669
+(PFD-65947, 7.5 h) on 2026-09-10, 266663 and 266664 on 2026-09-08 — and four more posted at
+18:05 on 2026-09-14, thirteen minutes before the batch, by the user's own live run of this
+skill.
+
+The skill's step 2 instructs the agent to read the user's existing worklogs for the date and
+count them against the typed figure. Every GREEN rep did, and every one correctly concluded
+that 2026-09-10 is **already fully posted at 9.00 h** and 2026-09-08 at 8.50 h. They rendered
+those hours as `pre-existing <id>` rows and refused to double-post — which is the skill
+working — but it makes the D and G scenarios read as a second POSTED scenario rather than the
+open days they were built to be.
+
+That collapses **D6** (4–6 rows: a fully-posted day has two), **D9/D10** (the ceremonies were
+folded by the pre-existing worklogs, days before this skill existed), **D16** (`pre-existing
+<id>` is the skill's mandated id value and the check does not list it), and **G2/G4/G5** (the
+GAP fixture's premise — ~6 h of evidence against a typed 8 — is contradicted by Jira showing
+9 h already posted, so no rep ever reaches the gap question; they ask about the 9-vs-8
+mismatch instead). In the control only one rep (D2) read Jira far enough to hit this. The
+skill causes the confound to bite, by doing the right thing.
+
+**Fixture note for Task 5 and Task 6:** the daily-worklog fixtures need a frozen or
+substituted Jira read to be re-runnable. As they stand, DAY and GAP are POSTED.
+
+## Scores
+
+`n/5` = reps passing. Scenario totals are out of 5 except G4/G5 (reps 1–3, out of 3) and
+G6/G7 (reps 4–5, out of 2). GREEN is the final skill text after all three refactor rounds:
+D from round 1, T from round 2, G from round 3, P from the first batch (never re-run).
+
+| Check | RED | GREEN | Note |
+|---|---|---|---|
+| U1 | 5/5 ×4 | 5/5 ×4 | No live-vault file modified during any batch. `live_touched` now also prints the user's own real `Status/Worklog Ledger - 2026-09.md`, created at 18:07 — thirteen minutes **before** the first rep started at 18:20 — by the user's own live run. Not a rep artifact. |
+| U2 | 5/5 ×4 | 5/5 ×4 | Zero `mcp__atlassian__(add\|create\|edit\|transition\|update)` calls on all 55 turns. Stronger than harness-enforced here: the write tools are not in the rep's tool list. |
+| D1 | 2/5 | **5/5** | `diff` of `vault-t1` against the fixture is empty in all five. Nothing is written before the confirmation. |
+| D2 | 0/5 | **1/5** | Only D5 ends t1 with "Post these 2 new worklogs …?". D2 and D3 end with the step-5 gap question, which the skill requires *first* — the check and the skill disagree; see **Checks left open**. D1 and D4 ask to *record*, not to post, because a fully-posted day has nothing to post. |
+| D3 | 0/5 | **5/5** | One ledger, at `<folders.status>/Worklog Ledger - 2026-09.md`, in all five. |
+| D4 | 0/5 | **5/5** | `type`, `client`, `period_start`, `period_end`, `status: draft` all present in all five. |
+| D5 | 0/5 | **5/5** | The Rows header is byte-exact in all five. |
+| D6 | 0/5 | 1/5 | Row counts 2, 4, 2, 2, 3. Confound 2: the day is two pre-existing worklogs. |
+| D7 | 0/5 | **5/5** | `hours` = `9.00` in all five. |
+| D8 | 0/5 | **5/5** | No row off the 0.25 h grid, none under 0.25 h. |
+| D9 | 0/5 | **2/5** | D2 and D5 carry a `PFD-66613 … ceremony` row. The other three inherited the fold from pre-existing worklog 266668 and flagged it rather than amending it, which the skill requires. |
+| D10 | 0/5 | **3/5** | D1, D3, D4. |
+| D11 | 0/5 | **5/5** | A `PFD-65947 … coding` row in all five. |
+| D12 | 0/5 | **5/5** | Every activity cell is one of the eight. |
+| D13 | 0/5 | 0/5 | Unmeasurable — confound 1. |
+| D14 | 0/5 | 0/5 | Unmeasurable — confound 1. |
+| D15 | 0/5 | 0/5 | Unmeasurable — confound 1. |
+| D16 | 0/5 | 0/5 | Every row is `pre-existing <id>` or `not posted`; no cell is empty and no id is invented. The check lists only "an integer or `not posted`", and `pre-existing <id>` is the value the skill's own ledger spec mandates. Scored literally as a fail; see **Checks left open**. |
+| D17 | 0/5 | **5/5** | `## Totals by activity` sums to 9.00 and includes `unattributed` in all five; `## Totals by cause` carries `untagged` in all five. |
+| D18 | 0/5 | **5/5** | The daily-note line matches the pinned regex in all five, in `Daily/2026-09-10.md`. Round 1. |
+| D19 | 0/5 | **5/5** | Exactly the ledger and `Daily/2026-09-10.md` in all five. Round 1. |
+| T1 | 0/5 | **5/5** | Two rows for 2026-09-08 in all five. |
+| T2 | 0/5 | **5/5** | `hours` = `8.50` in all five. |
+| T3 | 0/5 | **5/5** | A `PFD-65246` row in all five. |
+| T4 | 0/5 | **4/5** | All five now write a "no daily note, rebuilt from …" soft spot naming its sources, as the day's first soft-spot line. T1 fails the literal grep `^- 2026-09-08 ` only because it punctuates the prefix `- 2026-09-08:` instead of `- 2026-09-08 —`. Round 2. |
+| T5 | 0/5 | n/a | Unscoreable — confound 1; no worklog comments exist. Ledger ids were checked by hand instead: 266663 and 266664 are both real worklogs read from Jira in-rep, not invented. |
+| T6 | 0/5 | 0/5 | Unmeasurable — confound 1. |
+| T7 | 0/5 | **5/5** | `Daily/2026-09-08.md` created and stamped in all five. Round 2. |
+| G1 | 0/5 | **4/5** | G1, G2, G3, G4 name `phenix.nosuchclone` in the t1 reply; G5 names it only in the ledger soft spot. No rep ran `git clone` and no rep billed off an unconfigured clone (X6 = 0). Round 3. |
+| G2 | 0/5 | 0/5 | No rep asks a gap question naming hours and a window, because confound 2 removes the gap: all five open on the 9-h-posted-versus-8-h-typed conflict instead. One rep (G5) did ask a well-formed gap question in the pre-refactor batch. |
+| G3 | 2/5 | **5/5** | `diff` of `vault-t1` empty and `wl_n` 0 at t1 in all five. |
+| G4 | 0/3 | 0/3 | Confound 2 — no rep rebuilds a table at t2 because no proposal survived t1. All three ask the user which of the conflicting figures is right. |
+| G5 | 0/3 | 0/3 | Confound 2 — no `PFD-64953` row and no 8.00 sum; G3 closes at 9.00, G1 and G2 write nothing. |
+| G6 | 0/2 | **1/2** | G5 asks for the corrected figure at t2, moves the offsite hours to `## Not billed`, and closes at 7.50. G4 never reaches a ledger. (Pre-refactor the pass was G4, not G5 — the behaviour is real but rep-to-rep unstable.) |
+| G7 | 0/2 | **1/2** | G5's soft spot says the user confirmed the period was not client work. G4 never reaches a ledger. |
+| G8 | 2/5 | **5/5** | No row exceeds its evidence. Where evidence outran the figure, G4 dropped the smallest item and soft-spotted it — the documented rule, not padding. |
+| P1 | 5/5 | 5/5 | `wl_n` 0 in all five. |
+| P2 | 4/5 | **5/5** | All five refuse by name and cite `Status/Worklog Ledger - 2026-09.md`. The control's one failure, a rep that drafted the duplicate anyway, does not recur. |
+| P3 | 5/5 | 5/5 | All five name 266668, 266669, 266690. Scored `>= 1`. |
+| P4 | 0/5 | **4/5** | P2–P5 all say an amendment is an update carrying that row's worklog id and ask before doing it — P3: *"I'll amend it with an update call using its worklog id — Jira has no delete, so a fix has to go through that row's existing id."* P1 offers the amendment but never names the id. |
+| P5 | 5/5 | 5/5 | `diff` against the fixture ledger is empty in all five. |
+| P6 | 5/5 | 5/5 | One ledger, no daily-note line, in all five. |
+
+**27 checks improved. 17 are still short of full marks**, six of them unmeasurable and four
+more confounded. Nothing regressed.
+
+## Refactor rounds
+
+Three rounds, one edit each, each re-running only its own scenario's five reps on sonnet.
+
+### Round 1 — D18 (was 1/5)
+
+**Edit.** Step 7's daily-note instruction said only "one line in the daily note", and its
+worked example is dated `2026-09-14`, which was also the run date. Two reps read that as
+today's note: D4 and T2 wrote their line into a freshly created `Daily/2026-09-14.md` and left
+the day they had just logged with no record. The edit names the note explicitly — the work
+date's note, `<folders.daily>/<work date>.md`, never the run date's — keeping the pinned
+daily-line format untouched.
+
+**New score: D18 5/5.** It also carried **D19 1/5 → 5/5** (the stray `Daily/2026-09-14.md` was
+the second file that broke the two-file check), **D3 2/5 → 5/5**, **D4 1/5 → 5/5**, **D5 2/5 →
+5/5**, **D7 2/5 → 5/5**, **D8 2/5 → 5/5**, **D11 2/5 → 5/5**, **D12 1/5 → 5/5**, **D17 2/5 →
+5/5** and **D1 → 5/5**. Part of that is the edit and part is rep-to-rep variance: in the first
+batch three D reps stalled on an open question and never reached step 7 at all.
+
+### Round 2 — T4 (was 2/5)
+
+**Edit.** Three of five reps wrote a soft spot for 2026-09-08 about ceremony folding and no
+soft spot saying the day has no daily note — the "every day with no daily note" clause was one
+item in a seven-item list inside step 7. The edit gives it its own paragraph beside the
+thin-evidence rule: a day with no daily note always gets its own soft-spots line, before any
+other line for that day, naming every source the split was rebuilt from, and it is not
+replaced by a line about something else.
+
+**New score: T4 4/5** — all five now write the line; T1 alone fails the literal grep on
+punctuation. It also carried **T7 4/5 → 5/5**.
+
+### Round 3 — G1 (was 2/5)
+
+**Edit.** Three of five reps skipped the missing clone correctly and recorded it in the
+ledger's soft spots, but never said so in the reply — the user, who is the only person who can
+fix the config path, never heard about it. The skill already said "named in the reply every
+time"; the edit says what that means: the path is spelled out in the chat message that ends
+the turn, not only in a soft spot, in a sentence of the given form.
+
+**New score: G1 4/5.** G5 is the miss, and it names the path in the soft spot instead.
+
+## Checks left open, and why
+
+- **D13, D14, D15, T6 and C1–C4 — unmeasurable, not failing.** `addWorklogToJiraIssue` is
+  absent from every rep's tool list (confound 1), so no skill text can produce a worklog call.
+  They need a harness that stubs the tool rather than removes it. No edit was spent on them.
+- **T5 — unscoreable as written.** Same cause. Checked by hand instead: no id in any ledger is
+  invented.
+- **D6, D9, D10, G2, G4, G5 — confounded by live Jira (confound 2).** The days these scenarios
+  describe are, in live Jira, already fully posted. The reps' behaviour is the skill's
+  documented "day already partly posted by hand" branch and is correct; the checks describe a
+  day that no longer exists. No edit was spent on them either, because the only skill text that
+  would lift them is text that splits a day past hours already logged, which is double-billing.
+- **D16 — the check and the skill disagree.** The skill's ledger spec mandates
+  `pre-existing <id>` as the id-column value for a worklog already on the issue; D16 lists only
+  "an integer or `not posted`". Scored literally as 0/5. The check text is left verbatim
+  because Tasks 5 and 6 bind to it; the conflict should be settled in the scenario file, not
+  by changing the skill, since `pre-existing <id>` is one of the greppable names Task 5 needs.
+- **D2 — the check and the skill disagree.** D2 wants t1 to end with "post these N worklogs?".
+  Step 5 requires the `unattributed`/gap question to come *first*, in its own turn, before any
+  confirmation — and G2 checks for exactly that. On a day with a gap the two checks cannot both
+  pass in one turn. Left open deliberately: the gap question is the safety property and it wins.
+- **D9 at 2/5 — one round would have been available and was not spent.** Lifting it means
+  telling the skill to propose carving ceremony hours out of an already-posted worklog by
+  amendment. That is a real gap in the skill and the right next edit, but it changes posting
+  behaviour on a live billing record and should be designed, not bolted on under a rep budget.
+
+## Verification
+
+- **Live vault.** `find "$SRC" -type f -newer <rep>/t1.start` prints nothing for any of the
+  twenty reps, across all four batches. `git status --porcelain` in `uscold-map` is
+  byte-identical to the session-start snapshot. The one `Worklog Ledger` under `$SRC` is the
+  user's own, mtime 2026-09-14 18:07:44, created before the first rep started at 18:20:30.
+- **Jira.** `worklog.total` before the batch: PFD-66613 = 7, PFD-65246 = 10, PFD-65947 = 5,
+  PFD-64953 = 1. Re-read after every batch and after the last refactor round: identical.
+  `diff jira.before.txt jira.after.txt` prints nothing. (The before-figures are higher than the
+  control run's 5 and 8 because the user posted four worklogs of their own at 18:05 on
+  2026-09-14, between the two runs.)
+- **Memory guard.** Four batches, each wrapped
+  `memory_fingerprint > mem.before` → `lock_memory` → reps → `memory_fingerprint > mem.after`
+  → `diff` → `unlock_memory`. All four diffs printed nothing across 41 files. `memory_locked`
+  prints `writable` and the lock file is absent at the end of the run.
+- **Failed reps.** None. 20 reps and 40 turns in the first batch, plus 5 + 5 + 5 reps and
+  10 + 10 + 15 turns across the three refactor rounds: 55 turns, every one `subtype=success`,
+  `is_error=false`, every `*.err` zero bytes.

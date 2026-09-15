@@ -28,7 +28,7 @@ Then five sources, scoped to that one date in config `timezone`:
 1. `<folders.daily>/<date>.md` — the spine. Its `- HH:MM` lines give the day's order and its clock times, which is where row start times and lengths come from.
 2. `<folders.work>/*Work <date>.md` — coding depth. The `when | what | why | decided` rows carry the repo paths, commits and artifact ids the comment needs; the note's `jira` names the ticket. Read these notes; never write one.
 3. `<folders.meetings>/` notes whose `date` is that date — `meeting_type` separates ceremonies from working sessions; topics and outcomes give the comment its closing clause.
-4. `git log --author=<worklog.git_author>` bounded to the date in **each path in `worklog.repos` and no other repository**, with sha, time and subject. A configured path with no clone there: **name that path in the reply, skip it, and continue.** Never clone it, never fall back to another clone found on disk, and never bill an hour off commits from a repo the config did not name. A repo that was skipped is named in the reply every time, even when the day's rows came out fine without it.
+4. `git log --author=<worklog.git_author>` bounded to the date in **each path in `worklog.repos` and no other repository**, with sha, time and subject. A configured path with no clone there: **name that path in the reply, skip it, and continue.** Never clone it, never fall back to another clone found on disk, and never bill an hour off commits from a repo the config did not name. A repo that was skipped is named in the reply every time, even when the day's rows came out fine without it. **Named in the reply means the path is spelled out in the chat message that ends the turn**, not only in a soft spot and not only in the ledger — a sentence of the form "`<path>` in `worklog.repos` has no clone on disk; git evidence for it was skipped." The soft spot is the ledger's record of the gap; the reply is the user's, and the user is the only one who can correct the path. A turn that swept a missing clone and does not say so in its own last message has hidden a hole in the evidence behind a table that looks complete.
 5. Jira and GitHub activity: comments, transitions and issue activity by `worklog.account_id`; PR reviews, review comments, pushes and merges by `worklog.github_login`. **Read the user's own worklogs already on that date.** They are not evidence of work to log — they are work already logged, and they count against the typed figure.
 
 ## 3. Classify
@@ -126,9 +126,11 @@ Worklog id column: an integer; `not posted` for a row drafted but not sent; `—
 
 Appending a day never rewrites an earlier one. Two exceptions: filling a `not posted` id once the row posts, and an amendment, which keeps its id and its place and gains ` (amended YYYY-MM-DD)` after the hours. The four totals sections are derived and recomputed in full every run. Soft spots only ever append; a cleared one gains ` — cleared YYYY-MM-DD`.
 
-Then one line in the daily note under `## Log`, creating the note if the day has none:
+Then one line under `## Log` in the **work** date's daily note — `<folders.daily>/<work date>.md`, the same date the rows are for — creating that note if the day has none. Never the run date's note: closing out 10 September on 14 September writes the line into 10 September's note, and putting it in today's note instead leaves the day it describes with no record and stamps a day nobody logged.
 
 `- HH:MM worklogs posted for 2026-09-14: 8.50 h across 4 rows → [[Worklog Ledger - 2026-09]]`
+
+The note and the date inside the line are both the work date. Only `HH:MM` is the time of the run.
 
 ## When something is missing
 
@@ -141,6 +143,8 @@ A ticket that is Closed or belongs to someone else is a home, not a blocker: pos
 A ceremony is logged at its actual length, not its scheduled length. One that ran more than double its slot, or a day whose ceremony total passed 2 h, gets a soft-spots line naming the meeting note and the scheduled length. A ceremony that turned into working a ticket is two rows, split at the time the daily or meeting note gives.
 
 A day with no daily note and thin evidence still gets rows: sweep the other four sources, propose, mark every reconstructed row in soft spots with what it was reconstructed from, and post. The day total is what the user typed and is safe; the split is the challengeable part, and both worklogs can be resized in place by update. A reconstructed split beats an unlogged day.
+
+**A day with no daily note always gets its own soft-spots line, before any other line for that day**, saying that no daily note exists and naming every source the split was rebuilt from — the meeting notes, the commits, the existing worklogs, the PR activity. That line is not optional and is not replaced by a line about something else that went wrong on the day; a reconstruction nobody recorded reads as a timed split six months later, and the one thing that makes it defensible is the sentence saying it was rebuilt and from what.
 
 ## Common mistakes
 
