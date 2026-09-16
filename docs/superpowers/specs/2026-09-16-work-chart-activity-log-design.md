@@ -124,7 +124,7 @@ Reads the hook JSON on stdin. It uses `session_id`, `cwd`, `tool_name` and `tool
 
    Matching is case-insensitive and looks only at the verb the name starts with, so `getTransitionsForJiraIssue` and `list_labels` are research and `editJiraIssue` is outward. Everything else is not logged: `Skill`, `Agent`, `AskUserQuestion`, the todo tools, and MCP tools that match neither list.
 5. An `edit` whose path is under the vault: exit 0.
-6. A `Bash` call whose command contains `work-chart-stamp.sh`: write a `MARK` line instead of a `shell` line. The command is only checked, never stored.
+6. A `Bash` call writes a `MARK` line instead of a `shell` line only when it runs `work-chart-stamp.sh`, not merely mentions it: split the command on `&&`, `||` and `;`, and a segment runs it when, after trimming leading spaces, its first word — or the word after a leading `bash` or `sh` — ends in `work-chart-stamp.sh`, quotes allowed around it. The command is only checked, never stored.
 7. Append one line to the log file, creating the folder when needed. For `shell`, the place is the git top of `cwd`, found by walking up to the nearest `.git` entry (faster than running git), or empty when `cwd` is not in a repo. The Stop hook resolves it again with git.
 8. Any failure, such as an unwritable folder or bad JSON: exit 0.
 

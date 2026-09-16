@@ -91,22 +91,24 @@ wc_log_path() {
 
 # Print six lines read from hook JSON $1: session_id, cwd, tool_name, touched path
 # (tool_input file_path, then notebook_path, then path), stop_hook_active (true/false),
-# and whether tool_input.command mentions work-chart-stamp.sh (true/false).
-# Uses jq when present (and WC_NO_JQ is unset), else sed.
+# and the tool_input.command text, sanitized and with escaped quotes (\") unescaped.
+# Callers pass the sixth line to wc_runs_stamp to tell a call that runs
+# work-chart-stamp.sh from one that merely mentions it. Uses jq when present (and
+# WC_NO_JQ is unset), else sed.
 wc_hook_fields() {
   if [ -z "${WC_NO_JQ:-}" ] && command -v jq >/dev/null 2>&1; then
     printf '%s' "$1" | jq -r '
-      def s: if . == null then "" else tostring | gsub("[\n\r]"; " ") end;
+      def s: if . == null then "" else tostring | gsub("[\n\r\t]"; " ") end;
       (.session_id | s),
       (.cwd | s),
       (.tool_name | s),
       ((.tool_input.file_path? // .tool_input.notebook_path? // .tool_input.path?) | s),
       (.stop_hook_active == true | tostring),
-      ((.tool_input.command? // "") | tostring | contains("work-chart-stamp.sh") | tostring)
+      ((.tool_input.command? // "") | s)
     ' 2>/dev/null
     return 0
   fi
-  local k v p=""
+  local k v p="" cmd
   for k in session_id cwd tool_name; do
     printf '%s\n' "$1" | sed -n "s/.*\"$k\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n 1
   done
@@ -116,7 +118,9 @@ wc_hook_fields() {
   done
   printf '%s\n' "$p"
   if printf '%s' "$1" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then echo true; else echo false; fi
-  if printf '%s' "$1" | grep -q '"command"[[:space:]]*:[[:space:]]*"[^"]*work-chart-stamp\.sh'; then echo true; else echo false; fi
+  # The command value can hold escaped quotes (\"); match past them, then unescape.
+  cmd=$(printf '%s\n' "$1" | sed -n -E 's/.*"command"[[:space:]]*:[[:space:]]*"((\\.|[^"\\])*)".*/\1/p' | head -n 1)
+  printf '%s\n' "${cmd//\\\"/\"}"
 }
 
 # Print the log kind for a tool name: edit, outward, research, shell, or nothing.
@@ -150,5 +154,47 @@ wc_git_top() {
     [ -e "$d/.git" ] && { printf '%s' "$d"; return 0; }
     d="${d%/*}"
   done
+  return 1
+}
+
+# Succeed when command $1 runs work-chart-stamp.sh, not merely mentions it (as an
+# argument to grep, git add, and the like). Splits the command into segments on
+# && || and ;. A segment runs the script when, after trimming leading spaces, its
+# first word -- or the word after a leading bash or sh -- ends in
+# work-chart-stamp.sh, with surrounding single or double quotes allowed.
+wc_runs_stamp() {
+  local cmd="$1" seg first rest word
+  cmd="${cmd//&&/;}"
+  cmd="${cmd//||/;}"
+  cmd="${cmd//;/$'\n'}"
+  while IFS= read -r seg; do
+    seg="${seg#"${seg%%[! ]*}"}"
+    [ -n "$seg" ] || continue
+    first="${seg%% *}"
+    case "$seg" in
+      *" "*) rest="${seg#* }" ;;
+      *) rest="" ;;
+    esac
+    case "$first" in
+      \"*\") first="${first#\"}"; first="${first%\"}" ;;
+      \'*\') first="${first#\'}"; first="${first%\'}" ;;
+    esac
+    case "$first" in
+      bash|sh)
+        rest="${rest#"${rest%%[! ]*}"}"
+        word="${rest%% *}" ;;
+      *)
+        word="$first" ;;
+    esac
+    case "$word" in
+      \"*\") word="${word#\"}"; word="${word%\"}" ;;
+      \'*\') word="${word#\'}"; word="${word%\'}" ;;
+    esac
+    case "$word" in
+      *work-chart-stamp.sh) return 0 ;;
+    esac
+  done <<EOF
+$cmd
+EOF
   return 1
 }

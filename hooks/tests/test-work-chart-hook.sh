@@ -108,6 +108,9 @@ logcall c1 Bash "$LOOSE" '{"command":"ls"}'
 check "log: each kind classified, place recorded" "edit:Edit:$SIB/a.txt | edit:Write:$LOOSE/q.sql | edit:NotebookEdit:$SIB/n.ipynb | outward:mcp__atlassian__addCommentToJiraIssue: | outward:mcp__claude_ai_Gmail__label_message: | research:mcp__claude_ai_Gmail__list_labels: | research:mcp__claude_ai_Gmail__search_threads: | research:mcp__atlassian__getTransitionsForJiraIssue: | outward:mcp__atlassian__editJiraIssue: | outward:mcp__claude_ai_Asana__save_task_changes_confirm: | research:Read:$SIB/a.txt | research:Grep:$SIB | research:WebFetch: | shell:Bash:$SIB | shell:Bash:" "$(logged c1)"
 check "log: four tab-separated fields, epoch first" "yes" "$(awk -F'\t' 'NF != 4 || $1 !~ /^[0-9]+$/ {bad=1} END {print bad ? "no" : "yes"}' "$(logfile c1)")"
 
+logcall ctab Edit "$VAULT" "{\"file_path\":\"$SIB/a\tb.txt\"}"
+check "log: a tab in the path still yields four fields" "yes" "$(awk -F'\t' 'NF != 4 {bad=1} END {print bad ? "no" : "yes"}' "$(logfile ctab)")"
+
 logcall c2 Skill "$VAULT" '{"skill":"consultant-vault:daybook"}'
 logcall c2 Agent "$VAULT" '{"prompt":"x"}'
 logcall c2 TodoWrite "$VAULT" '{"todos":[]}'
@@ -128,6 +131,22 @@ check "log: cwd outside, path inside -> logged" "edit:Edit:$SIB/a.txt" "$(logged
 
 logcall c5 Bash "$SIB" '{"command":"bash /plugins/consultant-vault/hooks/work-chart-stamp.sh /x/sibling"}'
 check "log: the stamp call writes a MARK" "MARK:Bash:" "$(logged c5)"
+
+logcall c10 Bash "$SIB" '{"command":"git add hooks/work-chart-stamp.sh"}'
+logcall c10 Bash "$SIB" '{"command":"grep -n x hooks/work-chart-stamp.sh"}'
+logcall c10 Bash "$SIB" '{"command":"hooks/work-chart-stamp.sh /r"}'
+logcall c10 Bash "$SIB" "{\"command\":\"bash \\\"/p/hooks/work-chart-stamp.sh\\\" /r\"}"
+logcall c10 Bash "$SIB" '{"command":"cd /p && bash hooks/work-chart-stamp.sh /r"}'
+logcall c10 Bash "$SIB" "{\"command\":\"sh '/p/work-chart-stamp.sh'\"}"
+check "log: MARK only when the command runs the stamp script, not merely mentions it" "shell:Bash:$SIB | shell:Bash:$SIB | MARK:Bash: | MARK:Bash: | MARK:Bash: | MARK:Bash:" "$(logged c10)"
+
+WC_NO_JQ=1 logcall c11 Bash "$SIB" '{"command":"git add hooks/work-chart-stamp.sh"}'
+WC_NO_JQ=1 logcall c11 Bash "$SIB" '{"command":"grep -n x hooks/work-chart-stamp.sh"}'
+WC_NO_JQ=1 logcall c11 Bash "$SIB" '{"command":"hooks/work-chart-stamp.sh /r"}'
+WC_NO_JQ=1 logcall c11 Bash "$SIB" "{\"command\":\"bash \\\"/p/hooks/work-chart-stamp.sh\\\" /r\"}"
+WC_NO_JQ=1 logcall c11 Bash "$SIB" '{"command":"cd /p && bash hooks/work-chart-stamp.sh /r"}'
+WC_NO_JQ=1 logcall c11 Bash "$SIB" "{\"command\":\"sh '/p/work-chart-stamp.sh'\"}"
+check "log: sed fallback, MARK only when the command runs the stamp script" "shell:Bash:$SIB | shell:Bash:$SIB | MARK:Bash: | MARK:Bash: | MARK:Bash: | MARK:Bash:" "$(logged c11)"
 
 rm "$HOME/.config/vault-skills/vault-path"
 logcall c6 Edit "$SIB" "{\"file_path\":\"$SIB/a.txt\"}"

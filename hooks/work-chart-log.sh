@@ -7,12 +7,12 @@
 set -u
 
 log_call() {
-  local here input vault sid cwd tool path active stampcall kind place="" log
+  local here input vault sid cwd tool path active cmd kind place="" log
   case "$0" in */*) here="${0%/*}" ;; *) here=. ;; esac
   . "$here/work-chart-lib.sh" || return 0
   input=$(cat)
   vault=$(wc_vault) || return 0
-  { IFS= read -r sid; IFS= read -r cwd; IFS= read -r tool; IFS= read -r path; IFS= read -r active; IFS= read -r stampcall; } <<FIELDS
+  { IFS= read -r sid; IFS= read -r cwd; IFS= read -r tool; IFS= read -r path; IFS= read -r active; IFS= read -r cmd; } <<FIELDS
 $(wc_hook_fields "$input")
 FIELDS
   [ -n "$sid" ] && [ -n "$tool" ] || return 0
@@ -31,7 +31,7 @@ FIELDS
     research)
       place="$path" ;;
     shell)
-      if [ "$stampcall" = true ]; then
+      if wc_runs_stamp "$cmd"; then
         kind=MARK
       else
         place=$(wc_git_top "$cwd") || place=""
