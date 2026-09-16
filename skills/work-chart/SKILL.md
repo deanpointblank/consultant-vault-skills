@@ -9,10 +9,10 @@ Follow the obsidian-vault skill's conventions. One note per ticket per day in `f
 
 ## When rows get written
 
-- A task finished, tests ran, a commit was made, a question was researched to an answer or to a dead end, or the user changed subject: write rows for everything since the last row.
+- A task finished, tests ran, a commit was made, research toward a goal reached an answer or a dead end, or the user changed subject: write rows for everything since the last row.
 - Who writes: the agent that did the work. The one exception is a worker dispatched to do one task of a larger plan (subagent-driven development); it leaves the rows to the agent that dispatched it, which writes them from the worker's report. An agent doing the user's work directly writes its own rows, including one that another agent started to act on its own.
 - The Stop hook said "… not yet in the work chart": write the rows, run the stamp script, then print the Work line. The message names repos with changes, files outside git, and counts of research calls and outward calls (outward: something other people see, such as a Jira comment or a sent email). The counts say where to look; the rows follow the goal-directed stretches, however many calls each one took. A named repo changed on disk, not necessarily in this conversation: a change made by hand, in an editor, or before this session started gets its row too. Reason not known: `why` says "not stated", and one line above the Work line asks for it.
-- The hook asked, but nothing since the last row had a goal behind it — a plain question, answered: no row, no work note, no daily-note line. Run the stamp script with no arguments so the hook goes quiet, then end the reply with the answer.
+- The hook asked, but nothing since the last row had a goal behind it: no row, no work note, no daily-note line. A question is research only when it serves a goal: a ticket, a decision, a change to make. Explaining existing code or a concept on request is a plain question, however many files the answer took to read. Run the stamp script with no arguments so the hook goes quiet, then end the reply with the answer.
 
 Write the rows; do not offer to write them.
 
@@ -40,7 +40,7 @@ After writing: update the first line, `changes`, `areas`, `repos`. Daily note: `
 
 1. Dossier line. For each repo in `repos` that has no note in `folders.repos`, and that no earlier work note from today already lists: one line above the Work line suggests one — "`phenix.appointments` has no dossier note yet; say "dossier phenix.appointments" to start one." Suggest; the dossier gets created only when the user says so.
 2. Stamp. Run `hooks/work-chart-stamp.sh` from the plugin root, which is two directories above this skill's folder. Its arguments are the paths of the repos the new rows name, and nothing else; with no such repo, or no rows, it takes no arguments, and that is a valid run. Examples: `hooks/work-chart-stamp.sh ~/Code/StrideClients/UsCold/phenix.appointments`, or just `hooks/work-chart-stamp.sh`. Make the script's path the first word of the command (or the word after `bash`), with nothing set in front of it such as `HOME=…`; any other form does not count as a run.
-3. End the reply with the Work line:
+3. End the reply with the Work line. This holds for every reply that writes or confirms rows, including each answer to the hook's message: the Work line is the last line, and nothing follows it. Notes, caveats, and questions go above it.
 
 `Work: <N> changes today on <KEY or topic>; last: <newest row's what, first clause>`
 
