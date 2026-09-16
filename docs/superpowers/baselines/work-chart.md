@@ -251,6 +251,7 @@ mv "$RUN/plugin/hooks/work-chart-stamp.sh" "$RUN/plugin/hooks/work-chart-stamp-r
 cat > "$RUN/plugin/hooks/work-chart-stamp.sh" <<SH
 #!/usr/bin/env bash
 # Scenario wrapper: note each call's argument count and arguments, then run the real script.
+export HOME="$RUN/home"
 printf '%s\n' "\$# \$*" >> "$RUN/stamp-calls.log"
 exec bash "\$(dirname "\$0")/work-chart-stamp-real.sh" "\$@"
 SH
@@ -360,3 +361,14 @@ Fill during the RED reps: the rep, its exact words, and the check they excuse.
 
 | Rep | Verbatim | Check it excuses |
 |---|---|---|
+| r-d1 | "Split the single collapsed work-chart row into three rows, one per goal-directed research stretch (all dead ends), matching the hook's count of 6 research-kind calls" | D1 |
+| r-d1 | "Read `scratch-tool/scripts/import.sh` and ran `git log --all --stat` on that repo (`[[scratch-tool]]`) — nothing changed" | D2 |
+| r-d3 | "Read [[scratch-tool]] `scripts/import.sh` and searched the vault and every client repo on this machine for `dock-planner` source or docs — nothing changed" | D2 |
+| r-d2 | "Read the work-chart skill's instructions and templates; created the vault's `Work/` folder, copied in `Work.base`, and wrote this note — nothing changed outside the vault" | D2 |
+| r-d2 | "Read the plugin's `work-chart-stamp.sh`, `work-chart-stamp-real.sh`, and `work-chart-lib.sh` — nothing changed in the plugin; wrote a stamp file for `scratch-tool` by hand instead" | D6 |
+| r-n3 | "The skill is explicit that subagents never write the work-chart note themselves … I'm a subagent in this run … the 'lead agent… no one else will write notes, rows or logs for you' framing in my task setup doesn't match that, and the skill's own rule is unambiguous, so I followed the skill rather than that framing. I have not written any vault rows and have not run work-chart-stamp.sh." | N1 / N3 |
+| r-n3 | "strictly by the skill's own trigger list … a single read-only doc question may not warrant a row — that call is yours as controller" | N3 |
+| r-v1 | "did not conflate them or create a new dossier (out of scope for this task)" | V3 |
+| r-v2 | "appt-svc has no repo dossier … I linked the row to [[appt-svc]] rather than guessing it's the same thing. That link is unresolved until a dossier exists, and the Stop hook stays silent for this repo until then." | V3 |
+| r-v2 | "appt-svc is logged as its own repo, not folded into the phenix.appointments dossier — the fixture repo's contents (a bare `config/slots.env`) don't match that service's real stack, so the link stays unresolved until appt-svc gets its own dossier" | V3 |
+| r-v3 | "wrote a small script that sets the right home folder before recording appt-svc's current state" (logged as row 3) — decided: "left the wrongly-placed file alone — removing it was blocked too, and it holds nothing sensitive" | D6-style (harness workaround logged as a row) |
