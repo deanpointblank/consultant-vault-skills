@@ -1,6 +1,6 @@
 ---
 name: work-chart
-description: Keep a plain-language record of goal-directed work as it happens, one note per ticket or topic per day: what was done, why, and what was decided. That covers code changes in any repo, research, coordination, design, and dead ends. Use whenever work toward a goal finished or was dropped in this session: a task finished, tests ran, a commit was made, or a question was researched; whenever a Stop hook reports "not yet in the work chart"; whenever the user asks "what did you just do", "why did you change X", or "explain that diff"; and when the user says "set up the work chart". Work nobody wrote down is work the developer cannot explain tomorrow.
+description: Keep a plain-language record of goal-directed work as it happens, one note per ticket or topic per day: what was done, why, and what was decided. That covers code changes in any repo, research, coordination, design, and dead ends. Use whenever work toward a goal finished or was dropped in this session: a task finished, tests ran, a commit was made, or research for a goal ended, answered or not; whenever a Stop hook reports "not yet in the work chart"; whenever the user asks "what did you just do", "why did you change X", or "explain that diff"; and when the user says "set up the work chart". Work nobody wrote down is work the developer cannot explain tomorrow.
 ---
 
 # Work chart
@@ -11,8 +11,8 @@ Follow the obsidian-vault skill's conventions. One note per ticket per day in `f
 
 - A task finished, tests ran, a commit was made, research toward a goal reached an answer or a dead end, or the user changed subject: write rows for everything since the last row.
 - Who writes: the agent that did the work. The one exception is a worker dispatched to do one task of a larger plan (subagent-driven development); it leaves the rows to the agent that dispatched it, which writes them from the worker's report. An agent doing the user's work directly writes its own rows, including one that another agent started to act on its own.
-- The Stop hook said "… not yet in the work chart": write the rows, run the stamp script, then print the Work line. The message names repos with changes, files outside git, and counts of research calls and outward calls (outward: something other people see, such as a Jira comment or a sent email). The counts say where to look; the rows follow the goal-directed stretches, however many calls each one took. A named repo changed on disk, not necessarily in this conversation: a change made by hand, in an editor, or before this session started gets its row too. Reason not known: `why` says "not stated", and one line above the Work line asks for it.
-- The hook asked, but nothing since the last row had a goal behind it: no row, no work note, no daily-note line. A question is research only when it serves a goal: a ticket, a decision, a change to make. Explaining existing code or a concept on request is a plain question, however many files the answer took to read. Run the stamp script with no arguments so the hook goes quiet, then end the reply with the answer.
+- The Stop hook said "… not yet in the work chart": write the rows, run the stamp script, then print the Work line. The message names repos with changes, files outside git, and counts of research calls and outward calls (outward: something other people see, such as a Jira comment or a sent email). The counts say where to look; the rows follow the goal-directed stretches, however many calls each one took. A named repo changed on disk, not necessarily in this conversation: a change made by hand, in an editor, or before this session started gets its row too, and the stamp names it. A change nobody explained: `why` says "not stated", and one line above the Work line asks for it. A research row always states the goal it served.
+- The message names no repo with changes and no file outside git, and nothing since the last row had a goal behind it: no row, no work note, no daily-note line. A question is research only when it serves a goal: a ticket, a decision, a change to make. Explaining existing code or a concept on request is a plain question, however many files the answer took to read. Run the stamp script with no arguments so the hook goes quiet, then end the reply with the answer.
 
 Write the rows; do not offer to write them.
 
@@ -39,7 +39,7 @@ One table: `when | what | why | decided`.
 After writing: update the first line, `changes`, `areas`, `repos`. Daily note: `- HH:MM work on [[KEY Work YYYY-MM-DD]]: N changes`, once per work note per day, then edit the count in place; add the key to the daily note's `jira` list. Then, in order:
 
 1. Dossier line. For each repo in `repos` that has no note in `folders.repos`, and that no earlier work note from today already lists: one line above the Work line suggests one — "`phenix.appointments` has no dossier note yet; say "dossier phenix.appointments" to start one." Suggest; the dossier gets created only when the user says so.
-2. Stamp. Run `hooks/work-chart-stamp.sh` from the plugin root, which is two directories above this skill's folder. Its arguments are the paths of the repos the new rows name, and nothing else; with no such repo, or no rows, it takes no arguments, and that is a valid run. Examples: `hooks/work-chart-stamp.sh ~/Code/StrideClients/UsCold/phenix.appointments`, or just `hooks/work-chart-stamp.sh`. Make the script's path the first word of the command (or the word after `bash`), with nothing set in front of it such as `HOME=…`; any other form does not count as a run.
+2. Stamp. Run the stamp script by its full path from wherever you are working, with no `cd`: it is `hooks/work-chart-stamp.sh` under the plugin root, which is two directories above this skill's folder. Its arguments are the full paths of the repos the new rows name, and nothing else; with no such repo, or no rows, it takes no arguments, and that is a valid run. Examples: `<plugin root>/hooks/work-chart-stamp.sh ~/Code/StrideClients/UsCold/phenix.appointments`, or just `<plugin root>/hooks/work-chart-stamp.sh`. The script's path counts as a run when it is the first word of a command: at the start, after `&&`, `||`, `;` or a line break, or after `bash` or `sh`. A `VAR=value` in front of it hides the run.
 3. End the reply with the Work line. This holds for every reply that writes or confirms rows, including each answer to the hook's message: the Work line is the last line, and nothing follows it. Notes, caveats, and questions go above it.
 
 `Work: <N> changes today on <KEY or topic>; last: <newest row's what, first clause>`
@@ -69,21 +69,19 @@ The hooks count work only inside a `work_roots` folder, or inside the vault fold
 | Rows "matching the hook's count of 6 research-kind calls" | The counts point at the work; the stretches set the rows |
 | "Read `scripts/import.sh` and ran `git log --all --stat` on that repo …" | Says what was opened, not what was learned; open with the verb and end with the outcome |
 | "decided: none — dead end …" | The stop reason belongs after "dropped:" or "open:", where a reader scanning the column sees it first |
-| A row for "Read the work-chart skill's instructions" or "wrote a small script that sets the right home folder before recording …" | Upkeep of the record, not the user's work; it also drags banned words into the note |
+| A row for "Read the work-chart skill's instructions and templates" | Upkeep of the record, not the user's work; it also drags banned words into the note |
 | `why` restates the ticket | The key is in the frontmatter; the reason is what the diff cannot give back |
 | "decided: none" on a call a reviewer would question | The handoff's rulings section and the decisions folder both miss it |
 | Rows only at the end of the session | The rows should exist before the developer asks, not after |
 | Offering instead of writing — "tell me if you want this logged there" | Nothing gets recorded, and the reasoning is gone by the next turn |
-| Handing the call on — "that call is yours as controller" | The agent that did the work decides: rows, or no rows and a stamp with no arguments |
 | A daybook line instead of a work note | The daily note is the spine; the rows live in the work note it links |
 | Skipping the stamp, including after deciding no row is needed | The hook asks for the same rows again at the next stop |
 | Naming the repo in the stamp after a question with no goal | It marks that repo's changes as recorded when no row holds them |
-| `HOME=… hooks/work-chart-stamp.sh …`, or writing the stamp file by hand | Not counted as a run; the hook asks again |
+| Writing the stamp file by hand | Only a run of the script counts; the hook asks again |
 | Writing a row for a question with no goal | The chart fills with noise nobody will read |
 | Noticing a repo has no dossier and stopping there — "out of scope for this task" | The one-line suggestion is the step; the user decides |
-| "Subagents never write this note … I'm a subagent in this run" — then no rows and no stamp | That exception covers plan-task workers only; an agent doing the work writes its own rows |
-| A plan-task worker writing its own rows | Two writers, one note; the agent that dispatched it has the reports and the diff |
-| A last line like "worth a `chmod +x` if it's meant to be run directly" | Caveats go above the Work line, which goes last |
+| The wrong writer: a plan-task worker writing its own rows; any other agent refusing — "Subagents never write this note … I'm a subagent in this run" — or handing the call on — "that call is yours as controller" | A plan-task worker's dispatcher has the reports and the diff; every other agent that did the work decides and writes: rows, or no rows and a stamp with no arguments |
+| A line after the Work line — "worth a `chmod +x` if it's meant to be run directly", "Want me to add `work: Work` under `folders`?" | Caveats and questions go above the Work line, which goes last (step 3) |
 | Citing the note as a path — "from `vault/Work/PFD-65947 Work 2026-09-10.md`" | Nothing to click; `[[PFD-65947 Work 2026-09-10]]` opens it |
 | "I read it as 'a chart of my work' and built the Bases dashboard" | A chart at the vault root over notes nobody has written yet; Setup comes first |
 | "The term appears nowhere in the vault … so I inferred it from state" | Half-finished files in the vault are not the request; Setup is |
@@ -92,5 +90,4 @@ The hooks count work only inside a `work_roots` folder, or inside the vault fold
 | "Blocked — one question before I write the work-chart rows … `Meta/Config.md` has no `folders.work` key" | The key names the folder; it does not gate the rows. `Work` is the default until the user picks another |
 | Holding the folder, the base and the stamp folder for the same yes | Only the config lines are the user's to approve; the rest is this skill's own scaffolding |
 | One row for the whole task — "`scripts/import.sh` and `README.md` — added a `--dry-run` flag …, and put the flag in the README usage line" | Two reasons, two rows; `changes` and the Work line both count what the reader will look for |
-| A last line like "Want me to add `work: Work` under `folders`?" | The config question is a caveat; every caveat sits above the Work line |
 | "This change was already there before this session started — I didn't make it, so I won't log it" | The rows record the repo, not the conversation; write what changed, put "not stated" in `why`, and ask for the reason in one line above the Work line |

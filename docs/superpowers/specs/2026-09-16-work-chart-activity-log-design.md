@@ -227,7 +227,7 @@ Keeps `wc_vault` and `wc_stamp_path`. Adds or changes:
 | Deciding no row is needed but skipping the stamp | The hook asks again at the next stop |
 | Leaving a repo with no dossier out of `repos` | The By repo view misses the work |
 
-**Unchanged.** The columns, the frontmatter, the daily-note line, the Work line, and the rule that subagents never write rows.
+**Unchanged.** The columns, the frontmatter, the daily-note line, the Work line, and the rule that a worker dispatched for one plan task leaves its rows to the agent that dispatched it.
 
 ## Failure cases
 

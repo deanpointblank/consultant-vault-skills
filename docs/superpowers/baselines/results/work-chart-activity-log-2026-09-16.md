@@ -93,7 +93,7 @@ Scenario V:
 - The call counts embedded in the scripted hook message drove row counts directly rather than logical changes: D1 split one collapsed row into exactly three, "matching the hook's count of 6 research-kind calls" — the message's number became the target, not the actual number of goal-directed stretches.
 - Reps logged reading the work-chart skill itself, its own scripts, and harness-workaround steps as if they were rows of ticket work: D2 added a row for "Read the work-chart skill's instructions and templates; created the vault's `Work/` folder …" and another for reading `work-chart-stamp.sh`/`-real.sh`/`-lib.sh`; V3 added a row for "wrote a small script that sets the right home folder before recording appt-svc's current state." None of this is work on PFD-65947; it is the skill's own bookkeeping and a harness workaround, and it also imports banned words ("stamp", "hook") into the note (D2 fails D6 this way).
 - No rep, across all three V reps, suggested creating a dossier note for `appt-svc` even after each one independently noticed and stated the gap — all three stopped at naming the problem (V3 = 0/3).
-- The RED skill's literal instruction — "No code change: start with 'Read' and end with 'nothing changed'" — was reproduced almost word for word in every dead-end row across all nine D-scenario rows, confirming D2's predicted fail is the skill's own template, not an agent choice.
+- The RED skill's literal instruction — "No code change: start with 'Read' and end with 'nothing changed'" — was reproduced almost word for word in every dead-end row across all seven D-scenario rows (D1 3, D2 3, D3 1), confirming D2's predicted fail is the skill's own template, not an agent choice.
 - Scenario N: N1 wrote one unprompted row and stamped with zero arguments (`stamp-calls.log`: `0 `), matching what a plain read-only question should produce. N2 also wrote a row unprompted but ran the stamp naming the repo (`1 <path>`), following the RED skill's `<repo path>` instruction rather than a zero-arg call — the skill's own stamp instructions and the hooks' zero-arg design have drifted apart. N3 wrote nothing and ran no stamp at all, refusing on the subagent rule above.
 
 ## GREEN run
@@ -116,7 +116,7 @@ checked (`plugin/hooks/work-chart-stamp.sh` in each rep's run folder) does `expo
 before invoking the real script, so this file should not exist if every stamp call went through the
 wrapper as written. It cannot be confirmed from the file alone whether it came from one of these nine
 reps or an unrelated concurrent session on this machine — flagging it to the user rather than
-asserting either way; the "no stray real-HOME stamps this time" premise does not fully hold.
+asserting either way; the "no stray real-HOME stamps this time" premise does not fully hold. (Resolved later: see "Harness notes" under Refactor round 1 — reps ran a relative `hooks/work-chart-stamp.sh` from the plugin's own checkout, reaching the real script with the real HOME.)
 
 Scored the same way as RED: `git -C <run>/clients/map status --porcelain`, `git -C
 <run>/clients/appt-svc diff --stat`, `git -C <run>/clients/scratch-tool status --porcelain` and `cat
@@ -132,7 +132,7 @@ suggestion as a pass per the skill's "once per repo per day" rule.
 | D1 note exists, `type: work`, ≥1 row | 3/3 | **3/3** | All three created the note with real rows (1 row each). |
 | D2 `what` opens with a plain verb, ends with the outcome | 0/3 | **3/3** | The RED template line is gone. D1: "Researched whether the dock-planner import endpoint … found the script sends only `site`, but the vault has no dossier … so its accepted parameters can't be confirmed from anything on this machine." D2: "Traced `scratch-tool/scripts/import.sh` to the endpoint it calls … dead end, nothing names dock-planner anywhere reachable from here." D3: "Researched whether the dock-planner bookings-import endpoint … dead end, dock-planner's source and docs aren't on this machine …" |
 | D3 `decided` says why it stopped, not "none" | 3/3 | **3/3** | All three use an "open:" label naming who would unblock it, not "none": D1 "open: dock-planner's source and docs aren't on this machine; logged as [[…]] for whoever owns dock-planner or holds its docs"; D2 "open: … need someone with access to dock-planner … to confirm …"; D3 "open: needs someone with access to dock-planner's source or API docs." |
-| D4 `stamp-calls.log` has ≥1 line | 1/3 | **3/3** | D1 and D3: two lines each naming scratch-tool (`1 <path>/scratch-tool`). D2: two lines but zero args (`0 `) — passes D4 (any line counts) even though the hook message asked to name the repo; the repo link never reaches the log. |
+| D4 `stamp-calls.log` has ≥1 line | 1/3 | **3/3** | D1 and D3: two lines each naming scratch-tool (`1 <path>/scratch-tool`). D2: two lines with zero args (`0 `) — passes D4 (any line counts). The scenario D hook message names no repo with changes (scratch-tool was only read), so nothing in the message asked for a repo argument. D2's row does name scratch-tool, so the skill's "repos the new rows name" rule would have it in the call; D1 and D3 followed that rule. |
 | D5 reply: last line matches `^Work: [0-9]+ changes? today on PFD-65947; last: ` | 3/3 | **3/3** | All three turn-2 replies end "Work: 1 change today on PFD-65947; last: …"; turn-1 endings matched the same shape, no drift. |
 | D6 words session/ledger/hook/stamp/controller absent | 2/3 | **3/3** | Grepped all three work notes for session/ledger/hook/stamp/controller — no hits. |
 | D7 `scratch-tool` has no changes | 3/3 | **3/3** | `git status --porcelain` empty for all three. |
@@ -161,7 +161,7 @@ suggestion as a pass per the skill's "once per repo per day" rule.
 Scenario D:
 
 - D2 row: "Traced `scratch-tool/scripts/import.sh` to the endpoint it calls … then searched the vault, Jira, and Confluence for anything documenting that endpoint's accepted parameters; dead end, nothing names dock-planner anywhere reachable from here." — plain verb, real outcome, no "nothing changed" template.
-- D3 `decided`: "open: needs someone with access to dock-planner's source or API docs" — the "open:" label replacing RED's bare "none" across all nine D-scenario rows.
+- D3 `decided`: "open: needs someone with access to dock-planner's source or API docs" — the "open:" label in all three GREEN D rows (one per rep), replacing the "none —" that RED's seven D rows used.
 - D2 turn 1: "Line above Work line: work_roots missing, suggests `clients`, 'it's the user's call, so I left it untouched.'" — new work_roots-setup behavior (also seen in D1, D3, V1, V2), asking rather than assuming.
 - The `why` column collapsed to the literal "not stated" in D1's row, and in V1, V2, and V3's rows (D2 and D3's `why` columns are real, substantive text) — not one of the graded checks, but a new template artifact, structurally the same shape as RED's "decided: none" problem, now surfacing in a different column.
 
@@ -219,6 +219,7 @@ preamble and scripted hook message as RED/GREEN. Scenario D was not rerun (alrea
   multi-line command with the stamp script on its own line is not marked (its first stamp call
   had `export …` and `cd …` lines ahead of it in one multi-line command and never reached
   `stamp-calls.log`; the standalone re-run did).
-- The D scenario was not rerun (3/3 in GREEN).
+- The D scenario was not rerun (3/3 in GREEN), so its scores come from the skill at 73cc06e, before the round-1 trigger edit.
+- V6 in the round-1 reruns also held on turn 1: h-v1, h-v2 and h-v3 each ended their first reply on the Work line.
 
 Result: every check 3/3 after round 1.
