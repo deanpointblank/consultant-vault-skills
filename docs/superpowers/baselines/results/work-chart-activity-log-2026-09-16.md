@@ -187,3 +187,38 @@ Scenario V:
 
 - **N1/N2** — g-n1: "Per the skill, that counts as 'a question researched to an answer' (not the 'plain question, no goal' exception), so it earned one row." Edit: the trigger now reads "research toward a goal reached an answer or a dead end", and the no-goal bullet says a question is research only when it serves a goal (a ticket, a decision, a change to make); explaining existing code or a concept on request is a plain question, however many files the answer took to read.
 - **V6** — g-v1: "Note: the why … still not stated" after the Work line; g-v3: "Everything else … Stopping here." after it, and "Stopping here as instructed." with no Work line in turn 1. Edit: step 3 now says every reply that writes or confirms rows, including each answer to the hook's message, ends on the Work line with nothing after it; notes, caveats, and questions go above it.
+
+### Round 1 reruns (N and V)
+
+Six reps (N1–N3, V1–V3), `general-purpose` agents on sonnet, fresh context each, sent 16:04,
+`skills/work-chart/SKILL.md` at 8503cc3 (this branch, both refactor-round-1 edits applied — the
+trigger scoping for N and the "Work line ends the reply, nothing after it" rule for V). Same
+preamble and scripted hook message as RED/GREEN. Scenario D was not rerun (already 3/3 in GREEN).
+
+| Check | GREEN | Round 1 | Notes |
+|---|---|---|---|
+| N1 no file under `Work/`, daily note unchanged | 2/3 | **3/3** | All three (h-n1, h-n2, h-n3): `git status --porcelain` on `clients/map` fully empty, no `Work/` directory created. None treated the plain question as goal-directed research this time. |
+| N2 `stamp-calls.log` has a line starting `0 ` | 2/3 | **3/3** | All three: log content is exactly `0 \n` (confirmed byte-for-byte with `od -c`) — a bare zero-arg call, no repo path. |
+| N3 reply: no offer to log the answer | 3/3 | **3/3** | All three answer and explicitly state no work-chart entry is needed (h-n1: "this was a read-only lookup, so no work-chart row is needed"; h-n2: "No files were changed — this was a read-only lookup"; h-n3: "read-only lookup, so no work-chart entry or commit is warranted") — no offer, and no "that call is yours as controller" deflection. |
+| V1 `config/slots.env` says `SLOT_MINUTES=15`, uncommitted | 3/3 | **3/3** | All three: `git diff --stat` on `appt-svc` shows one file changed, content confirmed `SLOT_MINUTES=15`, `git status --porcelain` shows ` M config/slots.env`. |
+| V2 work note lists `"[[appt-svc]]"` in `repos` | 3/3 | **3/3** | All three frontmatter list `appt-svc` under `repos` (h-v1/h-v2 block style `- "[[appt-svc]]"`, h-v3 flow style `["[[appt-svc]]"]`). |
+| V3 reply: a line above the Work line suggests a dossier note for `appt-svc` (turn 1 counts) | 3/3 | **3/3** | All three turn-1 replies carry the line `"appt-svc" has no dossier note yet; say "dossier appt-svc" to start one.` above the Work line. |
+| V4 no `Repos/appt-svc.md` created | 3/3 | **3/3** | Confirmed absent from all three `Repos/` folders. |
+| V5 `stamp-calls.log` names `<RUN>/clients/appt-svc` or a path inside it | 3/3 | **3/3** | h-v1: 2 lines, both `1 <path>/appt-svc`. h-v2: 2 lines, both `1 <path>/appt-svc`. h-v3: 1 line, `1 <path>/appt-svc`. |
+| V6 reply: last line matches `^Work: [0-9]+ changes? today on PFD-65947; last: ` (turn 2) | 1/3 | **3/3** | h-v1 turn 2: no new row (re-verification treated as upkeep), Work line last. h-v2 turn 2: added a second row for ticket-match research, Work line last. h-v3 turn 2: a stray-real-stamp note printed above the Work line, not after it — Work line last in all three. |
+
+### Harness notes
+
+- Stray stamp files in the real `~/.config/vault-skills/work-stamp/` (files at 15:03 ×2, 15:43,
+  16:16) came from reps running a relative `hooks/work-chart-stamp.sh` while their shell sat in
+  the plugin's own checkout — the real script with the real HOME, not the fixture wrapper.
+- Rep h-v1 claimed a same-second edit gave a stale fingerprint on the first stamp run
+  ("`git diff --stat` didn't pick up the edit on the very first stamp run … mtime landed in the
+  same second") — unverified.
+- Rep g-d3 showed the log hook does not treat a line break as a command separator, so a
+  multi-line command with the stamp script on its own line is not marked (its first stamp call
+  had `export …` and `cd …` lines ahead of it in one multi-line command and never reached
+  `stamp-calls.log`; the standalone re-run did).
+- The D scenario was not rerun (3/3 in GREEN).
+
+Result: every check 3/3 after round 1.
