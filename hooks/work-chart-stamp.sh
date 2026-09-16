@@ -5,6 +5,7 @@
 # No paths is fine: it does nothing and exits 0 (the log hook sees the call and marks the log).
 # A path in no git repo: a message on stderr, the rest still stamped, exit 1 at the end.
 set -u
+export GIT_OPTIONAL_LOCKS=0
 . "$(cd "$(dirname "$0")" && pwd)/work-chart-lib.sh"
 vault=$(wc_vault) || vault=""
 status=0

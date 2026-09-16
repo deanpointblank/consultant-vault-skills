@@ -271,6 +271,32 @@ LOGS="$HOME/.config/vault-skills/work-log"
 stopcall nolog "$VAULT" false >/dev/null
 check "stop: logs older than 14 days removed, newer kept" "recent.tsv" "$(cd "$LOGS" && ls old.tsv recent.tsv 2>/dev/null)"
 
+put bad1 bogus edit Edit "$SIB/a.txt"
+result=$(stopcall bad1 "$VAULT" false)
+case "$result" in
+  '{"decision":"block","reason":"Work since '[0-9][0-9]:[0-9][0-9]' not yet in the work chart: '*)
+    ok "stop: malformed first-line time falls back to the current time" ;;
+  *)
+    bad "stop: malformed first-line time falls back to the current time (got [$result])" ;;
+esac
+git -C "$SIB" checkout -q -- a.txt
+
+PBASE=1789580000
+PLOG=$(logfile perf1)
+mkdir -p "$(dirname "$PLOG")"
+{
+  for ((i=1; i<=500; i++)); do printf '%s\tedit\tEdit\t%s\n' "$((PBASE+i))" "$SIB/a.txt"; done
+  for ((i=1; i<=500; i++)); do printf '%s\tedit\tWrite\t%s\n' "$((PBASE+500+i))" "$LOOSE/out.txt"; done
+  for ((i=1; i<=500; i++)); do printf '%s\tresearch\tWebFetch\t\n' "$((PBASE+1000+i))"; done
+  for ((i=1; i<=500; i++)); do printf '%s\tshell\tBash\t%s\n' "$((PBASE+1500+i))" "$SIB"; done
+} > "$PLOG"
+TIMEFORMAT=%R
+secs=$( { time stopcall perf1 "$VAULT" false > "$T/perf.out"; } 2>&1 )
+presult=$(cat "$T/perf.out")
+pexpected=$(block "$((PBASE+1))" "$REASON_SIB; files outside git: ~/Code/Client/scratch/out.txt; research calls: 1000")
+check "stop: 2000 lines after MARK, reason still correct" "$pexpected" "$presult"
+check "stop: 2000 lines after MARK finishes under 1s (took ${secs}s)" "yes" "$(awk -v s="$secs" 'BEGIN{print (s<1)?"yes":"no"}')"
+
 # --- Every run -----------------------------------------------------------------------------
 
 check "both hooks exit 0 in every case above" "" "$(cat "$T/nonzero")"
