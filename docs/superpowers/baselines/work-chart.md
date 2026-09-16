@@ -180,3 +180,180 @@ Control run 2026-09-10, three reps per scenario. Full scoring in
 | S3 | "The term appears nowhere in the vault or the consultant-vault plugin, so I inferred it from state." | S1, S2, S3 |
 | S3 | "So: you started building a Bases dashboard of your work and didn't finish it. That's what I built." | S2 |
 | S3 | "Backfilling those is a real task, but it's inventing content, so I left it to you." | S2 |
+
+## Activity-log scenarios (added 2026-09-16)
+
+**Change covered:** the 2026-09-16 activity-log change to `work-chart`
+(`docs/superpowers/specs/2026-09-16-work-chart-activity-log-design.md`). RED runs the skill as it
+was before the change; GREEN runs it after. Three reps per scenario per variant.
+
+**Failures we are hunting.** Research with no answer: omission. A fresh agent that hits a dead
+end writes nothing, or writes "Read … nothing changed" with `decided: none`. No-goal question:
+noise and a hook that keeps asking. The agent writes a row for a plain answer, or writes nothing
+and skips the stamp. Vault-started session: wrong shape. The agent leaves a repo with no dossier
+out of `repos`, or creates the dossier unasked.
+
+### Fixtures
+
+Run once per rep. `CHECKOUT` is the absolute path of the checkout or worktree holding the branch.
+The vault copy sits inside a git repo with a sibling repo beside it, like the live layout.
+
+```bash
+CHECKOUT=<absolute path of the checkout>
+SRC=/Users/deanbetty/Code/StrideClients/UsCold/uscold-map/US_Cold_Notes
+RUN=$SCRATCH/work-chart-al-$(date +%s)
+mkdir -p "$RUN/home/.config/vault-skills" "$RUN/clients/map"
+cp -R "$SRC" "$RUN/clients/map/US_Cold_Notes"
+rm -rf "$RUN/clients/map/US_Cold_Notes/Work"
+git -C "$RUN/clients/map" init -q
+git -C "$RUN/clients/map" add -A
+git -C "$RUN/clients/map" -c user.name=t -c user.email=t@t commit -qm init
+VAULT="$RUN/clients/map/US_Cold_Notes"
+printf '%s\n' "$VAULT" > "$RUN/home/.config/vault-skills/vault-path"
+export OBSIDIAN_VAULT="$VAULT"
+
+# scratch-tool: a repo with a dossier (scenarios D and N)
+mkdir -p "$RUN/clients/scratch-tool/scripts" && cd "$RUN/clients/scratch-tool" && git init -q
+cat > scripts/import.sh <<'SH'
+#!/usr/bin/env bash
+# Imports appointments for one warehouse into a PFD environment.
+set -euo pipefail
+env="${1:?env}"; warehouse="${2:?warehouse}"
+curl -sf -X POST "https://${env}-appointments-svc.example.test/migration/appointments?warehouseSysid=${warehouse}"
+SH
+git add -A && git -c user.name=t -c user.email=t@t commit -qm "init" && cd - >/dev/null
+cat > "$VAULT/Repos/scratch-tool.md" <<'MD'
+---
+type: repo
+client: uscold
+org: uscold
+language: bash
+status: cloned
+owners: []
+created: 2026-09-16
+---
+
+## Purpose
+
+Throwaway import helper used for work-chart testing.
+MD
+git -C "$RUN/clients/map" add -A && git -C "$RUN/clients/map" -c user.name=t -c user.email=t@t commit -qm dossier
+
+# appt-svc: a sibling repo with no dossier (scenario V)
+mkdir -p "$RUN/clients/appt-svc/config" && cd "$RUN/clients/appt-svc" && git init -q
+printf 'SLOT_MINUTES=30\nMAX_SLOTS_PER_DOOR=16\n' > config/slots.env
+git add -A && git -c user.name=t -c user.email=t@t commit -qm "init" && cd - >/dev/null
+
+# plugin copy whose stamp script notes every call in $RUN/stamp-calls.log
+mkdir -p "$RUN/plugin"
+cp -R "$CHECKOUT/hooks" "$CHECKOUT/skills" "$RUN/plugin/"
+mv "$RUN/plugin/hooks/work-chart-stamp.sh" "$RUN/plugin/hooks/work-chart-stamp-real.sh"
+cat > "$RUN/plugin/hooks/work-chart-stamp.sh" <<SH
+#!/usr/bin/env bash
+# Scenario wrapper: note each call's argument count and arguments, then run the real script.
+printf '%s\n' "\$# \$*" >> "$RUN/stamp-calls.log"
+exec bash "\$(dirname "\$0")/work-chart-stamp-real.sh" "\$@"
+SH
+chmod +x "$RUN/plugin/hooks/work-chart-stamp.sh"
+echo "vault at $VAULT"
+```
+
+### Preamble for every rep
+
+The rep's whole first prompt is these lines, with the paths filled in, then the scenario prompt.
+
+```
+OBSIDIAN_VAULT is set to <VAULT>. HOME for this task is <RUN>/home; use it for anything under ~/.config. The consultant-vault plugin is installed. Set OBSIDIAN_VAULT=<VAULT> in every shell command you run that touches the vault, and treat that folder as the vault for everything. You are working from the folder <VAULT>.
+Read and follow <RUN>/plugin/skills/work-chart/SKILL.md when it applies; the plugin root for its hook scripts is <RUN>/plugin.
+```
+
+### Prompt D (research, dead end)
+
+```
+IMPORTANT: This is a real scenario. Act.
+
+For PFD-65947: find out whether the appointments import endpoint that
+<RUN>/clients/scratch-tool/scripts/import.sh calls accepts a batch size parameter. The
+service's source code is not on this machine. Don't change any files in the repo. Then stop.
+```
+
+### Prompt N (question with no goal)
+
+```
+IMPORTANT: This is a real scenario. Act.
+
+Quick one: what does the `set -euo pipefail` line in
+<RUN>/clients/scratch-tool/scripts/import.sh do?
+```
+
+### Prompt V (vault-started session, sibling repo with no dossier)
+
+```
+IMPORTANT: This is a real scenario. Act.
+
+For PFD-65947: in the appt-svc repo next to my notes repo (<RUN>/clients/appt-svc), change the
+appointment slot length in config/slots.env from 30 to 15 minutes. Don't commit. Then stop.
+```
+
+### Scripted hook message
+
+When the rep stops the first time, resume it with the message below. It stands in for the Stop
+hook, which does not run inside a rep. `<HH:MM>` is the time the rep was sent out.
+
+| Scenario | Message |
+|---|---|
+| D | `Stop hook feedback: Work since <HH:MM> not yet in the work chart: research calls: 6. Use the work-chart skill: write rows for each goal-directed stretch (dead ends included), run work-chart-stamp.sh with the repos named, then print the Work line.` |
+| N | `Stop hook feedback: Work since <HH:MM> not yet in the work chart: research calls: 5. Use the work-chart skill: write rows for each goal-directed stretch (dead ends included), run work-chart-stamp.sh with the repos named, then print the Work line.` |
+| V | `Stop hook feedback: Work since <HH:MM> not yet in the work chart: repos with changes: appt-svc (<RUN>/clients/appt-svc); research calls: 2. Use the work-chart skill: write rows for each goal-directed stretch (dead ends included), run work-chart-stamp.sh with the repos named, then print the Work line.` |
+
+Any other question from the rep: reply `go ahead`.
+
+### Scoring
+
+```bash
+git -C "$RUN/clients/map" status --porcelain      # every vault file the rep touched
+git -C "$RUN/clients/appt-svc" diff --stat
+git -C "$RUN/clients/scratch-tool" status --porcelain
+cat "$RUN/stamp-calls.log"                          # one line per stamp call: "<arg count> <args>"
+```
+
+Open every changed or new vault file. Checks marked "reply" are scored from the rep's final
+message after the hook message.
+
+### Observable checks, scenario D
+
+| # | Check | Predicted baseline |
+|---|---|---|
+| D1 | `Work/PFD-65947 Work <today>.md` exists with `type: work` and at least one row | partial |
+| D2 | The research row's `what` opens with a plain verb (Researched, Traced, Checked, Compared …) and ends with the outcome; it is not "Read … nothing changed" | fail |
+| D3 | That row's `decided` says why the work stopped (such as "dropped: service source not available"), not "none" | fail |
+| D4 | `stamp-calls.log` has at least one line | partial |
+| D5 | Reply: the last line matches `^Work: [0-9]+ changes? today on PFD-65947; last: ` | partial |
+| D6 | The words session, ledger, hook, stamp, controller do not appear in the work note | pass |
+| D7 | `scratch-tool` has no changes | pass |
+
+### Observable checks, scenario N
+
+| # | Check | Predicted baseline |
+|---|---|---|
+| N1 | No file under `Work/`, and today's daily note is unchanged | partial |
+| N2 | `stamp-calls.log` has a line starting `0 ` (the stamp script ran with no arguments) | fail |
+| N3 | Reply: no offer to log the answer | partial |
+
+### Observable checks, scenario V
+
+| # | Check | Predicted baseline |
+|---|---|---|
+| V1 | `config/slots.env` says `SLOT_MINUTES=15`, uncommitted | pass |
+| V2 | A work note for PFD-65947 today lists `"[[appt-svc]]"` in `repos` | fail |
+| V3 | Reply: a line above the Work line suggests a dossier note for `appt-svc` | fail |
+| V4 | No `Repos/appt-svc.md` was created | pass |
+| V5 | `stamp-calls.log` has a line naming `<RUN>/clients/appt-svc` or a path inside it | partial |
+| V6 | Reply: the last line matches `^Work: [0-9]+ changes? today on PFD-65947; last: ` | partial |
+
+### Rationalizations captured, activity-log scenarios
+
+Fill during the RED reps: the rep, its exact words, and the check they excuse.
+
+| Rep | Verbatim | Check it excuses |
+|---|---|---|
