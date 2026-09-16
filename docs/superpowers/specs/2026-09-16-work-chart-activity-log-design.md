@@ -245,6 +245,10 @@ One line each.
 - A repo with changes from before the session and no stamp: the first touch asks for rows; rows say "not stated" for changes nobody explained.
 - A stamp saved by the old script, for a repo that holds the vault: the fingerprint differs once, so the hook asks once, then the new stamp holds.
 - A shell command that works in another folder by path (such as `git -C ../other-repo`) is logged against `cwd`'s repo; the other repo counts only when an edit reached it.
+- A line inside a heredoc body or a multi-line quoted string that starts with the stamp script's path is read as a run and writes a `MARK`; the lines logged before it then stop counting.
+- `git diff --stat` may refresh `.git/index` even with optional locks off. That is the only write the Stop hook can cause, and it stays inside `.git`.
+- The fingerprint covers status lines and diff line counts only. A second edit with the same counts, or an edit to an untracked file, does not change it. Edits made with the edit tools still count, because every edit line asks for rows.
+- Not yet verified: whether the tool-call hook fires when the stamp script exits 1 (one bad path). The live check covers it.
 
 ## Repo changes
 

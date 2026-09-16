@@ -2,7 +2,7 @@
 date: 2026-09-15
 status: done
 type: note
-tags: [skill-idea, work-chart, hooks, untracked]
+tags: [skill-idea, work-chart, hooks]
 ---
 
 # work-chart hook only watches the repo the CLI was opened in

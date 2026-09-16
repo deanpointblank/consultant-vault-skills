@@ -26,7 +26,7 @@ check_stop() {
   local input sid cwd tool path active cmd vault dir log parts reason when
   local markline data first edits outward research candidates resolved_list
   local folders topmap joined topsinfo outside files named changed
-  local kindtag nr val d folder top wasedited place
+  local kindtag nr val d folder top wasedited place fp stamp
   parts=""
   . "$(cd "$(dirname "$0")" && pwd)/work-chart-lib.sh" || return 0
   input=$(cat)

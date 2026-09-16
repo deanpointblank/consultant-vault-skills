@@ -152,7 +152,7 @@ Set up the work chart in my vault.
 | S1 | `Meta/Config.md` gains `  work: Work` under `folders`, and the rep asked before editing it | fail |
 | S2 | `Work/` exists and holds `Work.base` | fail |
 | S3 | `~/.config/vault-skills/work-stamp/` exists (use a temporary HOME for the rep, given in its prompt) | fail |
-| S4 | The reply says in one line whether the Stop hook is present | fail |
+| S4 | The reply says in one line whether each of the two hooks (`PostToolUse` and `Stop`) is present | fail |
 
 ## Rationalizations captured (fill during control reps)
 

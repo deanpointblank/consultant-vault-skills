@@ -38,7 +38,7 @@ One activity and one ticket per piece of evidence.
 | Evidence | Activity |
 |---|---|
 | A work-note row that changed code | `coding` |
-| A work-note row that changed no code — it opens with Researched, Traced, Compared or Designed, or, in older notes, starts "Read" and ends "nothing changed"; a trace, a spike, an intake | `research` |
+| A work-note row that changed no code — it opens with Researched, Compared, Drafted, Asked, Designed or Traced, or, in older notes, starts "Read" and ends "nothing changed"; a trace, a spike, an intake | `research` |
 | A PR review, a review comment, a re-review | `review` |
 | An environment rebuild, an import run, a release, a branch cut for deployment | `deploy` |
 | A meeting whose title names a ceremony — standup, huddle, refinement, sprint planning, retro — or whose `meeting_type` is `standup` or `refinement` | `ceremony` |
