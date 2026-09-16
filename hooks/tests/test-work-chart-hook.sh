@@ -197,26 +197,79 @@ TIMEFORMAT=%R
 secs=$( { time for i in 1 2 3 4 5 6 7 8 9 10; do post speed Bash "$SIB" '{"command":"ls"}' | bash "$LOG"; done; } 2>&1 )
 check "log: under 50 ms a call (10 calls took ${secs}s)" "yes" "$(awk -v s="$secs" 'BEGIN {print (s < 0.5) ? "yes" : "no"}')"
 
-# --- Old Stop hook (Task 4 replaces this section) ----------------------------------------
+# --- Stop hook ---------------------------------------------------------------------------
 
-OLDVAULT="$T/oldvault"; mkdir -p "$OLDVAULT/Meta" "$OLDVAULT/Repos"
-printf -- '---\nfolders:\n  repos: Repos\n---\n' > "$OLDVAULT/Meta/Config.md"
-REPO="$T/scratch-tool"; mkrepo "$REPO"
-NOREPO="$T/plain"; mkdir -p "$NOREPO"
-OLDBLOCK='{"decision":"block","reason":"Files changed since the last work-chart rows. Use the work-chart skill: write the rows for what changed and why, then print the Work line."}'
-oldin() { printf '{"session_id":"s","transcript_path":"/dev/null","cwd":"%s","permission_mode":"default","hook_event_name":"Stop","stop_hook_active":%s}' "$1" "$2"; }
-printf '%s\n' "$OLDVAULT" > "$HOME/.config/vault-skills/vault-path"
-check "old stop: silent when stop_hook_active" "" "$(oldin "$REPO" true | bash "$STOP")"
-echo two >> "$REPO/a.txt"
-check "old stop: silent outside a repo" "" "$(oldin "$NOREPO" false | bash "$STOP")"
-check "old stop: silent without a dossier" "" "$(oldin "$REPO" false | bash "$STOP")"
-printf -- '---\ntype: repo\n---\n' > "$OLDVAULT/Repos/scratch-tool.md"
-check "old stop: blocks on changes with no stamp" "$OLDBLOCK" "$(oldin "$REPO" false | bash "$STOP")"
-bash "$STAMP" "$REPO"
-check "old stop: silent when stamp matches" "" "$(oldin "$REPO" false | bash "$STOP")"
+TAIL='Use the work-chart skill: write rows for each goal-directed stretch (dead ends included), run work-chart-stamp.sh with the repos named, then print the Work line.'
+# block: $1 = epoch of the first line after the last MARK, $2 = the parts.
+block() { printf '{"decision":"block","reason":"Work since %s not yet in the work chart: %s. %s"}' "$(date -r "$1" +%H:%M)" "$2" "$TAIL"; }
+# first: epoch of the first line after the last MARK in a session's log.
+first() { awk -F'\t' '$2 == "MARK" {t = ""; next} t == "" {t = $1} END {print t}' "$(logfile "$1")"; }
+# put: write a log line directly. $1 session, $2 epoch, $3 kind, $4 tool, $5 place.
+put() { mkdir -p "$HOME/.config/vault-skills/work-log"; printf '%s\t%s\t%s\t%s\n' "$2" "$3" "$4" "${5:-}" >> "$(logfile "$1")"; }
+snapshot() { find "$MAP" "$SIB" "$LOOSE" -path '*/.git' -prune -o -type f -print0 | xargs -0 shasum | sort | shasum; }
+REASON_SIB="repos with changes: sibling (~/Code/Client/sibling)"
+
+for i in 1 2 3 4; do logcall r1 WebFetch "$VAULT" '{"url":"https://example.test"}'; done
+check "stop: four research calls -> silent" "" "$(stopcall r1 "$VAULT" false)"
+logcall r1 Bash "$LOOSE" '{"command":"ls"}'
+check "stop: five research and shell calls -> block" "$(block "$(first r1)" 'research calls: 5')" "$(stopcall r1 "$VAULT" false)"
+check "stop: loop guard on -> silent" "" "$(stopcall r1 "$VAULT" true)"
+rm "$HOME/.config/vault-skills/vault-path"
+check "stop: no vault -> silent" "" "$(stopcall r1 "$VAULT" false)"
 printf '%s\n' "$VAULT" > "$HOME/.config/vault-skills/vault-path"
+check "stop: no log for the session -> silent" "" "$(stopcall nolog "$VAULT" false)"
 
-# --- end of old Stop hook ----------------------------------------------------------------
+echo two >> "$SIB/a.txt"
+logcall e1 Edit "$VAULT" "{\"file_path\":\"$SIB/a.txt\"}"
+before=$(snapshot)
+check "stop: vault session, one edit in a sibling repo with no dossier -> block naming it" "$(block "$(first e1)" "$REASON_SIB")" "$(stopcall e1 "$VAULT" false)"
+check "stop: wrote nothing to the repos or the vault" "$before" "$(snapshot)"
+check "stop: same result without jq" "$(block "$(first e1)" "$REASON_SIB")" "$(WC_NO_JQ=1 stopcall e1 "$VAULT" false)"
+bash "$STAMP" "$SIB"
+logcall e1 Bash "$VAULT" "{\"command\":\"bash $STAMP $SIB\"}"
+check "stop: MARK with nothing after -> silent" "" "$(stopcall e1 "$VAULT" false)"
+
+logcall o1 mcp__atlassian__addCommentToJiraIssue "$VAULT" '{"issueIdOrKey":"PFD-1"}'
+check "stop: one outward call -> block" "$(block "$(first o1)" 'outward calls: 1')" "$(stopcall o1 "$VAULT" false)"
+
+echo "select 1" > "$LOOSE/q.sql"
+logcall f1 Write "$VAULT" "{\"file_path\":\"$LOOSE/q.sql\"}"
+check "stop: edit outside git -> block naming the file" "$(block "$(first f1)" 'files outside git: ~/Code/Client/scratch/q.sql')" "$(stopcall f1 "$VAULT" false)"
+
+logcall d1 Bash "$SIB" '{"command":"ls"}'
+check "stop: shell only, repo matches its stamp -> silent" "" "$(stopcall d1 "$SIB" false)"
+echo three >> "$SIB/a.txt"
+check "stop: shell only, file changed on disk -> block through the fingerprint" "$(block "$(first d1)" "$REASON_SIB; research calls: 1")" "$(stopcall d1 "$SIB" false)"
+git -C "$SIB" checkout -q -- a.txt; rm -rf "$HOME/.config/vault-skills/work-stamp"
+check "stop: shell only, repo clean again -> silent" "" "$(stopcall d1 "$SIB" false)"
+
+logcall v1 Bash "$VAULT" '{"command":"ls"}'
+echo "row" >> "$VAULT/Work/Work - notes 2026-09-16.md"
+echo "line" >> "$VAULT/Daily/2026-09-16.md"
+check "stop: vault notes written, holding repo otherwise clean -> silent" "" "$(stopcall v1 "$VAULT" false)"
+
+for i in 1 2 3 4 5 6 7 8 9 10; do put m1 1789567500 research WebFetch; done
+put m1 1789567600 MARK Bash
+check "stop: only lines after the last MARK count" "" "$(stopcall m1 "$VAULT" false)"
+put m1 1789567700 edit Edit "$SIB/a.txt"
+check "stop: edit after MARK, repo since committed -> block, time from that line" "$(block 1789567700 "$REASON_SIB")" "$(stopcall m1 "$VAULT" false)"
+
+echo two >> "$SIB/a.txt"; echo two >> "$MAP/a.txt"
+put a1 1789567500 edit Edit "$SIB/a.txt"
+put a1 1789567510 shell Bash "$SIB"
+put a1 1789567520 edit Edit "$MAP/a.txt"
+put a1 1789567530 edit Write "$LOOSE/q.sql"
+put a1 1789567540 edit Write "$LOOSE/q.sql"
+for i in 1 2 3 4 5 6; do put a1 1789567610 research WebFetch; done
+put a1 1789567620 outward mcp__atlassian__addCommentToJiraIssue
+check "stop: every part, in order" "$(block 1789567500 "repos with changes: sibling (~/Code/Client/sibling), map (~/Code/Client/map); files outside git: ~/Code/Client/scratch/q.sql; research calls: 7; outward calls: 1")" "$(stopcall a1 "$VAULT" false)"
+git -C "$SIB" checkout -q -- a.txt; git -C "$MAP" checkout -q -- a.txt
+
+LOGS="$HOME/.config/vault-skills/work-log"
+: > "$LOGS/old.tsv"; touch -t "$(date -v-15d +%Y%m%d%H%M)" "$LOGS/old.tsv"
+: > "$LOGS/recent.tsv"; touch -t "$(date -v-13d +%Y%m%d%H%M)" "$LOGS/recent.tsv"
+stopcall nolog "$VAULT" false >/dev/null
+check "stop: logs older than 14 days removed, newer kept" "recent.tsv" "$(cd "$LOGS" && ls old.tsv recent.tsv 2>/dev/null)"
 
 # --- Every run -----------------------------------------------------------------------------
 

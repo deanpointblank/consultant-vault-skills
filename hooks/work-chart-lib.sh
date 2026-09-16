@@ -10,14 +10,6 @@ wc_vault() {
   [ -n "$v" ] && [ -d "$v" ] && printf '%s' "$v"
 }
 
-# Print the repos folder name from Meta/Config.md, default Repos. $1 = vault.
-# Used only by the old Stop hook; Task 4 removes it.
-wc_repos_folder() {
-  local f
-  f=$(awk '/^folders:/{in_f=1; next} in_f && /^[^ ]/{in_f=0} in_f && /^  repos:/{sub(/^  repos:[ ]*/, ""); gsub(/["'"'"']/, ""); print; exit}' "$1/Meta/Config.md" 2>/dev/null)
-  printf '%s' "${f:-Repos}"
-}
-
 # Print the work roots from Meta/Config.md, one per line, with a leading ~ expanded.
 # Prints the vault itself when work_roots is missing or empty. $1 = vault.
 wc_roots() {
