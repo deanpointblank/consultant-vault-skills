@@ -88,6 +88,28 @@ check "fingerprint: a repo that is the vault prints nothing" "" "$(wc_fingerprin
 
 check "log path" "$HOME/.config/vault-skills/work-log/s-1.tsv" "$(wc_log_path s-1)"
 
+# --- Stamp script ------------------------------------------------------------------------
+
+STAMPS="$HOME/.config/vault-skills/work-stamp"
+bash "$STAMP" > "$T/stamp.out" 2>&1; code=$?
+check "stamp: no arguments exits 0" 0 "$code"
+check "stamp: no arguments prints nothing" "" "$(cat "$T/stamp.out")"
+check "stamp: no arguments writes no stamp" "0" "$(ls "$STAMPS" 2>/dev/null | wc -l | tr -d ' ')"
+
+echo two >> "$SIB/a.txt"; echo two >> "$MAP/a.txt"
+bash "$STAMP" "$SIB" "$MAP/a.txt" 2>"$T/stamp.err"; code=$?
+check "stamp: two repos exits 0" 0 "$code"
+check "stamp: sibling stamp holds its fingerprint" "$(wc_fingerprint "$SIB" "$VAULT")" "$(cat "$(wc_stamp_path "$SIB")")"
+check "stamp: a file path stamps its repo, vault left out" "$(wc_fingerprint "$MAP" "$VAULT")" "$(cat "$(wc_stamp_path "$MAP")")"
+
+rm -rf "$STAMPS"
+bash "$STAMP" "$SIB" "$T/nowhere" "$MAP" 2>"$T/stamp.err"; code=$?
+check "stamp: a path outside git exits 1" 1 "$code"
+check "stamp: the bad path is named on stderr" "not a git repo: $T/nowhere" "$(cat "$T/stamp.err")"
+[ -f "$(wc_stamp_path "$SIB")" ] && [ -f "$(wc_stamp_path "$MAP")" ]
+check "stamp: the other repos are still stamped" 0 "$?"
+git -C "$SIB" checkout -q -- a.txt; git -C "$MAP" checkout -q -- a.txt; rm -rf "$STAMPS"
+
 # --- Log hook ----------------------------------------------------------------------------
 
 logcall c1 Edit "$VAULT" "{\"file_path\":\"$SIB/a.txt\",\"old_string\":\"one\",\"new_string\":\"two\"}"
