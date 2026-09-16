@@ -88,6 +88,74 @@ check "fingerprint: a repo that is the vault prints nothing" "" "$(wc_fingerprin
 
 check "log path" "$HOME/.config/vault-skills/work-log/s-1.tsv" "$(wc_log_path s-1)"
 
+# --- Log hook ----------------------------------------------------------------------------
+
+logcall c1 Edit "$VAULT" "{\"file_path\":\"$SIB/a.txt\",\"old_string\":\"one\",\"new_string\":\"two\"}"
+logcall c1 Write "$VAULT" "{\"file_path\":\"$LOOSE/q.sql\",\"content\":\"select 1\"}"
+logcall c1 NotebookEdit "$VAULT" "{\"notebook_path\":\"$SIB/n.ipynb\",\"new_source\":\"x\"}"
+logcall c1 mcp__atlassian__addCommentToJiraIssue "$VAULT" '{"issueIdOrKey":"PFD-1","commentBody":"hi"}'
+logcall c1 mcp__claude_ai_Gmail__label_message "$VAULT" '{"messageId":"m"}'
+logcall c1 mcp__claude_ai_Gmail__list_labels "$VAULT"
+logcall c1 mcp__claude_ai_Gmail__search_threads "$VAULT" '{"query":"pallet"}'
+logcall c1 mcp__atlassian__getTransitionsForJiraIssue "$VAULT" '{"issueIdOrKey":"PFD-1"}'
+logcall c1 mcp__atlassian__editJiraIssue "$VAULT" '{"issueIdOrKey":"PFD-1"}'
+logcall c1 mcp__claude_ai_Asana__save_task_changes_confirm "$VAULT"
+logcall c1 Read "$VAULT" "{\"file_path\":\"$SIB/a.txt\"}"
+logcall c1 Grep "$VAULT" "{\"pattern\":\"x\",\"path\":\"$SIB\"}"
+logcall c1 WebFetch "$VAULT" '{"url":"https://example.test","prompt":"p"}'
+logcall c1 Bash "$SIB" '{"command":"ls -la"}'
+logcall c1 Bash "$LOOSE" '{"command":"ls"}'
+check "log: each kind classified, place recorded" "edit:Edit:$SIB/a.txt | edit:Write:$LOOSE/q.sql | edit:NotebookEdit:$SIB/n.ipynb | outward:mcp__atlassian__addCommentToJiraIssue: | outward:mcp__claude_ai_Gmail__label_message: | research:mcp__claude_ai_Gmail__list_labels: | research:mcp__claude_ai_Gmail__search_threads: | research:mcp__atlassian__getTransitionsForJiraIssue: | outward:mcp__atlassian__editJiraIssue: | outward:mcp__claude_ai_Asana__save_task_changes_confirm: | research:Read:$SIB/a.txt | research:Grep:$SIB | research:WebFetch: | shell:Bash:$SIB | shell:Bash:" "$(logged c1)"
+check "log: four tab-separated fields, epoch first" "yes" "$(awk -F'\t' 'NF != 4 || $1 !~ /^[0-9]+$/ {bad=1} END {print bad ? "no" : "yes"}' "$(logfile c1)")"
+
+logcall c2 Skill "$VAULT" '{"skill":"consultant-vault:daybook"}'
+logcall c2 Agent "$VAULT" '{"prompt":"x"}'
+logcall c2 TodoWrite "$VAULT" '{"todos":[]}'
+logcall c2 AskUserQuestion "$VAULT" '{"questions":[]}'
+logcall c2 mcp__claude_design__render_preview "$VAULT" '{}'
+check "log: Skill, Agent, todo, questions, unmatched MCP write nothing" "" "$(logged c2)"
+
+logcall c3 Edit "$VAULT" "{\"file_path\":\"$VAULT/Daily/2026-09-16.md\"}"
+logcall c3 Write "$SIB" "{\"file_path\":\"$VAULT/Work/x.md\"}"
+check "log: vault edits skipped" "" "$(logged c3)"
+
+logcall c4 Bash "$ELSE" '{"command":"ls"}'
+logcall c4 Read "$ELSE" "{\"file_path\":\"$ELSE/a.txt\"}"
+logcall c4 Edit "$ELSE" "{\"file_path\":\"${ROOT}2/a.txt\"}"
+check "log: calls outside every root skipped" "" "$(logged c4)"
+logcall c4 Edit "$ELSE" "{\"file_path\":\"$SIB/a.txt\"}"
+check "log: cwd outside, path inside -> logged" "edit:Edit:$SIB/a.txt" "$(logged c4)"
+
+logcall c5 Bash "$SIB" '{"command":"bash /plugins/consultant-vault/hooks/work-chart-stamp.sh /x/sibling"}'
+check "log: the stamp call writes a MARK" "MARK:Bash:" "$(logged c5)"
+
+rm "$HOME/.config/vault-skills/vault-path"
+logcall c6 Edit "$SIB" "{\"file_path\":\"$SIB/a.txt\"}"
+check "log: no vault -> nothing" "" "$(logged c6)"
+printf '%s\n' "$VAULT" > "$HOME/.config/vault-skills/vault-path"
+
+printf -- '---\ntype: config\n---\n' > "$VAULT/Meta/Config.md"
+logcall c7 Edit "$SIB" "{\"file_path\":\"$SIB/a.txt\"}"
+logcall c7 Bash "$VAULT" '{"command":"ls"}'
+check "log: work_roots missing -> only the vault counts" "shell:Bash:$MAP" "$(logged c7)"
+config_roots
+
+WC_NO_JQ=1 logcall c8 Edit "$VAULT" "{\"file_path\":\"$SIB/a.txt\"}"
+WC_NO_JQ=1 logcall c8 mcp__atlassian__getJiraIssue "$VAULT" '{"issueIdOrKey":"PFD-1"}'
+WC_NO_JQ=1 logcall c8 Bash "$SIB" '{"command":"sh hooks/work-chart-stamp.sh"}'
+check "log: sed fallback without jq" "edit:Edit:$SIB/a.txt | research:mcp__atlassian__getJiraIssue: | MARK:Bash:" "$(logged c8)"
+
+printf 'not json' | bash "$LOG" >>"$T/log.out" 2>&1 || echo "log bad json" >> "$T/nonzero"
+mv "$HOME/.config/vault-skills/work-log" "$T/work-log.saved"; echo blocker > "$HOME/.config/vault-skills/work-log"
+logcall c9 Edit "$VAULT" "{\"file_path\":\"$SIB/a.txt\"}"
+rm "$HOME/.config/vault-skills/work-log"; mv "$T/work-log.saved" "$HOME/.config/vault-skills/work-log"
+check "log: never prints, even on bad JSON or an unwritable log folder" "" "$(cat "$T/log.out")"
+
+logcall warm Bash "$SIB" '{"command":"ls"}'
+TIMEFORMAT=%R
+secs=$( { time for i in 1 2 3 4 5 6 7 8 9 10; do post speed Bash "$SIB" '{"command":"ls"}' | bash "$LOG"; done; } 2>&1 )
+check "log: under 50 ms a call (10 calls took ${secs}s)" "yes" "$(awk -v s="$secs" 'BEGIN {print (s < 0.5) ? "yes" : "no"}')"
+
 # --- Old Stop hook (Task 4 replaces this section) ----------------------------------------
 
 OLDVAULT="$T/oldvault"; mkdir -p "$OLDVAULT/Meta" "$OLDVAULT/Repos"

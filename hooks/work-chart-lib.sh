@@ -88,3 +88,67 @@ wc_stamp_path() {
 wc_log_path() {
   printf '%s/.config/vault-skills/work-log/%s.tsv' "$HOME" "$(printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '_')"
 }
+
+# Print six lines read from hook JSON $1: session_id, cwd, tool_name, touched path
+# (tool_input file_path, then notebook_path, then path), stop_hook_active (true/false),
+# and whether tool_input.command mentions work-chart-stamp.sh (true/false).
+# Uses jq when present (and WC_NO_JQ is unset), else sed.
+wc_hook_fields() {
+  if [ -z "${WC_NO_JQ:-}" ] && command -v jq >/dev/null 2>&1; then
+    printf '%s' "$1" | jq -r '
+      def s: if . == null then "" else tostring | gsub("[\n\r]"; " ") end;
+      (.session_id | s),
+      (.cwd | s),
+      (.tool_name | s),
+      ((.tool_input.file_path? // .tool_input.notebook_path? // .tool_input.path?) | s),
+      (.stop_hook_active == true | tostring),
+      ((.tool_input.command? // "") | tostring | contains("work-chart-stamp.sh") | tostring)
+    ' 2>/dev/null
+    return 0
+  fi
+  local k v p=""
+  for k in session_id cwd tool_name; do
+    printf '%s\n' "$1" | sed -n "s/.*\"$k\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n 1
+  done
+  for k in file_path notebook_path path; do
+    v=$(printf '%s\n' "$1" | sed -n "s/.*\"$k\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n 1)
+    [ -n "$v" ] && { p="$v"; break; }
+  done
+  printf '%s\n' "$p"
+  if printf '%s' "$1" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then echo true; else echo false; fi
+  if printf '%s' "$1" | grep -q '"command"[[:space:]]*:[[:space:]]*"[^"]*work-chart-stamp\.sh'; then echo true; else echo false; fi
+}
+
+# Print the log kind for a tool name: edit, outward, research, shell, or nothing.
+# Case-insensitive. For MCP tools only the verb the last name part starts with counts,
+# so getTransitionsForJiraIssue and list_labels are research, editJiraIssue is outward.
+wc_kind() {
+  local last="${1##*__}" kind=""
+  shopt -s nocasematch
+  case "$1" in
+    Edit|Write|NotebookEdit) kind=edit ;;
+    Read|Grep|Glob|WebFetch|WebSearch) kind=research ;;
+    Bash) kind=shell ;;
+    mcp__*)
+      case "$last" in
+        create*|add*|send*|post*|comment*|update*|edit*|write*|save*|copy*|move*|transition*|reply*|respond*|forward*|share*|delete*|trash*|label*|unlabel*|mark*|unmark*|apply*)
+          kind=outward ;;
+        get*|search*|list*|fetch*|query*|read*|lookup*|find*)
+          kind=research ;;
+      esac ;;
+  esac
+  shopt -u nocasematch
+  [ -n "$kind" ] && printf '%s\n' "$kind"
+  return 0
+}
+
+# Print the nearest folder at or above $1 that holds a .git entry, without running git.
+# Fast enough for the log hook; the Stop hook resolves the result with git.
+wc_git_top() {
+  local d="${1%/}"
+  while [ -n "$d" ]; do
+    [ -e "$d/.git" ] && { printf '%s' "$d"; return 0; }
+    d="${d%/*}"
+  done
+  return 1
+}

@@ -1,5 +1,12 @@
 {
   "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/work-chart-log.sh" }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
