@@ -112,7 +112,7 @@ Reads the hook JSON on stdin. It uses `session_id`, `cwd`, `tool_name` and `tool
 
 1. No vault configured: exit 0.
 2. Find the touched path. Use `tool_input.file_path`, then `notebook_path`, then `path`, whichever is present. For `Bash`, the touched path is `cwd`.
-3. Neither `cwd` nor the touched path is under a work root: exit 0.
+3. Neither `cwd` nor the touched path is under a work root: exit 0. A `Bash` call that runs `work-chart-stamp.sh` (step 6) is the exception: it writes its `MARK` before this check, wherever `cwd` is, because the plugin lives outside every work root.
 4. Classify the call by `tool_name`:
 
    | Kind | Tools |
@@ -124,7 +124,7 @@ Reads the hook JSON on stdin. It uses `session_id`, `cwd`, `tool_name` and `tool
 
    Matching is case-insensitive and looks only at the verb the name starts with, so `getTransitionsForJiraIssue` and `list_labels` are research and `editJiraIssue` is outward. Everything else is not logged: `Skill`, `Agent`, `AskUserQuestion`, the todo tools, and MCP tools that match neither list.
 5. An `edit` whose path is under the vault: exit 0.
-6. A `Bash` call writes a `MARK` line instead of a `shell` line only when it runs `work-chart-stamp.sh`, not merely mentions it: split the command on `&&`, `||` and `;`, and a segment runs it when, after trimming leading spaces, its first word — or the word after a leading `bash` or `sh` — ends in `work-chart-stamp.sh`, quotes allowed around it. The command is only checked, never stored.
+6. A `Bash` call writes a `MARK` line instead of a `shell` line only when it runs `work-chart-stamp.sh`, not merely mentions it: split the command on `&&`, `||`, `;` and line breaks, and a segment runs it when, after trimming leading spaces, its first word — or the word after a leading `bash` or `sh` — ends in `work-chart-stamp.sh`, quotes allowed around it. The command is only checked, never stored.
 7. Append one line to the log file, creating the folder when needed. For `shell`, the place is the git top of `cwd`, found by walking up to the nearest `.git` entry (faster than running git), or empty when `cwd` is not in a repo. The Stop hook resolves it again with git.
 8. Any failure, such as an unwritable folder or bad JSON: exit 0.
 
@@ -233,7 +233,7 @@ Keeps `wc_vault` and `wc_stamp_path`. Adds or changes:
 
 One line each.
 
-- No vault, or the call is outside every work root: both hooks are silent.
+- No vault, or the call is outside every work root: both hooks are silent. The one exception is a stamp run outside every root, which still writes its `MARK`.
 - Log folder cannot be written: the log hook gives up silently and never blocks a tool call.
 - No `jq`: both hooks use the `sed` fallback.
 - Subagent calls land in the same session log; the controlling agent writes the rows from the subagents' reports.
@@ -263,7 +263,7 @@ Written first, before the scripts change. They go in `hooks/tests/test-work-char
 1. The log script classifies each kind: `edit`, `outward`, `research`, `shell`; a `Skill` call writes nothing.
 2. The log script skips edits under the vault.
 3. The log script skips calls where neither `cwd` nor the path is under a work root.
-4. A Bash call running `work-chart-stamp.sh` writes a `MARK` line.
+4. A Bash call running `work-chart-stamp.sh` writes a `MARK` line, also when `cwd` is outside every work root and when the call sits on a later line of a multi-line command.
 5. The log script never prints anything.
 6. Four research calls: the Stop hook is silent. Five: it blocks.
 7. One edit: it blocks.

@@ -170,9 +170,26 @@ WC_NO_JQ=1 logcall c11 Bash "$SIB" '{"command":"cd /p && bash hooks/work-chart-s
 WC_NO_JQ=1 logcall c11 Bash "$SIB" "{\"command\":\"sh '/p/work-chart-stamp.sh'\"}"
 check "log: sed fallback, MARK only when the command runs the stamp script" "shell:Bash:$SIB | shell:Bash:$SIB | MARK:Bash: | MARK:Bash: | MARK:Bash: | MARK:Bash:" "$(logged c11)"
 
+# A stamp run counts wherever the shell sits: the plugin lives outside every work root.
+logcall c12 Bash "$ELSE" '{"command":"/plugins/consultant-vault/hooks/work-chart-stamp.sh /x/sibling"}'
+logcall c12 Bash "$ELSE" '{"command":"ls"}'
+check "log: stamp call outside every root -> MARK; other calls there -> nothing" "MARK:Bash:" "$(logged c12)"
+WC_NO_JQ=1 logcall c13 Bash "$ELSE" '{"command":"/plugins/consultant-vault/hooks/work-chart-stamp.sh /x/sibling"}'
+WC_NO_JQ=1 logcall c13 Bash "$ELSE" '{"command":"ls"}'
+check "log: sed fallback, stamp call outside every root -> MARK; other calls there -> nothing" "MARK:Bash:" "$(logged c13)"
+
+# Line breaks separate commands, like ; does.
+logcall c14 Bash "$SIB" '{"command":"export X=1\ncd /p\n/p/hooks/work-chart-stamp.sh /r"}'
+logcall c14 Bash "$SIB" '{"command":"cat /p/hooks/work-chart-stamp.sh\necho hi"}'
+check "log: multi-line command runs the stamp -> MARK; only mentions it -> shell" "MARK:Bash: | shell:Bash:$SIB" "$(logged c14)"
+WC_NO_JQ=1 logcall c15 Bash "$SIB" '{"command":"export X=1\ncd /p\n/p/hooks/work-chart-stamp.sh /r"}'
+WC_NO_JQ=1 logcall c15 Bash "$SIB" '{"command":"cat /p/hooks/work-chart-stamp.sh\necho hi"}'
+check "log: sed fallback, multi-line command runs the stamp -> MARK; only mentions it -> shell" "MARK:Bash: | shell:Bash:$SIB" "$(logged c15)"
+
 rm "$HOME/.config/vault-skills/vault-path"
 logcall c6 Edit "$SIB" "{\"file_path\":\"$SIB/a.txt\"}"
-check "log: no vault -> nothing" "" "$(logged c6)"
+logcall c6 Bash "$ELSE" '{"command":"/p/hooks/work-chart-stamp.sh /r"}'
+check "log: no vault -> nothing, not even a stamp call" "" "$(logged c6)"
 printf '%s\n' "$VAULT" > "$HOME/.config/vault-skills/vault-path"
 
 printf -- '---\ntype: config\n---\n' > "$VAULT/Meta/Config.md"

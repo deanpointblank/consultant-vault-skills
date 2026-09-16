@@ -18,25 +18,26 @@ FIELDS
   [ -n "$sid" ] && [ -n "$tool" ] || return 0
   kind=$(wc_kind "$tool")
   [ -n "$kind" ] || return 0
-  [ "$kind" = shell ] && path="$cwd"
-  case "$path" in
-    ""|/*) ;;
-    *) path="$cwd/$path" ;;
-  esac
-  wc_in_roots "$cwd" "$vault" || wc_in_roots "$path" "$vault" || return 0
-  case "$kind" in
-    edit)
-      wc_under "$path" "$vault" && return 0
-      place="$path" ;;
-    research)
-      place="$path" ;;
-    shell)
-      if wc_runs_stamp "$cmd"; then
-        kind=MARK
-      else
-        place=$(wc_git_top "$cwd") || place=""
-      fi ;;
-  esac
+  # A stamp run is marked wherever the shell sits: the plugin lives outside every work root.
+  if [ "$kind" = shell ] && wc_runs_stamp "$cmd"; then
+    kind=MARK
+  else
+    [ "$kind" = shell ] && path="$cwd"
+    case "$path" in
+      ""|/*) ;;
+      *) path="$cwd/$path" ;;
+    esac
+    wc_in_roots "$cwd" "$vault" || wc_in_roots "$path" "$vault" || return 0
+    case "$kind" in
+      edit)
+        wc_under "$path" "$vault" && return 0
+        place="$path" ;;
+      research)
+        place="$path" ;;
+      shell)
+        place=$(wc_git_top "$cwd") || place="" ;;
+    esac
+  fi
   log=$(wc_log_path "$sid")
   [ -d "${log%/*}" ] || mkdir -p "${log%/*}" || return 0
   printf '%s\t%s\t%s\t%s\n' "$(date +%s)" "$kind" "$tool" "$place" >> "$log"
