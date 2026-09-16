@@ -118,14 +118,14 @@ Reads the hook JSON on stdin. It uses `session_id`, `cwd`, `tool_name` and `tool
    | Kind | Tools |
    |---|---|
    | `edit` | `Edit`, `Write`, `NotebookEdit` |
-   | `outward` | MCP tools (names starting `mcp__`) whose last name part contains create, add, send, comment, update, edit, write, copy, move, transition, reply, respond, forward, share, delete, or trash, or starts with label, unlabel, mark, or apply. `list_labels` is research: "label" counts only at the start of the name. Examples: Jira, Confluence, Slack, Gmail, Drive, Calendar, Asana. |
-   | `research` | `Read`, `Grep`, `Glob`, `WebFetch`, `WebSearch`, and MCP tools whose last name part contains get, search, list, fetch, or query |
+   | `outward` | MCP tools (names starting `mcp__`) whose last name part starts with create, add, send, post, comment, update, edit, write, save, copy, move, transition, reply, respond, forward, share, delete, trash, label, unlabel, mark, unmark, or apply. Examples: Jira, Confluence, Slack, Gmail, Drive, Calendar, Asana. |
+   | `research` | `Read`, `Grep`, `Glob`, `WebFetch`, `WebSearch`, and MCP tools whose last name part starts with get, search, list, fetch, query, read, lookup, or find |
    | `shell` | `Bash` |
 
-   Matching is case-insensitive. The outward check runs before the research check. Everything else is not logged: `Skill`, `Agent`, `AskUserQuestion`, the todo tools, and MCP tools that match neither list.
+   Matching is case-insensitive and looks only at the verb the name starts with, so `getTransitionsForJiraIssue` and `list_labels` are research and `editJiraIssue` is outward. Everything else is not logged: `Skill`, `Agent`, `AskUserQuestion`, the todo tools, and MCP tools that match neither list.
 5. An `edit` whose path is under the vault: exit 0.
 6. A `Bash` call whose command contains `work-chart-stamp.sh`: write a `MARK` line instead of a `shell` line. The command is only checked, never stored.
-7. Append one line to the log file, creating the folder when needed. For `shell`, the place is `git rev-parse --show-toplevel` run on `cwd`, or empty when `cwd` is not in a repo.
+7. Append one line to the log file, creating the folder when needed. For `shell`, the place is the git top of `cwd`, found by walking up to the nearest `.git` entry (faster than running git), or empty when `cwd` is not in a repo. The Stop hook resolves it again with git.
 8. Any failure, such as an unwritable folder or bad JSON: exit 0.
 
 Rules for the whole script:
