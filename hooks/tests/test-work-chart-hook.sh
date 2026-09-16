@@ -88,6 +88,18 @@ check "fingerprint: a repo that is the vault prints nothing" "" "$(wc_fingerprin
 
 check "log path" "$HOME/.config/vault-skills/work-log/s-1.tsv" "$(wc_log_path s-1)"
 
+OTHER="$T/other-vault"; mkdir -p "$OTHER"
+check "vault: OBSIDIAN_VAULT wins over the pointer file" "$OTHER" "$(OBSIDIAN_VAULT="$OTHER" wc_vault)"
+check "vault: pointer file used when OBSIDIAN_VAULT is unset" "$VAULT" "$(wc_vault)"
+
+# runs: $1 = command; prints MARK when wc_runs_stamp says it runs the stamp script, else shell.
+runs() { if wc_runs_stamp "$1"; then echo MARK; else echo shell; fi; }
+check "runs stamp: quoted first word with a space" MARK "$(runs '"/Users/me/My Plugins/hooks/work-chart-stamp.sh" /r')"
+check "runs stamp: bash then single-quoted path with a space" MARK "$(runs "bash '/a b/work-chart-stamp.sh'")"
+check "runs stamp: quoted other script with a space, stamp only an argument" shell "$(runs '"/a b/other.sh" work-chart-stamp.sh')"
+check "runs stamp: quoted path with a space after cd &&" MARK "$(runs 'cd /p && "/a b/work-chart-stamp.sh"')"
+check "runs stamp: unclosed quote is not a run" shell "$(runs '"/a b/work-chart-stamp.sh')"
+
 # --- Stamp script ------------------------------------------------------------------------
 
 STAMPS="$HOME/.config/vault-skills/work-stamp"
@@ -151,6 +163,25 @@ check "log: calls outside every root skipped" "" "$(logged c4)"
 logcall c4 Edit "$ELSE" "{\"file_path\":\"$SIB/a.txt\"}"
 check "log: cwd outside, path inside -> logged" "edit:Edit:$SIB/a.txt" "$(logged c4)"
 
+# An edit counts only when its own path is under a root; the session's cwd is not enough.
+MEM="$T/claude/projects/p/memory"
+logcall c16 Write "$VAULT" "{\"file_path\":\"$MEM/note.md\",\"content\":\"x\"}"
+logcall c16 Edit "$SIB" "{\"file_path\":\"$ELSE/a.txt\"}"
+logcall c16 Edit "$ELSE" "{\"file_path\":\"a.txt\"}"
+check "log: edit outside every root from a cwd inside -> nothing" "" "$(logged c16)"
+logcall c16 Edit "$SIB" "{\"file_path\":\"a.txt\"}"
+logcall c16 Read "$SIB" "{\"file_path\":\"$ELSE/a.txt\"}"
+logcall c16 Edit "$ELSE" "{\"file_path\":\"$SIB/a.txt\"}"
+check "log: relative edit resolved against cwd; read outside from inside -> research; edit inside from outside -> edit" "edit:Edit:$SIB/a.txt | research:Read:$ELSE/a.txt | edit:Edit:$SIB/a.txt" "$(logged c16)"
+WC_NO_JQ=1 logcall c17 Write "$VAULT" "{\"file_path\":\"$MEM/note.md\",\"content\":\"x\"}"
+WC_NO_JQ=1 logcall c17 Edit "$SIB" "{\"file_path\":\"$ELSE/a.txt\"}"
+WC_NO_JQ=1 logcall c17 Edit "$ELSE" "{\"file_path\":\"a.txt\"}"
+check "log: sed fallback, edit outside every root from a cwd inside -> nothing" "" "$(logged c17)"
+WC_NO_JQ=1 logcall c17 Edit "$SIB" "{\"file_path\":\"a.txt\"}"
+WC_NO_JQ=1 logcall c17 Read "$SIB" "{\"file_path\":\"$ELSE/a.txt\"}"
+WC_NO_JQ=1 logcall c17 Edit "$ELSE" "{\"file_path\":\"$SIB/a.txt\"}"
+check "log: sed fallback, relative edit resolved; read outside from inside -> research; edit inside from outside -> edit" "edit:Edit:$SIB/a.txt | research:Read:$ELSE/a.txt | edit:Edit:$SIB/a.txt" "$(logged c17)"
+
 logcall c5 Bash "$SIB" '{"command":"bash /plugins/consultant-vault/hooks/work-chart-stamp.sh /x/sibling"}'
 check "log: the stamp call writes a MARK" "MARK:Bash:" "$(logged c5)"
 
@@ -169,6 +200,15 @@ WC_NO_JQ=1 logcall c11 Bash "$SIB" "{\"command\":\"bash \\\"/p/hooks/work-chart-
 WC_NO_JQ=1 logcall c11 Bash "$SIB" '{"command":"cd /p && bash hooks/work-chart-stamp.sh /r"}'
 WC_NO_JQ=1 logcall c11 Bash "$SIB" "{\"command\":\"sh '/p/work-chart-stamp.sh'\"}"
 check "log: sed fallback, MARK only when the command runs the stamp script" "shell:Bash:$SIB | shell:Bash:$SIB | MARK:Bash: | MARK:Bash: | MARK:Bash: | MARK:Bash:" "$(logged c11)"
+
+# A quoted script path with a space in it.
+Q1="{\"command\":\"\\\"/Users/me/My Plugins/hooks/work-chart-stamp.sh\\\" /r\"}"
+Q2="{\"command\":\"bash '/a b/work-chart-stamp.sh'\"}"
+Q3="{\"command\":\"\\\"/a b/other.sh\\\" work-chart-stamp.sh\"}"
+logcall c18 Bash "$SIB" "$Q1"; logcall c18 Bash "$SIB" "$Q2"; logcall c18 Bash "$SIB" "$Q3"
+check "log: quoted stamp path with a space -> MARK; quoted other script -> shell" "MARK:Bash: | MARK:Bash: | shell:Bash:$SIB" "$(logged c18)"
+WC_NO_JQ=1 logcall c19 Bash "$SIB" "$Q1"; WC_NO_JQ=1 logcall c19 Bash "$SIB" "$Q2"; WC_NO_JQ=1 logcall c19 Bash "$SIB" "$Q3"
+check "log: sed fallback, quoted stamp path with a space -> MARK; quoted other script -> shell" "MARK:Bash: | MARK:Bash: | shell:Bash:$SIB" "$(logged c19)"
 
 # A stamp run counts wherever the shell sits: the plugin lives outside every work root.
 logcall c12 Bash "$ELSE" '{"command":"/plugins/consultant-vault/hooks/work-chart-stamp.sh /x/sibling"}'

@@ -156,40 +156,47 @@ wc_git_top() {
   return 1
 }
 
+# Split $1 into its first word (_w) and the rest (_r), both with leading spaces trimmed.
+# A word that starts with " or ' runs to the matching closing quote, which may be past a
+# space, and loses its quotes; with no closing quote, _w is empty. The caller declares
+# _w and _r local.
+wc_split_word() {
+  local s="$1" q
+  s="${s#"${s%%[! ]*}"}"
+  case "$s" in
+    \"*|\'*)
+      q="${s:0:1}"; s="${s:1}"
+      case "$s" in
+        *"$q"*) _w="${s%%"$q"*}"; _r="${s#*"$q"}" ;;
+        *) _w=""; _r=""; return 0 ;;
+      esac ;;
+    *)
+      _w="${s%% *}"
+      case "$s" in
+        *" "*) _r="${s#* }" ;;
+        *) _r="" ;;
+      esac ;;
+  esac
+  _r="${_r#"${_r%%[! ]*}"}"
+}
+
 # Succeed when command $1 runs work-chart-stamp.sh, not merely mentions it (as an
 # argument to grep, git add, and the like). Splits the command into segments on
-# && || ; and line breaks (wc_hook_fields has already turned those into ;). A segment runs the script when, after trimming leading spaces, its
-# first word -- or the word after a leading bash or sh -- ends in
-# work-chart-stamp.sh, with surrounding single or double quotes allowed.
+# && || ; and line breaks (wc_hook_fields has already turned those into ;). A segment
+# runs the script when its first word -- or the word after a leading bash or sh -- ends
+# in work-chart-stamp.sh. A quoted word may hold spaces: "/My Plugins/work-chart-stamp.sh".
 wc_runs_stamp() {
-  local cmd="$1" seg first rest word
+  local cmd="$1" seg _w _r
   cmd="${cmd//&&/;}"
   cmd="${cmd//||/;}"
   cmd="${cmd//;/$'\n'}"
   while IFS= read -r seg; do
-    seg="${seg#"${seg%%[! ]*}"}"
-    [ -n "$seg" ] || continue
-    first="${seg%% *}"
-    case "$seg" in
-      *" "*) rest="${seg#* }" ;;
-      *) rest="" ;;
+    wc_split_word "$seg"
+    [ -n "$_w" ] || continue
+    case "$_w" in
+      bash|sh) wc_split_word "$_r" ;;
     esac
-    case "$first" in
-      \"*\") first="${first#\"}"; first="${first%\"}" ;;
-      \'*\') first="${first#\'}"; first="${first%\'}" ;;
-    esac
-    case "$first" in
-      bash|sh)
-        rest="${rest#"${rest%%[! ]*}"}"
-        word="${rest%% *}" ;;
-      *)
-        word="$first" ;;
-    esac
-    case "$word" in
-      \"*\") word="${word#\"}"; word="${word%\"}" ;;
-      \'*\') word="${word#\'}"; word="${word%\'}" ;;
-    esac
-    case "$word" in
+    case "$_w" in
       *work-chart-stamp.sh) return 0 ;;
     esac
   done <<EOF

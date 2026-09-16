@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # work-chart PostToolUse hook. Reads the hook JSON on stdin and appends one line to this
 # session's activity log when the call counts as work: time, kind, tool, place.
+# An edit counts when its file is under a work root; other calls when cwd or their path is.
 # Never prints, never blocks a tool call, never stores file contents or command text.
 # Writes only under ~/.config/vault-skills/work-log/. Always exits 0. Runs on every
 # tool call, so it avoids extra processes: under 50 ms a call.
@@ -27,7 +28,13 @@ FIELDS
       ""|/*) ;;
       *) path="$cwd/$path" ;;
     esac
-    wc_in_roots "$cwd" "$vault" || wc_in_roots "$path" "$vault" || return 0
+    # An edit counts only when the file it touched is under a root; other calls also
+    # count when the session sits in a root.
+    if [ "$kind" = edit ]; then
+      wc_in_roots "$path" "$vault" || return 0
+    else
+      wc_in_roots "$cwd" "$vault" || wc_in_roots "$path" "$vault" || return 0
+    fi
     case "$kind" in
       edit)
         wc_under "$path" "$vault" && return 0
