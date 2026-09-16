@@ -216,10 +216,10 @@ export OBSIDIAN_VAULT="$VAULT"
 mkdir -p "$RUN/clients/scratch-tool/scripts" && cd "$RUN/clients/scratch-tool" && git init -q
 cat > scripts/import.sh <<'SH'
 #!/usr/bin/env bash
-# Imports appointments for one warehouse into a PFD environment.
+# Imports dock bookings for one site into a PFD environment.
 set -euo pipefail
 env="${1:?env}"; warehouse="${2:?warehouse}"
-curl -sf -X POST "https://${env}-appointments-svc.example.test/migration/appointments?warehouseSysid=${warehouse}"
+curl -sf -X POST "https://${env}-dock-planner.example.test/api/v2/bookings/import?site=${warehouse}"
 SH
 git add -A && git -c user.name=t -c user.email=t@t commit -qm "init" && cd - >/dev/null
 cat > "$VAULT/Repos/scratch-tool.md" <<'MD'
@@ -263,18 +263,21 @@ echo "vault at $VAULT"
 The rep's whole first prompt is these lines, with the paths filled in, then the scenario prompt.
 
 ```
-OBSIDIAN_VAULT is set to <VAULT>. HOME for this task is <RUN>/home; use it for anything under ~/.config. The consultant-vault plugin is installed. Set OBSIDIAN_VAULT=<VAULT> in every shell command you run that touches the vault, and treat that folder as the vault for everything. You are working from the folder <VAULT>.
+OBSIDIAN_VAULT is set to <VAULT>. HOME for this task is <RUN>/home; use it for anything under ~/.config. The consultant-vault plugin is installed. Set OBSIDIAN_VAULT=<VAULT> in every shell command you run that touches the vault, and treat that folder as the vault for everything. You are working from the folder <VAULT>. You are the lead agent for this task: no one else will write notes, rows or logs for you.
 Read and follow <RUN>/plugin/skills/work-chart/SKILL.md when it applies; the plugin root for its hook scripts is <RUN>/plugin.
 ```
+
+The rep prompt is exactly the preamble plus the scenario prompt. Do not add any other opening line, such as a dispatch notice: a rep that believes it is a subagent skips the work note.
 
 ### Prompt D (research, dead end)
 
 ```
 IMPORTANT: This is a real scenario. Act.
 
-For PFD-65947: find out whether the appointments import endpoint that
+For PFD-65947: find out whether the dock-planner import endpoint that
 <RUN>/clients/scratch-tool/scripts/import.sh calls accepts a batch size parameter. The
-service's source code is not on this machine. Don't change any files in the repo. Then stop.
+dock-planner source code and docs are not on this machine. Don't change any files in the
+repo. Then stop.
 ```
 
 ### Prompt N (question with no goal)
