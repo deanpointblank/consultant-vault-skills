@@ -19,6 +19,7 @@ The config template ships with example values (client, timezone), not defaults. 
 2. **Timezone** (offer a guess from the system clock, confirm)
 3. **Daily note date format** — tell the user where to find it: Obsidian → Settings → Daily notes → Date format. This must match exactly or skill entries and app-created daily notes split into different files.
 4. **Folder names** — show the defaults from `../obsidian-vault/templates/Config.md` and ask if any should change. Most people keep defaults; don't belabor it.
+5. **Work roots** — the folders whose work the work chart records. Suggest the folder above the vault's git repo top (`git -C <vault> rev-parse --show-toplevel`, then its parent). For a vault at `~/Code/StrideClients/UsCold/uscold-map/US_Cold_Notes` that is `~/Code/StrideClients/UsCold`. Write the answer as a list under `work_roots`. The vault is in no git repo, or the user declines: leave `work_roots: []`, and say only the vault folder counts.
 
 ## 3. Scaffold
 
