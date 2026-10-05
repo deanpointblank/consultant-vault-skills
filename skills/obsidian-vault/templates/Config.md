@@ -36,12 +36,20 @@ worklog:
   account_id:
   git_author:
   github_login:
-  day_start: "09:00"
+  day_window: "09:00-17:00"
+  billing_unit: 1.0
   ceremony_ticket:
   engagement_epic:
+  internal_meetings: []
   repos: []
+  transcript_dirs:
+    - ~/.claude/projects
 worklog_routing: []
 work_roots: []
+harvest:
+  project_id:
+  billable_task_id:
+  pto_task_id:
 ---
 
 # Vault config
@@ -59,7 +67,8 @@ Skills read the frontmatter above at the start of every task. Edit values here, 
 - `timezone` — used when constructing daily-note filenames and timestamps from automations that may run in UTC.
 - `folders.tickets` — ticket notes, handoffs, and time-logging drafts. Skills that wrote to `Tickets` before this key existed keep working; add the key so they stop telling you to.
 - `jira_site` — the Atlassian site skills read Jira from, e.g. `acme.atlassian.net`. ticket-intake fills it in the first time you confirm a site; daily-worklog requires it and resolves the cloud id from it once per run.
-- `worklog` — everything daily-worklog needs that is specific to one person or one engagement. `account_id` is the Jira account whose worklogs and activity it reads and writes, one account only; `git_author` is the `git log --author` filter; `github_login` is the account whose PR reviews, review comments and merges count as yours; `day_start` is the fallback start time for a row when no evidence gives one; `ceremony_ticket` is where standup, huddle, refinement and retro hours go; `engagement_epic` is where engagement-level discovery with no single ticket goes; `repos` is the list of clones swept by `git log`, and a path with no clone is named in the reply and skipped.
+- `worklog` — everything daily-worklog needs that is specific to one person or one engagement. `account_id` is the Jira account whose worklogs and activity it reads and writes, one account only; `git_author` is the `git log --author` filter; `github_login` is the account whose PR reviews, review comments and merges count as yours; `day_window` is the working window used when you give no hours, and the hours it covers are the day's billed figure (an older config with only `day_start` gets `day_start` plus 8 hours); `billing_unit` is the block size in hours that sets the day total's unit and the grid the day is filled on, while rows still go in 0.25 h steps; `ceremony_ticket` is where standup, huddle, refinement and retro hours go; `engagement_epic` is where engagement-level discovery with no single ticket goes; `internal_meetings` is the list of title matches for your own consultancy's events, which never go on the ceremony ticket; `repos` is the list of clones swept by `git log`, and a path with no clone is named in the reply and skipped; `transcript_dirs` is where Claude Code session transcripts live, read for timing only.
+- `harvest` — where daily-worklog writes the day's Harvest entry. `project_id` is the Harvest project, `billable_task_id` the task for a working day, `pto_task_id` the task for PTO. Empty: daily-worklog finds them from your recent entries and offers to fill them in.
 - `worklog_routing` — ordered client-specific rules, each a `match` string tested case-insensitively against the evidence text and a `ticket` key it routes to. Empty by default. Do not restate the ceremony or epic rules here; they are named keys.
 
 To customize a note template, copy it from the skill's `templates/` folder into your vault's `Templates/` folder and edit it there. Skills check your vault first and fall back to the shipped default, so updates to the skills never clobber your changes.
