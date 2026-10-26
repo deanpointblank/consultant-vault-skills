@@ -26,13 +26,19 @@ cat > "$T/site/a.html" <<'H'
 H
 echo '<!doctype html><title>b</title><p>page two</p>' > "$T/site/b.html"
 echo '<!doctype html><title>c</title><iframe name=f src="b.html"></iframe>' > "$T/site/c.html"
+cat > "$T/site/d.html" <<'H'
+<!doctype html><meta http-equiv="Content-Security-Policy" content="style-src 'self'"><title>d</title><input id=t>
+H
+cat > "$T/site/e.html" <<'H'
+<!doctype html><title>e</title><x-pw></x-pw><script>customElements.define('x-pw',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<input id=p type=password>'}})</script>
+H
 
 PORT=$(python3 -c 'import socket;s=socket.socket();s.bind(("",0));print(s.getsockname()[1])')
-( cd "$T/site" && exec python3 -m http.server "$PORT" >/dev/null 2>&1 ) &
-disown 2>/dev/null
+( cd "$T/site" && exec python3 -m http.server --bind 127.0.0.1 "$PORT" >/dev/null 2>&1 ) &
 PID=$!
-for _ in $(seq 1 50); do curl -sf "http://localhost:$PORT/a.html" >/dev/null && break; sleep 0.2; done
-URL="http://localhost:$PORT"
+disown 2>/dev/null
+URL="http://127.0.0.1:$PORT"
+for _ in $(seq 1 50); do curl -sf "$URL/a.html" >/dev/null && break; sleep 0.2; done
 
 pw() { env -C "$T/rec" playwright-cli -s="$S" --raw "$@"; }
 
@@ -65,6 +71,11 @@ check "click ring shows and the click lands" '"1 1"' "$(pw run-code 'async page 
 pw eval "() => window.__rec.caption('hi')" >/dev/null 2>&1
 pw goto "$URL/c.html" >/dev/null 2>&1
 check "no overlay inside an iframe" "0" "$(pw run-code "async page => { await page.waitForTimeout(500); const f = page.frames().find(x => x !== page.mainFrame()); return await f.evaluate(() => document.querySelectorAll('#__rec_cap').length); }" 2>&1)"
+
+pw goto "$URL/d.html" >/dev/null 2>&1
+check "overlay styled under a strict page policy" '"fixed"' "$(pw eval "() => getComputedStyle(document.querySelector('#__rec_cap')).position" 2>&1)"
+pw goto "$URL/e.html" >/dev/null 2>&1
+check "password keys in a shadow field stay off the badge" '""' "$(pw run-code "async page => { await page.locator('x-pw input').pressSequentially('xy'); return await page.evaluate(() => document.querySelector('#__rec_keys').textContent); }" 2>&1)"
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]
