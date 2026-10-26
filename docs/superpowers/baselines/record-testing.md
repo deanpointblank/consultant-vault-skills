@@ -295,6 +295,8 @@ and X1-X3 never look at `video-show-actions`, so a rep that enabled the overlay 
 in would still score 12/12. A reader scanning the check tables above should not read a pass as
 covering this rule.
 
+Since 2026-10-26 the same rule covers the injected overlay, `scripts/record-testing-overlay.js`, which the skill runs in the same step as `video-show-actions`. Its keystroke badge ignores keys typed into password fields, and `scripts/tests/test-record-testing-overlay.sh` checks that, but nothing scores when a rep ran it. A rep that ran the overlay before signing in would still score 12/12.
+
 It held in the 2026-09-15 GREEN round-1 V reps: all three enabled the overlay only after the
 submit click, confirmed by hand from the Bash tool inputs in `rep.jsonl`. That is a by-hand
 observation, not a score. A future re-baseline should add a check for it; adding one now would
