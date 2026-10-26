@@ -67,18 +67,18 @@ Also seen, for the fix wave:
 
 ## Verified again 2026-10-26 after the review fixes
 
-A second local walkthrough on the same fixture site (session `rt-bold2`, 1280x800, two criteria) following the fixed skill text word for word: overlay path quoted, `video-show-actions --duration=1500 --position=top-left --cursor=none`, mark then caption then `video-chapter … --duration=2500`, `.clear()` before `pressSequentially`. Cut by `record-testing-clip.sh` and read as 4x4 contact sheets at 640 px a tile, plus 5 fps frame cuts around each click and the typing.
+A second local walkthrough on the same fixture site (session `rt-bold2`, 1280x800, two criteria) following the fixed skill text word for word: overlay path quoted, `video-show-actions --duration=1500 --position=top-left --cursor=none`, mark then caption then `video-chapter … --duration=2500`, `.clear()` before `pressSequentially`. Cut by `record-testing-clip.sh` and read as 4x4 contact sheets at 640 px a tile, plus 5 fps frame cuts around each click and the typing. (order superseded below)
 
 1. Caption readable, 100-character caption wraps inside its bar: **pass**. The AC2 caption wraps to three lines inside the bar.
 2. Cursor ring visible, field under it not hidden: **pass**. `D07`, `North` and `South` all read through the ring.
 3. Keystroke badge and action callout never overlap: **pass**. Callout top-left, badge top-right in every frame.
-4. Each GIF opens on its chapter card: **pass**. The card is up from the second frame of each GIF (about 1 s in, the caption call sits between the mark and the card).
+4. Each GIF opens on its chapter card: **pass**. The card is up from the second frame of each GIF (about 1 s in, the caption call sits between the mark and the card). (superseded below)
 5. `South` appears letter by letter and the badge echoes it: **pass**. The field empties, then shows `S`, `Sou`, `South`; the badge shows `⟨Delete⟩` for the clear, then `S`, `Sou`, `South`.
 6. No caption, ring or badge before login, password never in a frame: **pass**. The before-login sheet is the plain login page; the password shows only as masked dots, and the clipped webm starts on the app page.
 
 - `.clear()` gives `South` as the final value: **pass**. `#dock` reads `"South"` after clicking away.
 - The ring is the mouse and is at the target when the click lands: **pass**. No arrow pointer in any frame; the callout's small dot is still there. At the dock click and the heading click the ring snaps to the click point on the same frame as the click ring. During the 1.5 s callout before each action it still sits on the previous spot.
-- The caption under each card is that criterion's own: **pass**. The AC2 card sits over the AC2 caption. The first frame of the AC2 GIF, before the card, still shows the AC1 caption for about a second.
+- The caption under each card is that criterion's own: **pass**. The AC2 card sits over the AC2 caption. The first frame of the AC2 GIF, before the card, still shows the AC1 caption for about a second. (superseded below)
 - The callout's target highlight with `--cursor=none`: **still shows**. A light-blue box on the target and a small filled dot at the hit point, both fading within the callout (see Known limits).
 
 ## Verified a third time 2026-10-26 after the order and wording fixes
