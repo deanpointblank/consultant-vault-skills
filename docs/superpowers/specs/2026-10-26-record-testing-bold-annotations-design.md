@@ -44,3 +44,21 @@ Reference implementation: the spike file, kept in the session scratchpad as `spi
 ## Out of scope
 
 Burning text in after recording; any change to `record-testing-clip.sh`; recording against a client environment (that needs Dean's explicit OK); a re-baseline of the skill.
+
+## Verified 2026-10-26
+
+One local walkthrough on the baseline fixture site (session `rt-bold`, 1280x800, two criteria), cut by `record-testing-clip.sh` and read as 4x4 contact sheets at 640 px a tile (stricter than the 800 px GIF), plus single-frame cuts where the sheets were too coarse.
+
+1. Caption readable at 800 px, 100-character caption wraps inside its bar: **pass**. The AC1 caption reads in every AC1 frame; the AC2 caption wraps to three lines inside the bar.
+2. Cursor ring visible, field under it not hidden: **pass**. The hollow ring sits on `#door` with `D07` readable and on `#dock` with the value readable through it.
+3. Keystroke badge and action callout never overlap: **pass**. Callout top-left, badge top-right, clear gap in every frame. The callout covers the page heading, which is the chosen position, not an overlap.
+4. Each GIF opens on its chapter card: **pass**. Both GIFs open on the card.
+5. `South` appears letter by letter in AC2 and the badge echoes it: **pass on the typing, wrong final value**. The field shows `So…` then `South` arriving one key at a time, and the badge shows `So`, `Sout`, `South`. The prefilled `North` was not cleared (`Control+a` does not select all on macOS), so the field ended `SouthNorth`. The typing example needs a `.clear()` before `pressSequentially`; that goes into the final fix wave.
+6. No caption, ring or badge before login, password never in a frame: **pass**. The before-login sheet shows the plain login page; the raw recording shows the password only as masked dots, and the clipped webm drops the login span entirely.
+
+`video-chapter --duration 2500` **blocks** for about 3.0 s before returning. This answers the open Known limits bullet; the mark-before-chapter order held and the card falls inside each criterion's GIF.
+
+Also seen, for the fix wave:
+
+- **Stale caption under the next card.** The AC2 chapter card shows over the AC1 caption for its first frames, because the AC2 caption is set after `video-chapter`. Set or clear the caption before the chapter call.
+- **Two cursor markers at once.** At each click the built-in `video-show-actions` pointer (arrow plus a filled red dot) lands on the target while the overlay ring is still on the previous field; the ring catches up about a frame later. For that moment a reader sees two markers on two fields, and the filled dot is what decision 5 set out to avoid. The ring also idles at its last spot through the next chapter card. Confusing at the click instant; worth moving the ring on the same event as the built-in pointer, or fading it when idle.
