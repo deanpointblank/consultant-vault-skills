@@ -33,7 +33,7 @@ Follow the obsidian-vault skill's conventions. One test-run note per recording, 
 
 - Note the wall-clock second (`date +%s`), then `video-start` with an absolute path inside the recording directory, `--size=1280x800`.
 - Keep a step log as you go, one line per action or check: seconds since the start, what you did in plain words, what you saw. Not one line per tool call.
-- Mark each criterion: `AC3 starts`, then its caption, then `video-chapter "AC3 – <the criterion in plain words>" --description "<what the reader will see>" --duration=2500`; `AC3 ends, pass` or `AC3 ends, fail: <one sentence>` at its last step. In that order the card is in that criterion's GIF and sits over its own caption, not the one before.
+- Mark each criterion: set its caption, then the `AC3 starts` mark, then straight away `video-chapter "AC3 – <the criterion in plain words>" --description "<what the reader will see>" --duration=2500`; `AC3 ends, pass` or `AC3 ends, fail: <one sentence>` at its last step. In that order the GIF opens on the card, over its own caption.
 - Captions say what is being checked, in words a tester knows: `eval "() => window.__rec.caption('AC3: Delete hides the note')"`. Set one at the start of each criterion and at key steps; `''` clears it.
 - No apostrophes, double quotes, `$` or backticks in caption, chapter or typed text: the command is one double-quoted bash string, which breaks on them or expands them. Write "does not".
 - Type the value the criterion is about where it can be seen: `run-code "async page => { const f = page.locator('#dock'); await f.click(); await f.clear(); await f.pressSequentially('South', {delay:120}); }"`. `fill` stays for setup values. Never this for the login.
@@ -78,7 +78,7 @@ First line under the title: one sentence, what was tested, where, the result.
 | Moving the raw video into the vault to save a step | The login is in it |
 | Leaving `.playwright-cli/` behind in a repo | The call ran from somewhere else; the stray lands wherever it was |
 | Turning the overlay or the action callout on before signing in | The callout prints what was typed; the password is on screen in plain text, mask or no mask |
-| Taking the `ACn starts` mark after the chapter card, or the caption after it | The card falls outside that criterion's GIF, or sits over the last criterion's caption |
+| Setting the caption after the `ACn starts` mark, or the mark after the chapter card | The GIF opens on the last criterion's caption, or the card falls outside that criterion's GIF |
 | `fill` for the value the criterion is about | It appears all at once; nobody sees it typed |
 | Skipping `close-all` because the run is over | The session outlives the bash call; a headless browser is left running |
 | Keeping the sign-in in because the video should show the whole run | A password on screen; everything worth watching is there without it |
