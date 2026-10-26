@@ -17,14 +17,14 @@ Follow the obsidian-vault skill's conventions. One test-run note per recording, 
 
 ## Driving the browser
 
-`playwright-cli` is the browser. It is already on PATH — one verb per bash call, nothing to install. Do not `npm install playwright`, do not `npx playwright`, do not write a `.mjs` script against the npm package: that is a different tool and it cannot record.
+`playwright-cli` is the browser. It is already on PATH — one verb per bash call, nothing to install. Do not `npm install playwright`, do not `npx playwright`, do not write your own script against the npm package: that is a different tool and it cannot record. The one script the skill runs is the overlay it ships, through `run-code --filename`.
 
 - Make a recording directory for the run — `mkdir -p "$TMPDIR/rec-<KEY>"` — and pass it to every call: `env -C "$TMPDIR/rec-<KEY>" playwright-cli -s=<KEY> …`. Bash calls reset the working directory, and the CLI drops a `.playwright-cli/` folder into whichever one it finds; unset, that is a client repo. Everything else is an absolute path.
 - `-s=<KEY>` on every call, named for the ticket. The session outlives the bash call, and `playwright-cli list` shows it.
-- The run in order: `open <url>`, `video-start`, the login, `video-show-actions`, the walkthrough, `video-stop`, `close-all`. If `open` says the browser is not installed, `playwright-cli install-browser chrome`. The verbs in between are `goto`, `fill`, `click`, `find`, `eval`. Targets are CSS selectors — `fill "input[name=u]" qauser`, `click "button[type=submit]"`.
+- The run in order: `open <url>`, `video-start`, the login, the overlay and `video-show-actions`, the walkthrough, `video-stop`, `close-all`. If `open` says the browser is not installed, `playwright-cli install-browser chrome`. The verbs in between are `goto`, `fill`, `click`, `find`, `eval`, `run-code`, `video-chapter`. Targets are CSS selectors — `fill "input[name=u]" qauser`, `click "button[type=submit]"`.
 - To see the page, `find <text>`: it prints the matching nodes with `[ref=eN]` inline. `snapshot` prints the whole tree; `find` prints only what matches.
 - `video-start <absolute path>.webm --size=1280x800` writes exactly where it is told. `video-stop` prints a path relative to the working directory — ignore it and use the absolute one you passed.
-- On the first app page after the login ends, and never before it: `video-show-actions --duration=1500`. It names each action on screen, so one criterion's clip does not look like another's. Before the login it prints what was typed, password included.
+- On the first app page after the login ends, and never before it, two calls: `run-code --filename <plugin root>/scripts/record-testing-overlay.js`, then `video-show-actions --duration=1500 --position=top-left`. The overlay adds a caption bar, a red ring that follows the mouse, and a badge showing keys as they are typed; it stays on through later page loads. The action callout names each action and highlights its target. Before the login it prints what was typed, password included.
 - Take the last criterion's end mark before `video-stop`, not after. The file carries a few seconds of frozen last frame while it finalises, and a mark inside that padding gives a clip of a still.
 - `close-all` at the end, always.
 - `playwright-cli --help` has the rest.
@@ -33,7 +33,9 @@ Follow the obsidian-vault skill's conventions. One test-run note per recording, 
 
 - Note the wall-clock second (`date +%s`), then `video-start` with an absolute path inside the recording directory, `--size=1280x800`.
 - Keep a step log as you go, one line per action or check: seconds since the start, what you did in plain words, what you saw. Not one line per tool call.
-- Mark each criterion: `AC3 starts` at its first step; `AC3 ends, pass` or `AC3 ends, fail: <one sentence>` at its last.
+- Mark each criterion: `AC3 starts`, then straight away `video-chapter "AC3 – <the criterion in plain words>" --description "<what the reader will see>" --duration 2500`; `AC3 ends, pass` or `AC3 ends, fail: <one sentence>` at its last step. The mark comes before the card, so the card is in that criterion's GIF.
+- Captions say what is being checked, in words a tester knows: `eval "() => window.__rec.caption('AC3: Delete hides the note')"`. Set one at the start of each criterion and at key steps; `''` clears it. No apostrophes: they end the quote, so write "does not".
+- Typing the criterion is about is typed where it can be seen: `run-code "async page => { await page.locator('#dock').click(); await page.locator('#dock').pressSequentially('South', {delay:120}); }"`. `fill` stays for setup values. Never this for the login.
 - A login form on screen: `login starts`. The first app page after it: `login ends`.
 - The recording changes nothing about the walkthrough itself.
 
@@ -73,7 +75,9 @@ First line under the title: one sentence, what was tested, where, the result.
 | Rewriting the step log afterwards from memory | The log is the evidence; the note copies it unchanged |
 | Moving the raw video into the vault to save a step | The login is in it |
 | Leaving `.playwright-cli/` behind in a repo | The call ran from somewhere else; the stray lands wherever it was |
-| Turning the action overlay on before signing in | It prints what was typed; the password is on screen in plain text, mask or no mask |
+| Turning the overlay or the action callout on before signing in | The callout prints what was typed; the password is on screen in plain text, mask or no mask |
+| Taking the `ACn starts` mark after the chapter card | The card falls outside that criterion's GIF |
+| `fill` for the value the criterion is about | It appears all at once; nobody sees it typed |
 | Skipping `close-all` because the run is over | The session outlives the bash call; a headless browser is left running |
 | Keeping the sign-in in because the video should show the whole run | A password on screen; everything worth watching is there without it |
 | One GIF for the whole run | Forty megabytes no Jira comment accepts; one per criterion |
