@@ -1,6 +1,7 @@
 // On-screen annotations for record-testing recordings: caption bar, cursor ring, click ring, key badge. Run only after the login ends.
 async page => {
   const init = () => {
+    if (window !== window.top) return;
     if (window.__rec_on) return;
     window.__rec_on = true;
     const start = () => {

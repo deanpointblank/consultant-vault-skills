@@ -25,6 +25,7 @@ cat > "$T/site/a.html" <<'H'
 <!doctype html><title>a</title><input id=t><input id=p type=password><button id=b onclick="window.n=(window.n||0)+1">Go</button>
 H
 echo '<!doctype html><title>b</title><p>page two</p>' > "$T/site/b.html"
+echo '<!doctype html><title>c</title><iframe name=f src="b.html"></iframe>' > "$T/site/c.html"
 
 PORT=$(python3 -c 'import socket;s=socket.socket();s.bind(("",0));print(s.getsockname()[1])')
 ( cd "$T/site" && exec python3 -m http.server "$PORT" >/dev/null 2>&1 ) &
@@ -60,6 +61,10 @@ case "$out" in *xy*) r=yes;; *) r=no;; esac
 check "text keys show on the badge" "yes" "$r"
 
 check "click ring shows and the click lands" '"1 1"' "$(pw run-code 'async page => { const b = await page.locator("#b").boundingBox(); await page.mouse.click(b.x + b.width/2, b.y + b.height/2); return `${await page.evaluate(() => document.querySelectorAll(".__rec_ring").length)} ${await page.evaluate(() => window.n)}`; }' 2>&1)"
+
+pw eval "() => window.__rec.caption('hi')" >/dev/null 2>&1
+pw goto "$URL/c.html" >/dev/null 2>&1
+check "no overlay inside an iframe" "0" "$(pw run-code "async page => { await page.waitForTimeout(500); const f = page.frames().find(x => x !== page.mainFrame()); return await f.evaluate(() => document.querySelectorAll('#__rec_cap').length); }" 2>&1)"
 
 echo "passed $pass, failed $fail"
 [ "$fail" -eq 0 ]
