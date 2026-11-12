@@ -53,6 +53,12 @@ export function repoSnapshot(repoPath) {
   return { porcelain, index: fs.existsSync(idx) ? fs.readFileSync(idx) : null };
 }
 
+export function chalkDir() {
+  if (process.env.CW_CHALK) return process.env.CW_CHALK;
+  const dir = path.join(os.homedir(), '.claude', 'skills', 'chalk-talk');
+  return fs.existsSync(path.join(dir, 'scripts', 'build.mjs')) ? dir : null;
+}
+
 export function makeVault(dir, notes) {
   const vault = path.join(dir, 'vault');
   fs.mkdirSync(vault, { recursive: true });
