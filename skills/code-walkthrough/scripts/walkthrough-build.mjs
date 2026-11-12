@@ -46,16 +46,39 @@ function parseArgs(argv) {
   return a;
 }
 
-// Real path of p, or of its nearest folder that exists with the rest put back on.
+// Real path of p: its nearest folder that exists, resolved through links by the system (so a ".."
+// after a link goes where the system goes), with the part that does not exist yet put back on.
+// A missing part holding ".." cannot be judged, so it is refused.
 function realOf(p) {
-  let here = path.resolve(p);
-  const rest = [];
-  for (;;) {
-    try { return path.join(fs.realpathSync.native(here), ...rest.reverse()); }
-    catch { const up = path.dirname(here); if (up === here) return path.resolve(p); rest.push(path.basename(here)); here = up; }
+  const raw = path.isAbsolute(p) ? p : `${process.cwd()}${path.sep}${p}`;
+  const segs = raw.split(path.sep);
+  const tail = [];
+  while (segs.length > 1) {
+    const here = segs.join(path.sep) || path.sep;
+    try { return path.join(fs.realpathSync.native(here), ...tail.reverse()); }
+    catch { const last = segs.pop(); if (last !== '') tail.push(last); }
+    if (tail.includes('..')) refuse(`${p} goes through a folder that does not exist and then ".."; give a plain path`);
   }
+  return path.join(path.sep, ...tail.reverse());
 }
-const inside = (child, parent) => child === parent || child.startsWith(parent.endsWith(path.sep) ? parent : parent + path.sep);
+
+// Whether the disk holding p ignores letter case, probed on its nearest existing folder with a letter in its name.
+function ignoresCase(p) {
+  const segs = p.split(path.sep);
+  for (let n = segs.length; n > 1; n--) {
+    const here = segs.slice(0, n).join(path.sep);
+    const name = segs[n - 1];
+    const flipped = name.replace(/[a-z]/gi, c => (c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase()));
+    if (flipped === name || !fs.existsSync(here)) continue;
+    return fs.existsSync(segs.slice(0, n - 1).concat(flipped).join(path.sep) || path.sep);
+  }
+  return false;
+}
+const inside = (child, parent) => {
+  const fold = ignoresCase(parent) ? s => s.toLowerCase() : s => s;
+  const c = fold(child), p = fold(parent);
+  return c === p || c.startsWith(p.endsWith(path.sep) ? p : p + path.sep);
+};
 
 // The data file's own rules, before any check can rely on it.
 function dataProblem(data) {
@@ -71,6 +94,9 @@ const failLine = f => `FAIL ${f.where}: ${f.why}`;
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
+  let dataReal;
+  try { dataReal = fs.realpathSync.native(args.dataFile); } catch { refuse(`${args.dataFile} cannot be read`); }
+  args.dataFile = dataReal;
   const loaded = loadData(args.dataFile);
   if (loaded.error) refuse(loaded.error);
   const data = loaded.data;
@@ -80,15 +106,15 @@ function main() {
   let vault;
   try { vault = fs.realpathSync.native(args.vault); if (!fs.statSync(vault).isDirectory()) throw new Error(); }
   catch { refuse(`the vault folder ${args.vault} does not exist`); }
+  if (args.folder.split(/[\\/]/).includes('..')) refuse(`--folder ${args.folder} must not use ".."`);
   const folderPath = path.resolve(args.vault, args.folder);
   if (!inside(realOf(folderPath), vault) || realOf(folderPath) === vault) refuse(`--folder ${args.folder} is not a folder inside the vault`);
 
-  const out = path.resolve(args.out);
-  const outReal = realOf(out);
+  const out = realOf(args.out);
+  const outReal = out;
   const keepOut = [['the vault', vault], ...data.repos.map(r => [`the repo ${r.name}`, realOf(repoByName(data, r.name).path)]), ...args.workRoots.map(w => [`the work folder ${w}`, realOf(w)])];
   for (const [what, p] of keepOut) if (inside(outReal, p)) refuse(`--out ${args.out} is inside ${what}; use a working folder outside the vault, the repos and the work folders`);
 
-  const dataReal = realOf(args.dataFile);
   for (const [what, p] of keepOut) if (inside(dataReal, p)) refuse(`${args.dataFile} is inside ${what}, and the build rewrites its data file; copy the data file to the working folder and build from the copy`);
 
   const shape = shapeErrors(data);
@@ -143,7 +169,7 @@ function main() {
   fs.writeFileSync(path.join(out, names.note), files.note);
   // The input may already be this very file: never copy it onto itself.
   const outData = path.join(out, names.data);
-  if (realOf(outData) !== realOf(args.dataFile)) fs.writeFileSync(outData, fs.readFileSync(args.dataFile));
+  if (outData !== dataReal) fs.writeFileSync(outData, fs.readFileSync(args.dataFile));
 
   if (args.write) {
     const copies = [names.page, names.data, names.note];

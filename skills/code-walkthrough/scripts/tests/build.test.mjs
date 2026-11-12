@@ -219,8 +219,9 @@ test('a data file inside the vault, a repo or a work root is refused and left al
     [path.join(ctx.repo.path, 'copy.json'), []],
     [path.join(workRoot, 'copy.json'), ['--work-root', workRoot]],
   ];
+  for (const [file] of homes) fs.copyFileSync(ctx.dataFile, file);
+  ctx.snapshot = repoSnapshot(ctx.repo.path);
   for (const [file, extra] of homes) {
-    fs.copyFileSync(ctx.dataFile, file);
     const before = fs.readFileSync(file);
     const r = run(ctx, ['--write', ...extra], { file });
     assert.equal(r.status, 2, `${file}: ${r.out}${r.err}`);
@@ -229,6 +230,43 @@ test('a data file inside the vault, a repo or a work root is refused and left al
     assert.equal(fs.existsSync(ctx.out), false);
   }
   assert.deepEqual(vaultFiles(ctx), ['booking-flow.walkthrough.json']);
+  finish(ctx);
+});
+
+test('a data file reached through a link and .. is judged where it really is', t => {
+  const ctx = setup(t);
+  fs.mkdirSync(ctx.folder, { recursive: true });
+  fs.mkdirSync(path.join(ctx.root, 'in'), { recursive: true });
+  fs.symlinkSync(ctx.folder, path.join(ctx.root, 'in', 'link'));
+  const real = path.join(ctx.vault, 'x.json');
+  fs.copyFileSync(ctx.dataFile, real);
+  const before = fs.readFileSync(real);
+  const r = run(ctx, [], { file: `${ctx.root}/in/link/../x.json` });
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.deepEqual(fs.readFileSync(real), before);
+  assert.deepEqual(fs.readdirSync(ctx.vault).sort(), ['README.md', 'Walkthroughs', 'x.json']);
+  finish(ctx);
+});
+
+test('a missing folder reached through .. is refused', t => {
+  const ctx = setup(t);
+  const r = run(ctx, [], { out: `${ctx.root}/nope/../vault/x` });
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.deepEqual(fs.readdirSync(ctx.vault), ['README.md']);
+  const r2 = run(ctx, [], { out: `${ctx.root}/missing/../elsewhere` });
+  assert.equal(r2.status, 2, r2.out + r2.err);
+  finish(ctx);
+});
+
+test('a work root that does not exist yet, typed in another letter case, still guards', t => {
+  const ctx = setup(t);
+  fs.mkdirSync(path.join(ctx.root, 'probe'));
+  if (!fs.existsSync(path.join(ctx.root, 'PROBE'))) return t.skip('this disk tells letter cases apart');
+  const out = path.join(ctx.root, 'LATER', 'x');
+  const r = run(ctx, ['--work-root', path.join(ctx.root, 'later')], { out });
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.equal(fs.existsSync(path.join(ctx.root, 'later')), false);
+  finish(ctx);
 });
 
 test('the same folder typed in another letter case is still inside', t => {
@@ -244,6 +282,7 @@ test('the same folder typed in another letter case is still inside', t => {
   assert.equal(lower.status, 0, lower.out + lower.err);
   const repoCase = run(ctx, [], { out: path.join(ctx.root, 'BOOKING-MINI', 'x') });
   assert.equal(repoCase.status, 2, repoCase.out + repoCase.err);
+  finish(ctx);
 });
 
 test('a leading ~ means the home folder, even in a work root that does not exist yet', t => {
