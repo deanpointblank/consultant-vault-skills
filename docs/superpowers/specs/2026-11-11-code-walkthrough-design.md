@@ -568,3 +568,30 @@ These all use the same data file and page format, so version 1 does not block th
 ## Open questions for the user
 
 None remain.
+
+## Verified 2026-11-12
+
+The first trial (plan Task 1): 14 stops from the sample, map from chalk-talk 4f88ead.
+
+- outcome: 1
+- frame_method: srcdoc — the map page, with a style that hides its caption bar added before `</head>`, sits in the walkthrough page as a JSON string in a `<script type="application/json" id="map-page">` block, with every `<` written as a unicode escape. At load the page parses it, listens for the frame's `load`, then sets `frame.srcdoc`. After `chalk.ready` it calls the frame's `chalk.go(cur)`, and each later stop change calls the frame's `chalk.go(k)` directly.
+- map_input: blocked — capture-phase listeners on the frame's window stop every key and every pointer event on the board. Left and right arrows call the page's own `go(cur ± 1)`. A tap passes only on a visible block that has code, so the code panel opens. There is no overlay.
+- caption_bar: hidden — `<style>.bar{display:none!important}</style>` is added to the map page before `</head>` when the page is built.
+- code_panel: kept
+- theme_method: the page sets the frame's `documentElement.dataset.theme`, once after `chalk.ready` and on every toggle
+- embed_height: 1100 (the trial used 900px; the user said it could be taller and chose 1100px)
+- open_link: button
+- budget_ms: 30000
+- Long titles: chalk-talk check on 14 steps, 0 errors (4 warnings).
+- Browser: Google Chrome 157.0.8103.51; protocol P 50/50. It is the user's default browser and the same engine as the scripted run.
+- Obsidian: check 6 pass; 7 pass; 8 pass. For all three the user reported only "Everything looks like it works", with no detail for each check. Check 9 pass by the Embed HTML plugin's "open in external browser" button. The wikilink opened the page in a new tab inside Obsidian, not in the browser.
+- Trial files: removed on 2026-11-12.
+
+Also found:
+
+- `blob` failed checks 1–5 at both sizes when opened from disk: the frame's address is `blob:null/…`, the browser treats it as another site, and the page cannot reach it. Not tried inside Obsidian.
+- `srcdoc` with input followed also passed checks 1–5 at both sizes. It is the spare.
+- With input blocked, Escape and C do not reach the map, so the code panel closes by its close button or a second tap on the same block. The user confirmed it opens and closes inside Obsidian.
+- The theme switch was not tried inside Obsidian. chalk-talk re-applies its own theme when the system's light or dark setting changes, which could override the page's.
+- The 50 scripted actions drew no ← or → inside the map. A separate key check covered them: they moved page and map together, and the map's other keys moved nothing.
+- A control run with input handling off matched 35 of 50, so protocol P does catch drift.
