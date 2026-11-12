@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { expectedText } from '../lib/code.mjs';
+import { BUDGET_MS } from '../lib/settings.mjs';
 
 const IDENTITY = {
   GIT_AUTHOR_NAME: 'Test Author', GIT_AUTHOR_EMAIL: 'author@example.com',
@@ -57,6 +59,76 @@ export function chalkDir() {
   if (process.env.CW_CHALK) return process.env.CW_CHALK;
   const dir = path.join(os.homedir(), '.claude', 'skills', 'chalk-talk');
   return fs.existsSync(path.join(dir, 'scripts', 'build.mjs')) ? dir : null;
+}
+
+const isFile = f => { try { return fs.statSync(f).isFile(); } catch { return false; } };
+
+// Our own copy of chalk-talk's findChrome (scripts/check.mjs), so page tests run without chalk-talk.
+export function findChrome() {
+  if (process.env.CHROME) return process.env.CHROME;
+  const env = process.env, cands = [];
+  if (process.platform === 'win32') {
+    const bases = [env.LOCALAPPDATA, env.PROGRAMFILES || 'C:/Program Files', env['PROGRAMFILES(X86)'] || 'C:/Program Files (x86)'].filter(Boolean);
+    for (const app of ['Google/Chrome/Application/chrome.exe', 'Chromium/Application/chrome.exe',
+      'Microsoft/Edge/Application/msedge.exe', 'BraveSoftware/Brave-Browser/Application/brave.exe'])
+      for (const b of bases) cands.push(path.join(b, app));
+  } else if (process.platform === 'darwin') {
+    cands.push('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser');
+  }
+  const found = cands.find(isFile);
+  if (found) return found;
+  const exts = process.platform === 'win32' ? ['.exe', ''] : [''];
+  for (const name of ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser', 'microsoft-edge', 'brave-browser', 'chrome', 'msedge'])
+    for (const dir of (env.PATH || '').split(path.delimiter)) for (const x of exts) if (dir && isFile(path.join(dir, name + x))) return path.join(dir, name + x);
+  return null;
+}
+
+// check.mjs gives each Chrome run about 30 s of real time before it stops waiting.
+const WATCHDOG_MS = 30_000;
+
+function killTree(child) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  else child.kill('SIGKILL');
+}
+
+// Runs a copy of `file`, with `head` just after <head> and `body` just before </body>, in headless
+// Chrome the way chalk-talk's check.mjs does, and resolves to the DOM Chrome dumps. The copy and the
+// Chrome profile live in their own temp folder, removed afterwards.
+export async function dumpDom(file, { query = '', hash = '', size = [1280, 900], budgetMs = BUDGET_MS, head = '', body = '' } = {}) {
+  const chrome = findChrome();
+  if (!chrome) throw new Error('dumpDom: no Chrome found');
+  const page = fs.readFileSync(file, 'utf8');
+  const h = page.indexOf('<head>'), b = page.lastIndexOf('</body>');
+  if (h < 0 || b < h) throw new Error(`dumpDom: ${file} has no <head> or no </body> after it`);
+  const at = h + '<head>'.length;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw-chrome-'));
+  try {
+    const copy = path.join(dir, path.basename(file));
+    fs.writeFileSync(copy, page.slice(0, at) + head + page.slice(at, b) + body + page.slice(b));
+    const url = pathToFileURL(copy).href + (query ? `?${query}` : '') + (hash ? `#${hash}` : '');
+    const args = ['--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
+      `--virtual-time-budget=${budgetMs}`, `--user-data-dir=${path.join(dir, 'profile')}`, `--window-size=${size[0]},${size[1]}`, '--dump-dom', url];
+    const child = spawn(chrome, args, { stdio: ['ignore', 'pipe', 'ignore'] });
+    child.stdout.setEncoding('utf8');
+    let out = '', failed = null, watchdog;
+    const closed = new Promise(resolve => child.on('close', resolve));
+    // Stop as soon as the dump is whole: the document's own </html> ends it.
+    await new Promise(resolve => {
+      child.stdout.on('data', d => { out += d; if (/<\/html>\s*$/.test(out)) resolve(); });
+      child.on('close', resolve);
+      child.on('error', e => { failed = e; resolve(); });
+      watchdog = setTimeout(resolve, WATCHDOG_MS);
+    });
+    clearTimeout(watchdog);
+    if (failed) throw new Error(`dumpDom: could not start ${chrome}: ${failed.message}`);
+    killTree(child);
+    await Promise.race([closed, new Promise(r => { const t = setTimeout(r, 2000); closed.then(() => clearTimeout(t)); })]);
+    return out;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  }
 }
 
 export function makeVault(dir, notes) {

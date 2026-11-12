@@ -85,6 +85,36 @@ test('plain words only', t => {
   assert.doesNotMatch(JSON.stringify(model(t)), /data file|scene|map_step|left_out|key_lines|not-recorded|vault-note|design-doc|build-note|pull-request|code-comment/);
 });
 
+test('model carries the words the page shows', t => {
+  const m = model(t);
+  const [s1, s2, s3] = m.stops;
+  assert.equal(s2.kicker, 'Stop 2 of 3');
+  assert.equal(s2.label, 'Stop 2 of 3 — The API checks the dock day');
+  assert.equal(s2.prevLabel, '← 1. The form sends the booking');
+  assert.equal(s2.nextLabel, '3. The yard service hears about it →');
+  assert.deepEqual([s1.prevLabel, s3.nextLabel], ['', '']);
+  assert.equal(s1.notesLabel, 'Notes on the code (1)');
+  assert.deepEqual([s2.moreLabel, s3.moreLabel], ['', '+1 more']);
+  assert.equal(m.outOf, 'of 3 stops');
+  assert.equal(m.extend[0].link, '2. The API checks the dock day →');
+  assert.deepEqual(m.stops.map(s => s.why.map(w => w.tone)), [['none'], ['comment', 'doc'], ['commit']]);
+});
+
+test('every source kind has a chip colour', () => {
+  const kinds = { 'vault-note': 'doc', 'design-doc': 'doc', 'build-note': 'doc', ticket: 'doc', commit: 'commit', 'pull-request': 'commit', 'code-comment': 'comment', 'not-recorded': 'none' };
+  const reasons = Object.keys(kinds).map(kind => ({ text: kind, quote: 'q', source: { kind, ref: kind === 'commit' ? { hash: 'abc1234' } : kind === 'pull-request' ? { number: 4 } : 'x' } }));
+  const m = pageModel({ journey: 'j', repos: [], stops: [{ id: 'a', name: 'A', reasons }], checks: {} });
+  assert.deepEqual(m.stops[0].why.map(w => w.tone), Object.values(kinds));
+});
+
+test('one stop reads in the singular', () => {
+  const m = pageModel({ journey: 'j', repos: [], stops: [{ id: 'a', name: 'A', notes: ['x', 'y'] }], checks: {} });
+  assert.equal(m.outOf, 'of 1 stop');
+  assert.equal(m.stops[0].label, 'Stop 1 of 1 — A');
+  assert.equal(m.stops[0].notesLabel, 'Notes on the code (2)');
+  assert.deepEqual([m.stops[0].prevLabel, m.stops[0].nextLabel, m.stops[0].moreLabel], ['', '', '']);
+});
+
 test('the fold limit is 14 numbered lines', () => {
   const rows = n => Array.from({ length: n }, (_, i) => ({ n: i + 1, text: 'x', key: i + 1 === 8 }));
   assert.equal(foldRows(rows(14)).length, 14);
