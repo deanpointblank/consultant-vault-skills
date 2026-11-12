@@ -540,21 +540,25 @@ test('light and dark', needsMap, async t => {
       await k.wait(0);
       return [...both(), left.slice(n)];
     };
+    r.system = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     r.start = both();
     r.label = k.text(k.$('#theme-toggle'));
-    r.mapOwnInLight = await mapOwn();
+    r.mapOwnAtStart = await mapOwn();
     k.$('#theme-toggle').click();
-    r.dark = [...both(), k.text(k.$('#theme-toggle')), localStorage.getItem('code-walkthrough:theme')];
-    r.mapOwnInDark = await mapOwn();
+    r.toggled = [...both(), k.text(k.$('#theme-toggle')), localStorage.getItem('code-walkthrough:theme')];
+    r.mapOwnToggled = await mapOwn();
     k.$('#theme-toggle').click();
-    r.light = both();
+    r.back = both();
   });
-  assert.deepEqual(r.start, ['light', 'light']);
-  assert.equal(r.label, 'Dark');
-  assert.deepEqual(r.mapOwnInLight, ['light', 'light', ['light', 'dark']]);
-  assert.deepEqual(r.dark, ['dark', 'dark', 'Light', 'dark']);
-  assert.deepEqual(r.mapOwnInDark, ['dark', 'dark', ['dark', 'light']]);
-  assert.deepEqual(r.light, ['light', 'light']);
+  // The page starts on the viewer's setting, whichever it is where the test runs.
+  const a = r.system, b = a === 'dark' ? 'light' : 'dark';
+  const word = t => (t === 'dark' ? 'Dark' : 'Light');
+  assert.deepEqual(r.start, [a, a]);
+  assert.equal(r.label, word(b));
+  assert.deepEqual(r.mapOwnAtStart, [a, a, [a, b]]);
+  assert.deepEqual(r.toggled, [b, b, word(a), b]);
+  assert.deepEqual(r.mapOwnToggled, [b, b, [b, a]]);
+  assert.deepEqual(r.back, [a, a]);
 });
 
 test('no requests of its own', needsMap, async t => {
@@ -581,6 +585,7 @@ test('keys inside the map move the stop and the map together', needsMap, async t
     const { win, doc } = await k.map();
     const now = () => [k.html.dataset.stop, doc.getElementById('h').textContent];
     const press = key => k.key(doc.body, key, win);
+    r.theme = doc.documentElement.dataset.theme;
     r.start = now();
     press('ArrowRight');
     r.right = now();
@@ -600,7 +605,7 @@ test('keys inside the map move the stop and the map together', needsMap, async t
   assert.deepEqual(r.right, at(2));
   assert.deepEqual(r.right2, at(3));
   assert.deepEqual(r.left, at(2));
-  for (const [key, ...rest] of r.others) assert.deepEqual(rest, [...at(2), 'light'], `after ${JSON.stringify(key)}`);
+  for (const [key, ...rest] of r.others) assert.deepEqual(rest, [...at(2), r.theme], `after ${JSON.stringify(key)}`);
 });
 
 test('map and stop stay together', needsMap, async t => {
