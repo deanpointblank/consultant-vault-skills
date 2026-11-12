@@ -44,3 +44,9 @@ test('facts leave the repo untouched', t => {
   assert.equal(after.porcelain, before.porcelain);
   assert.ok(before.index.equals(after.index));
 });
+
+test('cited paths are literal, not wildcards', t => {
+  const f = { 'app/[id]/page.ts': 'a\n', 'app/i/page.ts': 'b\n' };
+  const r = makeRepo(path.join(tempRoot(t), 'r'), { files: f, message: 'first', dirty: { 'app/[id]/page.ts': 'x\n', 'app/i/page.ts': 'y\n' } });
+  assert.deepEqual(repoFacts(r.path, ['app/[id]/page.ts']).uncommitted, ['app/[id]/page.ts']);
+});

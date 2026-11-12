@@ -20,6 +20,14 @@ export function repoByName(data, name) {
   return { name: r.name, path: r.path.replace(/^~(?=\/|$)/, os.homedir()) };
 }
 
+export function fieldProblem(o, withText) {
+  if (typeof o?.file !== 'string' || !o.file) return 'has no file name';
+  const l = o.lines;
+  if (!Array.isArray(l) || l.length !== 2 || !l.every(Number.isInteger) || l[0] < 1 || l[0] > l[1]) return 'needs lines as two whole numbers, first line 1 or more and not after the last';
+  if (withText && typeof o.text !== 'string') return 'has no text';
+  return null;
+}
+
 export function shapeErrors(data) {
   const errors = [];
   const repos = data.repos || [];
@@ -37,6 +45,8 @@ export function shapeErrors(data) {
     (s.code || []).forEach((b, i) => {
       const p = repoProblem(b, `stop ${id} code block ${i + 1}`);
       if (p) errors.push(p);
+      const f = fieldProblem(b, true);
+      if (f) errors.push(`stop ${id} code block ${i + 1} ${f}`);
     });
     const reasons = s.reasons || [];
     if (!reasons.length) errors.push(`stop ${id} has no Why entry`);
@@ -62,6 +72,8 @@ export function shapeErrors(data) {
     if (!seen.has(e.stop)) errors.push(`extend point ${i + 1} names stop ${e.stop}, which does not exist`);
     const p = repoProblem(e, `extend point ${i + 1} (stop ${e.stop})`);
     if (p) errors.push(p);
+    const f = fieldProblem(e, false);
+    if (f) errors.push(`extend point ${i + 1} (stop ${e.stop}) ${f}`);
   });
   return errors;
 }

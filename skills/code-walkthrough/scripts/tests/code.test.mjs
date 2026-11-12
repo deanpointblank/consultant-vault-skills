@@ -101,3 +101,39 @@ test('codeRows rebuilds real numbers', t => {
   assert.deepEqual(rows.filter(r => r.key).map(r => r.n), [5]);
   assert.equal(rows[2].text, '\tint indented = 3;');
 });
+
+for (const [name, mutate] of [
+  ['missing text', b => { delete b.text; }],
+  ['missing lines', b => { delete b.lines; }],
+  ['missing file', b => { delete b.file; }],
+  ['reversed range', b => { b.lines = [3, 1]; b.text = ''; }],
+  ['zero-based range', b => { b.lines = [0, 2]; b.text = '\nl1\nl2'; }],
+]) {
+  test(`malformed block does not throw: ${name}`, t => {
+    const { d } = setup(t);
+    mutate(d.stops[0].code[0]);
+    const r = checkCode(d);
+    assert.equal(r.failures.length, 1);
+    assert.ok(r.failures[0].where.startsWith('s1'), r.failures[0].where);
+  });
+}
+
+test('malformed extend point and unknown repo do not throw', t => {
+  const { d } = setup(t);
+  d.extend[0].lines = [0, 2];
+  d.stops[1].code[0].repo = 'nope';
+  const r = checkCode(d);
+  assert.equal(r.failures.length, 2);
+});
+
+test('codeRows splits text the way the check does', t => {
+  const { d } = setup(t);
+  const b = d.stops[0].code[0];
+  b.lines = [1, 3]; b.key_lines = [2];
+  for (const text of ['x\r\ny\r\nz', 'x\ry\rz']) {
+    b.text = text;
+    const rows = codeRows(b);
+    assert.deepEqual(rows.map(r => r.text), ['x', 'y', 'z']);
+    assert.deepEqual(rows.filter(r => r.key).map(r => r.n), [2]);
+  }
+});

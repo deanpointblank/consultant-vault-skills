@@ -51,3 +51,15 @@ test('format 2 is refused', t => {
   fs.writeFileSync(f, JSON.stringify({ format: 2 }));
   assert.ok(loadData(f).error.includes('format 2'));
 });
+
+for (const [name, mutate, text] of [
+  ['missing text', b => { delete b.text; }, 'no text'],
+  ['missing lines', b => { delete b.lines; }, 'lines'],
+  ['missing file', b => { delete b.file; }, 'file name'],
+  ['reversed range', b => { b.lines = [3, 1]; }, 'lines'],
+  ['zero-based range', b => { b.lines = [0, 2]; }, 'lines'],
+]) {
+  test(`malformed block: ${name}`, t => { const d = fresh(t); mutate(d.stops[0].code[0]); one(d, 's1', text); });
+}
+
+test('malformed extend point', t => { const d = fresh(t); d.extend[0].lines = [0, 2]; one(d, 'extend point 1', 'lines'); });

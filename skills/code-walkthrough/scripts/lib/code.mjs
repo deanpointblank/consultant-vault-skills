@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { repoByName } from './data.mjs';
+import { repoByName, fieldProblem } from './data.mjs';
 
 export const splitLines = t => { const ls = t.split(/\r\n|\n|\r/); if (ls.length && ls.at(-1) === '') ls.pop(); return ls; };
 
@@ -18,7 +18,7 @@ export function expectedText(fileText, lines, leftOut = []) {
 
 export function codeRows(block) {
   const [a, b] = block.lines;
-  const own = block.text.length ? block.text.split('\n') : [];
+  const own = splitLines(block.text);
   const key = new Set(block.key_lines || []);
   const starts = new Map((block.left_out || []).map(r => [r[0], r]));
   const rows = [];
@@ -47,27 +47,37 @@ function firstDiff(want, got) {
 export function checkCode(data, { readFile = fs.readFileSync } = {}) {
   const failures = [];
   let blocks = 0;
+  const attempt = (where, fn) => {
+    try { fn(); } catch (e) { failures.push({ where, why: e.message }); }
+  };
   for (const stop of data.stops) {
-    for (const block of stop.code || []) {
+    (stop.code || []).forEach((block, i) => {
       blocks++;
-      const where = `${stop.id} ${block.file}:${range(block.lines)}`;
-      const [a, b] = block.lines;
-      const exp = expectedText(read(data, block, readFile), block.lines, block.left_out);
-      if (exp.error) { failures.push({ where, why: exp.error }); continue; }
-      const outside = [];
-      for (const k of block.key_lines || []) if (k < a || k > b) outside.push(`line ${k} is outside ${a}-${b}`);
-      for (const r of block.left_out || []) if (r[0] < a || r[1] > b || r[0] > r[1]) outside.push(`left-out lines ${range(r)} are outside ${a}-${b}`);
-      if (outside.length) { failures.push({ where, why: outside.join('; ') }); continue; }
-      const got = block.text.replace(/\r\n|\r/g, '\n');
-      if (got !== exp.text) failures.push({ where, why: `the text differs from the file, first at line ${firstDiff(exp.text, got)} of the shown text` });
-    }
+      const named = typeof block.file === 'string' && Array.isArray(block.lines) ? `${stop.id} ${block.file}:${range(block.lines)}` : `${stop.id} code block ${i + 1}`;
+      const bad = fieldProblem(block, true);
+      if (bad) { failures.push({ where: named, why: `the block ${bad}` }); return; }
+      attempt(named, () => {
+        const where = named;
+        const [a, b] = block.lines;
+        const exp = expectedText(read(data, block, readFile), block.lines, block.left_out);
+        if (exp.error) { failures.push({ where, why: exp.error }); return; }
+        const outside = [];
+        for (const k of block.key_lines || []) if (k < a || k > b) outside.push(`line ${k} is outside ${a}-${b}`);
+        for (const r of block.left_out || []) if (r[0] < a || r[1] > b || r[0] > r[1]) outside.push(`left-out lines ${range(r)} are outside ${a}-${b}`);
+        if (outside.length) { failures.push({ where, why: outside.join('; ') }); return; }
+        const got = block.text.replace(/\r\n|\r/g, '\n');
+        if (got !== exp.text) failures.push({ where, why: `the text differs from the file, first at line ${firstDiff(exp.text, got)} of the shown text` });
+      });
+    });
   }
   (data.extend || []).forEach((e, i) => {
     const where = `extend ${i + 1}`;
-    const [a, b] = e.lines;
-    const exp = expectedText(read(data, e, readFile), e.lines);
-    if (exp.error) failures.push({ where, why: exp.error });
-    else if (a < 1 || a > b) failures.push({ where, why: `lines ${range(e.lines)} are not a valid range` });
+    const bad = fieldProblem(e, false);
+    if (bad) { failures.push({ where, why: `the extend point ${bad}` }); return; }
+    attempt(where, () => {
+      const exp = expectedText(read(data, e, readFile), e.lines);
+      if (exp.error) failures.push({ where, why: exp.error });
+    });
   });
   return { blocks, failures };
 }
