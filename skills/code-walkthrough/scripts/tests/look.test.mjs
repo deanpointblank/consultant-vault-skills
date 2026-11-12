@@ -146,7 +146,7 @@ test('a commit that is gone', t => {
 test('a hash that could be an option is never given to git', t => {
   const ctx = setup(t);
   const target = path.join(ctx.repo.path, 'pwned');
-  for (const bad of ['--output=' + target, '-q', '--no-index', '', 'zzzzzzz', 'HEAD', 'abc1234^{commit}']) {
+  for (const bad of ['--output=' + target, '-q', '--no-index', 'zzzzzzz', 'HEAD', 'abc1234^{commit}']) {
     editNote(ctx, s => s.replace(/^  - "booking-mini@.*"$/m, `  - "booking-mini@${bad}"`));
     arm(ctx);
     const r = look(ctx);
@@ -312,9 +312,67 @@ test('a list with no indent is read', t => {
   const ctx = setup(t);
   editNote(ctx, s => s.replace(/^  - /gm, '- '));
   arm(ctx);
-  assert.ok(look(ctx).lines[0].startsWith(LINE));
+  assert.equal(look(ctx).lines[0], `${LINE} · commit ${ctx.repo.head} · built ${DAY} · its cited files have not changed since`);
   finish(ctx);
 });
+
+test('a note with an empty commit says so', t => {
+  const ctx = setup(t);
+  editNote(ctx, s => s.replace(`booking-mini@${ctx.repo.head}`, 'booking-mini@'));
+  arm(ctx);
+  assert.match(look(ctx).lines[0], /· its commit was not recorded$/);
+  finish(ctx);
+});
+
+test('a git failure while counting is reported', t => {
+  const ctx = setup(t);
+  execFileSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/none'], { cwd: ctx.repo.path });
+  arm(ctx);
+  const r = look(ctx);
+  assert.match(r.lines[0], /· its cited files could not be checked$/, r.out + r.err);
+  finish(ctx);
+});
+
+const UNCHECKED = /· its cited files could not be checked$/;
+function inexact(t, cited, plant = () => {}) {
+  const ctx = setup(t);
+  plant(ctx);
+  editData(ctx, d => { d.cited_files['booking-mini'] = ['web/form.ts', cited]; });
+  fs.appendFileSync(path.join(ctx.repo.path, 'api/Dock.java'), 'int extra = 31;\n');
+  commitAll(ctx.repo.path, 'Change the dock check');
+  arm(ctx);
+  const r = look(ctx);
+  assert.equal(r.status, 0, r.err);
+  assert.match(r.lines[0], UNCHECKED, r.out);
+  assert.doesNotMatch(r.out, /have not changed/);
+  finish(ctx);
+}
+
+test('a doubled slash in a cited path is not trusted', t => inexact(t, 'api//Dock.java'));
+test('a ./ segment in a cited path is not trusted', t => inexact(t, 'api/./Dock.java'));
+
+test('wrong letter case in a cited path is not trusted', t => {
+  const probe = path.join(tempRoot(t), 'Case.txt');
+  fs.writeFileSync(probe, 'x');
+  if (!fs.existsSync(probe.replace('Case', 'case'))) return t.skip('this disk respects letter case, so git cannot be fooled this way');
+  inexact(t, 'api/dock.java');
+});
+
+test('a path through a committed symlink is not trusted', t => inexact(t, 'link/Dock.java',
+  ctx => fs.symlinkSync('api', path.join(ctx.repo.path, 'link'))));
+
+test('an ignored, never-committed cited file is not trusted', t => inexact(t, 'ignored.txt', ctx => {
+  fs.writeFileSync(path.join(ctx.repo.path, '.gitignore'), 'ignored.txt\n');
+  fs.writeFileSync(path.join(ctx.repo.path, 'ignored.txt'), 'edited after the build\n');
+}));
+
+test('a file inside an embedded repo is not trusted', t => inexact(t, 'sub/file.ts', ctx => {
+  const inner = path.join(ctx.repo.path, 'sub');
+  fs.mkdirSync(inner);
+  const env = { ...process.env, GIT_AUTHOR_NAME: 'T', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 'T', GIT_COMMITTER_EMAIL: 't@example.com' };
+  fs.writeFileSync(path.join(inner, 'file.ts'), 'const inner = 1;\n');
+  for (const a of [['init', '-q'], ['add', '.'], ['commit', '-q', '-m', 'inner']]) execFileSync('git', a, { cwd: inner, env, stdio: 'ignore' });
+}));
 
 test('a note with no recorded commit says so', t => {
   const ctx = setup(t);

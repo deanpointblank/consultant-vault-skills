@@ -66,11 +66,20 @@ function fullCommit(repoPath, hash) {
 
 const plainRelative = f => !f.startsWith('/') && !/^[A-Za-z]:/.test(f) && !f.split('/').includes('..');
 
+// A cited path is checkable only when git names it exactly: it was in the commit under that name, or it is
+// new since and listed (tracked or untracked, not ignored). Anything else could be hidden from the counts.
+function checkable(repoPath, full, file) {
+  try { gitRead(repoPath, ['cat-file', '-e', `${full}:${file}`]); return true; } catch { /* maybe new since */ }
+  try { return gitRead(repoPath, ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', file]).split('\0').includes(file); }
+  catch { return false; }
+}
+
 // { changed, unchecked }: unchecked is true when any cited path could not be given to git or git failed.
 function changedFiles(repoPath, full, cited) {
   const safe = cited.filter(plainRelative);
   let unchecked = safe.length < cited.length;
   if (!safe.length) return { changed: 0, unchecked: true };
+  if (!safe.every(f => checkable(repoPath, full, f))) return { changed: 0, unchecked: true };
   const set = new Set(safe);
   const hit = new Set();
   try {
@@ -114,7 +123,7 @@ export function lookUp({ vault, folder, repo, repoPath, files = [] }) {
     const commit = entry ? entry.slice(repo.length + 1) : '';
     const full = fullCommit(repoPath, commit);
     const { changed, unchecked } = full ? changedFiles(repoPath, full, cited) : { changed: 0, unchecked: false };
-    rows.push({ note: name.replace(/\.md$/i, ''), commit, date: typeof front.created === 'string' ? front.created : '', cited: cited.length, changed, missingCommit: !full, unchecked, noCommit: !entry });
+    rows.push({ note: name.replace(/\.md$/i, ''), commit, date: typeof front.created === 'string' ? front.created : '', cited: cited.length, changed, missingCommit: !full, unchecked, noCommit: !commit });
   }
   return rows.sort((a, b) => (a.date === b.date ? (a.note < b.note ? 1 : -1) : a.date < b.date ? 1 : -1));
 }
