@@ -579,13 +579,13 @@ The first trial (plan Task 1): 14 stops from the sample, map from chalk-talk 4f8
 - caption_bar: hidden — `<style>.bar{display:none!important}</style>` is added to the map page before `</head>` when the page is built.
 - code_panel: kept
 - theme_method: the page sets the frame's `documentElement.dataset.theme`, once after `chalk.ready` and on every toggle
-- embed_height: 1100 (the trial used 900px; the user said it could be taller and chose 1100px)
+- embed_height: 1100 (900px could be taller; the user viewed the embed at 1100px in the second run and it read well)
 - open_link: button
 - budget_ms: 30000
 - Long titles: chalk-talk check on 14 steps, 0 errors (4 warnings).
 - Browser: Google Chrome 157.0.8103.51; protocol P 50/50. It is the user's default browser and the same engine as the scripted run.
-- Obsidian: check 6 pass; 7 pass; 8 pass. For all three the user reported only "Everything looks like it works", with no detail for each check. Check 9 pass by the Embed HTML plugin's "open in external browser" button. The wikilink opened the page in a new tab inside Obsidian, not in the browser.
-- Trial files: removed on 2026-11-12.
+- Obsidian, in two runs. Check 6 pass: the embed showed the page. Check 7 pass: the map and the stop moved together. Check 8 pass, in the second run: after one click into the page, ← and → moved the stop and the map, and Obsidian itself did not react. With the focus inside the map, → still moved both. Check 9 pass by the Embed HTML plugin's "open in external browser" button. The wikilink opened the page in a new tab inside Obsidian, not in the browser.
+- Trial files: both runs' files removed on 2026-11-12.
 
 Also found:
 
