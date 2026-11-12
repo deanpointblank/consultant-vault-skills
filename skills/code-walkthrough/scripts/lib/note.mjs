@@ -34,7 +34,7 @@ export function noteText(data, names, { outcome = OUTCOME, embedHeight = EMBED_H
       : `Open [[${names.page}]] in your browser to read this walkthrough.`, '');
   }
   body.push(data.summary, '', builtText, '', embed, '');
-  if (outcome !== 2) body.push(`Not showing, or too small? Open [[${names.page}]], or use the "open in browser" button on the page above.`, '');
+  body.push(`Not showing, or too small? Open [[${names.page}]], or use the "open in browser" button on the page above.`, '');
   if (names.earlier) body.push(`Earlier walkthrough of this journey: [[${names.earlier}]].`, '');
   body.push('## Stops', '');
   stops.forEach((s, i) => {

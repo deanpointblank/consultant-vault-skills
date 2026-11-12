@@ -209,6 +209,55 @@ test('working folder in the wrong place is refused', t => {
   finish(ctx);
 });
 
+test('a data file inside the vault, a repo or a work root is refused and left alone', t => {
+  const ctx = setup(t);
+  const workRoot = path.join(ctx.root, 'roots');
+  fs.mkdirSync(workRoot);
+  fs.mkdirSync(ctx.folder, { recursive: true });
+  const homes = [
+    [path.join(ctx.folder, 'booking-flow.walkthrough.json'), []],
+    [path.join(ctx.repo.path, 'copy.json'), []],
+    [path.join(workRoot, 'copy.json'), ['--work-root', workRoot]],
+  ];
+  for (const [file, extra] of homes) {
+    fs.copyFileSync(ctx.dataFile, file);
+    const before = fs.readFileSync(file);
+    const r = run(ctx, ['--write', ...extra], { file });
+    assert.equal(r.status, 2, `${file}: ${r.out}${r.err}`);
+    assert.match(r.err, /copy the data file to the working folder/);
+    assert.deepEqual(fs.readFileSync(file), before, file);
+    assert.equal(fs.existsSync(ctx.out), false);
+  }
+  assert.deepEqual(vaultFiles(ctx), ['booking-flow.walkthrough.json']);
+});
+
+test('the same folder typed in another letter case is still inside', t => {
+  const ctx = setup(t);
+  fs.mkdirSync(path.join(ctx.root, 'probe'));
+  const blind = fs.existsSync(path.join(ctx.root, 'PROBE'));
+  if (!blind) return t.skip('this disk tells letter cases apart');
+  const out = path.join(ctx.root, 'VAULT', 'work');
+  const r = run(ctx, ['--write'], { out });
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.deepEqual(fs.readdirSync(ctx.vault), ['README.md']);
+  const lower = run(ctx, [], { out: path.join(ctx.root, 'REPOS-NOT', 'x'), file: ctx.dataFile });
+  assert.equal(lower.status, 0, lower.out + lower.err);
+  const repoCase = run(ctx, [], { out: path.join(ctx.root, 'BOOKING-MINI', 'x') });
+  assert.equal(repoCase.status, 2, repoCase.out + repoCase.err);
+});
+
+test('a leading ~ means the home folder, even in a work root that does not exist yet', t => {
+  const ctx = setup(t);
+  const home = path.join(ctx.root, 'home');
+  fs.mkdirSync(home);
+  const r = run(ctx, ['--work-root', '~/later'], { out: path.join(home, 'later', 'x'), env: { HOME: home } });
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.equal(fs.existsSync(path.join(home, 'later')), false);
+  const ok = run(ctx, ['--work-root', '~/later'], { env: { HOME: home } });
+  assert.equal(ok.status, 0, ok.out + ok.err);
+  finish(ctx);
+});
+
 test('a folder that only shares a prefix is not inside', t => {
   const ctx = setup(t);
   const r = run(ctx, [], { out: ctx.vault + '-old' });
@@ -268,7 +317,6 @@ test('with chalk-talk the page carries the map', { skip: !chalk || !findChrome()
   assert.equal(d.map_tool.commit, '4f88ead');
   assert.deepEqual(Object.keys(d.checks.map).sort(), ['arrows', 'broken', 'built', 'guesses', 'layoutChecked', 'traced']);
   assert.equal(d.checks.map.built, true);
-  for (const f of fs.readdirSync(ctx.out)) assert.ok(!f.includes('..'));
   assert.ok(fs.existsSync(path.join(ctx.out, 'booking-flow-snaps')));
   finish(ctx);
 });

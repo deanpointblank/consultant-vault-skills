@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { loadData, shapeErrors, repoByName } from './lib/data.mjs';
 import { repoFacts } from './lib/git.mjs';
@@ -16,6 +17,8 @@ const USAGE = 'usage: walkthrough-build.mjs <data.json> --out <working folder> -
 class Refused extends Error {}
 const refuse = msg => { throw new Refused(msg); };
 
+const home = p => p.replace(/^~(?=\/|$)/, os.homedir());
+
 function parseArgs(argv) {
   const a = { workRoots: [], write: false };
   const needs = new Set(['--out', '--vault', '--folder', '--chalk', '--work-root', '--same-day', '--date']);
@@ -25,13 +28,14 @@ function parseArgs(argv) {
     if (needs.has(arg)) {
       const v = argv[++i];
       if (v === undefined || v.startsWith('--')) refuse(`${arg} needs a value`);
-      if (arg === '--work-root') a.workRoots.push(v);
-      else a[arg.slice(2).replace(/-(\w)/g, (_, c) => c.toUpperCase())] = v;
+      const value = ['--out', '--vault', '--chalk', '--work-root'].includes(arg) ? home(v) : v;
+      if (arg === '--work-root') a.workRoots.push(value);
+      else a[arg.slice(2).replace(/-(\w)/g, (_, c) => c.toUpperCase())] = value;
       continue;
     }
     if (arg.startsWith('--')) refuse(`unknown option ${arg}`);
     if (a.dataFile !== undefined) refuse(`only one data file is allowed, got ${a.dataFile} and ${arg}`);
-    a.dataFile = arg;
+    a.dataFile = home(arg);
   }
   if (a.dataFile === undefined) refuse('no data file given');
   for (const k of ['out', 'vault', 'folder', 'chalk']) if (a[k] === undefined) refuse(`--${k} is needed`);
@@ -47,7 +51,7 @@ function realOf(p) {
   let here = path.resolve(p);
   const rest = [];
   for (;;) {
-    try { return path.join(fs.realpathSync(here), ...rest.reverse()); }
+    try { return path.join(fs.realpathSync.native(here), ...rest.reverse()); }
     catch { const up = path.dirname(here); if (up === here) return path.resolve(p); rest.push(path.basename(here)); here = up; }
   }
 }
@@ -74,7 +78,7 @@ function main() {
   if (problem) refuse(`${args.dataFile} ${problem}`);
 
   let vault;
-  try { vault = fs.realpathSync(args.vault); if (!fs.statSync(vault).isDirectory()) throw new Error(); }
+  try { vault = fs.realpathSync.native(args.vault); if (!fs.statSync(vault).isDirectory()) throw new Error(); }
   catch { refuse(`the vault folder ${args.vault} does not exist`); }
   const folderPath = path.resolve(args.vault, args.folder);
   if (!inside(realOf(folderPath), vault) || realOf(folderPath) === vault) refuse(`--folder ${args.folder} is not a folder inside the vault`);
@@ -83,6 +87,9 @@ function main() {
   const outReal = realOf(out);
   const keepOut = [['the vault', vault], ...data.repos.map(r => [`the repo ${r.name}`, realOf(repoByName(data, r.name).path)]), ...args.workRoots.map(w => [`the work folder ${w}`, realOf(w)])];
   for (const [what, p] of keepOut) if (inside(outReal, p)) refuse(`--out ${args.out} is inside ${what}; use a working folder outside the vault, the repos and the work folders`);
+
+  const dataReal = realOf(args.dataFile);
+  for (const [what, p] of keepOut) if (inside(dataReal, p)) refuse(`${args.dataFile} is inside ${what}, and the build rewrites its data file; copy the data file to the working folder and build from the copy`);
 
   const shape = shapeErrors(data);
   if (shape.length) { console.log(shape.map(e => `FAIL the walkthrough: ${e}`).join('\n')); return 1; }
