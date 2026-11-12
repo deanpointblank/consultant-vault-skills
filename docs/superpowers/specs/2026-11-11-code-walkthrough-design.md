@@ -584,7 +584,7 @@ The first trial (plan Task 1): 14 stops from the sample, map from chalk-talk 4f8
 - budget_ms: 30000
 - Long titles: chalk-talk check on 14 steps, 0 errors (4 warnings).
 - Browser: Google Chrome 157.0.8103.51; protocol P 50/50. It is the user's default browser and the same engine as the scripted run.
-- Obsidian, in two runs. Check 6 pass: the embed showed the page. Check 7 pass: the map and the stop moved together. Check 8 pass, in the second run: after one click into the page, ← and → moved the stop and the map, and Obsidian itself did not react. With the focus inside the map, → still moved both. Check 9 pass by the Embed HTML plugin's "open in external browser" button. The wikilink opened the page in a new tab inside Obsidian, not in the browser.
+- Obsidian: two runs. Check 6 pass: the embed showed the page. Check 7 pass: the map and the stop moved together. Check 8 pass, in the second run: after one click into the page, ← and → moved the stop and the map, and Obsidian itself did not react. With the focus inside the map, → still moved both. Check 9 pass by the Embed HTML plugin's "open in external browser" button. The wikilink opened the page in a new tab inside Obsidian, not in the browser.
 - Trial files: both runs' files removed on 2026-11-12.
 
 Also found:
