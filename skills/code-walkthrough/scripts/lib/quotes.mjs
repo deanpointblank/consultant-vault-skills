@@ -73,14 +73,18 @@ function vaultNoteText(vault, rel, named) {
   return text;
 }
 
-function savedCopy(data, kind, ref) {
+export function findSavedCopy(data, kind, ref) {
   const single = (data.repos || []).length === 1;
-  const hit = (data.sources || []).find(s => {
+  return (data.sources || []).find(s => {
     if (s.kind !== kind) return false;
     if (kind === 'ticket') return String(s.ref) === String(ref);
     const sr = typeof s.ref === 'object' && s.ref ? s.ref : { number: s.ref };
     return String(sr.number) === String(ref.number) && (ref.repo === undefined ? sr.repo === undefined || single : sr.repo === ref.repo || (sr.repo === undefined && single));
   });
+}
+
+function savedCopy(data, kind, ref) {
+  const hit = findSavedCopy(data, kind, ref);
   if (!hit || typeof hit.text !== 'string') throw new Error(`no saved copy of ${kind === 'ticket' ? 'ticket ' + ref : 'pull request ' + prKey(ref)}`);
   return hit.text;
 }
