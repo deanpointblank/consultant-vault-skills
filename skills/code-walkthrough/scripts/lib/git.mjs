@@ -27,3 +27,5 @@ export function repoFacts(repoPath, files) {
   }
   return { commit, uncommitted };
 }
+
+export const isCommitHash = s => typeof s === 'string' && /^[0-9a-f]{4,40}$/i.test(s);

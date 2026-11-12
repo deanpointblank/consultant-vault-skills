@@ -2,12 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { repoByName } from './data.mjs';
-import { gitRead } from './git.mjs';
+import { gitRead, isCommitHash } from './git.mjs';
 import { splitLines } from './code.mjs';
 
 export const normalizeForQuote = s => s.normalize('NFC')
   .replace(/[‘’‚‛′]/g, "'").replace(/[“”„‟″]/g, '"')
   .replace(/`/g, '').replace(/\s+/g, ' ').trim();
+
+const isWordChar = ch => ch !== undefined && /[\p{L}\p{N}_]/u.test(ch);
 
 export function quoteFound(quote, source) {
   const pieces = String(quote).split('…').map(normalizeForQuote).filter(Boolean);
@@ -15,7 +17,15 @@ export function quoteFound(quote, source) {
   const hay = normalizeForQuote(String(source));
   let from = 0;
   for (const piece of pieces) {
-    const i = hay.indexOf(piece, from);
+    const first = piece[0], last = piece.at(-1);
+    let i = hay.indexOf(piece, from);
+    while (i >= 0) {
+      const before = hay[i - 1], after = hay[i + piece.length];
+      const startOk = !(isWordChar(first) && isWordChar(before));
+      const endOk = !(isWordChar(last) && isWordChar(after));
+      if (startOk && endOk) break;
+      i = hay.indexOf(piece, i + 1);
+    }
     if (i < 0) return false;
     from = i + piece.length;
   }
@@ -27,19 +37,23 @@ const KIND_WORDS = {
   ticket: 'ticket', 'code-comment': 'code comment', 'build-note': 'build note',
 };
 
+const prKey = ref => `${ref.repo ? ref.repo : ''}#${ref.number}`;
+
 const refLabel = (kind, ref) => {
   if (ref === undefined || ref === null) return '';
   if (typeof ref === 'string') return ref;
   if (kind === 'design-doc') return ref.path;
   if (kind === 'commit') return ref.hash;
-  if (kind === 'pull-request') return `#${ref.number}`;
+  if (kind === 'pull-request') return prKey(ref);
   if (kind === 'code-comment') return `${ref.file} line ${ref.line}`;
   return '';
 };
 
 const isPrivate = text => {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  return !!m && /^visibility:\s*["']?private["']?\s*$/m.test(m[1]);
+  const m = text.replace(/^\uFEFF/, '').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return false;
+  const v = m[1].match(/^visibility\s*:\s*(.*)$/mi);
+  return !!v && v[1].replace(/\s+#.*$/, '').replace(/["'\s]/g, '').toLowerCase() === 'private';
 };
 
 const readText = file => {
@@ -60,8 +74,14 @@ function vaultNoteText(vault, rel, named) {
 }
 
 function savedCopy(data, kind, ref) {
-  const hit = (data.sources || []).find(s => s.kind === kind && String(s.ref) === String(ref));
-  if (!hit || typeof hit.text !== 'string') throw new Error(`no saved copy of ${kind === 'ticket' ? 'ticket' : 'pull request'} ${ref}`);
+  const single = (data.repos || []).length === 1;
+  const hit = (data.sources || []).find(s => {
+    if (s.kind !== kind) return false;
+    if (kind === 'ticket') return String(s.ref) === String(ref);
+    const sr = typeof s.ref === 'object' && s.ref ? s.ref : { number: s.ref };
+    return String(sr.number) === String(ref.number) && (ref.repo === undefined ? sr.repo === undefined || single : sr.repo === ref.repo || (sr.repo === undefined && single));
+  });
+  if (!hit || typeof hit.text !== 'string') throw new Error(`no saved copy of ${kind === 'ticket' ? 'ticket ' + ref : 'pull request ' + prKey(ref)}`);
   return hit.text;
 }
 
@@ -77,8 +97,9 @@ function sourceText(data, source, { vault, gh }) {
     }
     case 'commit': {
       const repo = repoOf();
-      try { return { text: gitRead(repo.path, ['log', '-1', '--format=%B', needString(ref?.hash, 'commit hash')]) }; }
-      catch (e) { if (e.message.startsWith('the source')) throw e; throw new Error(`git cannot read commit ${ref.hash} in ${repo.name}`); }
+      if (!isCommitHash(ref?.hash)) throw new Error('bad commit hash: it must be 4 to 40 hex characters');
+      try { return { text: gitRead(repo.path, ['log', '-1', '--format=%B', '--end-of-options', ref.hash]) }; }
+      catch { throw new Error(`git cannot read commit ${ref.hash} in ${repo.name}`); }
     }
     case 'code-comment': {
       const repo = repoOf();
@@ -105,13 +126,13 @@ function sourceText(data, source, { vault, gh }) {
       if (gh) {
         try {
           const out = execFileSync('gh', ['pr', 'view', String(ref.number), '--json', 'title,body,comments'], {
-            cwd: repo.path, encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'pipe'],
+            cwd: repo.path, encoding: 'utf8', timeout: 15000, env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }, stdio: ['ignore', 'pipe', 'pipe'],
           });
           const j = JSON.parse(out);
           return { text: [j.title, j.body, ...(j.comments || []).map(c => c.body)].filter(Boolean).join('\n\n') };
         } catch { /* fall back to the saved copy */ }
       }
-      return { text: savedCopy(data, 'pull-request', ref.number), saved: true };
+      return { text: savedCopy(data, 'pull-request', ref), saved: true };
     }
     default: throw new Error(`unknown source kind ${kind}`);
   }
@@ -131,7 +152,7 @@ export function checkQuotes(data, { vault, gh = false } = {}) {
       catch (e) { out.failures.push({ where, why: e.message }); return; }
       if (got.saved) {
         out.saved++;
-        const key = String(source.kind === 'pull-request' ? source.ref.number : source.ref);
+        const key = source.kind === 'pull-request' ? prKey(source.ref) : String(source.ref);
         const list = out.savedOf[source.kind];
         if (!list.includes(key)) list.push(key);
       }
