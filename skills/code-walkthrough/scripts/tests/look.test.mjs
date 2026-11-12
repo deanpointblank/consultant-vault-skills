@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { tempRoot, bookingRepo, sampleData, makeVault, commitAll, makeIndexStale, repoSnapshot } from './helpers.mjs';
 import { lookUp } from '../lib/look.mjs';
 
@@ -57,6 +58,13 @@ function look(ctx, extra = [], { args } = {}) {
   return { status: r.status, out: r.stdout, err: r.stderr, lines: r.stdout.split('\n').filter(Boolean) };
 }
 
+const editData = (ctx, fn) => {
+  const f = path.join(ctx.folder, 'booking-flow.walkthrough.json');
+  const d = JSON.parse(fs.readFileSync(f, 'utf8'));
+  fn(d);
+  fs.writeFileSync(f, JSON.stringify(d, null, 2));
+};
+
 const editNote = (ctx, fn, name = NOTE) => {
   const f = path.join(ctx.folder, name);
   fs.writeFileSync(f, fn(fs.readFileSync(f, 'utf8')));
@@ -78,7 +86,7 @@ test('counts files changed since its commit', t => {
   const r = look(ctx);
   assert.deepEqual(r.lines, [`${LINE} · commit ${ctx.repo.head} · built ${DAY} · 1 of 2 cited files changed since`]);
   assert.deepEqual(lookUp({ vault: ctx.vault, folder: 'Walkthroughs', repo: 'booking-mini', repoPath: ctx.repo.path }),
-    [{ note: 'Walkthrough - booking flow', commit: ctx.repo.head, date: DAY, cited: 2, changed: 1, missingCommit: false }]);
+    [{ note: 'Walkthrough - booking flow', commit: ctx.repo.head, date: DAY, cited: 2, changed: 1, missingCommit: false, unchecked: false, noCommit: false }]);
   finish(ctx);
 });
 
@@ -90,6 +98,15 @@ test('uncommitted and untracked changes count', t => {
   fs.writeFileSync(path.join(ctx.repo.path, 'notes.txt'), 'not cited\n');
   arm(ctx);
   assert.match(look(ctx).lines[0], /· 2 of 2 cited files changed since$/);
+  finish(ctx);
+});
+
+test('an untracked cited file counts', t => {
+  const ctx = setup(t);
+  editData(ctx, d => { d.cited_files['booking-mini'].push('web/new file.ts'); });
+  fs.writeFileSync(path.join(ctx.repo.path, 'web/new file.ts'), 'const fresh = 1;\n');
+  arm(ctx);
+  assert.match(look(ctx).lines[0], /· 1 of 3 cited files changed since$/);
   finish(ctx);
 });
 
@@ -107,7 +124,9 @@ test('a deleted and a staged cited file count', t => {
   const ctx = setup(t);
   fs.rmSync(path.join(ctx.repo.path, 'web/form.ts'));
   fs.appendFileSync(path.join(ctx.repo.path, 'api/Dock.java'), 'int extra = 31;\n');
-  spawnSync('git', ['add', 'api/Dock.java'], { cwd: ctx.repo.path });
+  const added = spawnSync('git', ['add', 'api/Dock.java'], { cwd: ctx.repo.path, encoding: 'utf8' });
+  assert.equal(added.status, 0, added.stderr);
+  assert.match(execFileSync('git', ['status', '--porcelain'], { cwd: ctx.repo.path, encoding: 'utf8' }), /^M  api\/Dock\.java$/m);
   arm(ctx);
   assert.match(look(ctx).lines[0], /· 2 of 2 cited files changed since$/);
   finish(ctx);
@@ -142,7 +161,7 @@ test('file filter', t => {
   const ctx = arm(setup(t));
   assert.equal(look(ctx, ['--file', 'api/Other.java']).out, 'none\n');
   assert.deepEqual(look(ctx, ['--file', 'api/Dock.java']).lines, [`${LINE} · commit ${ctx.repo.head} · built ${DAY} · its cited files have not changed since`]);
-  assert.equal(look(ctx, ['--file', 'api/Other.java', '--file', './web/form.ts']).lines.length, 1);
+  assert.ok(look(ctx, ['--file', 'api/Other.java', '--file', './web/form.ts']).lines[0].startsWith(LINE));
   finish(ctx);
 });
 
@@ -176,7 +195,7 @@ test('inline lists, quotes, BOM and Windows line endings', t => {
   arm(ctx);
   const rows = lookUp({ vault: ctx.vault, folder: 'Walkthroughs', repo: 'booking-mini', repoPath: ctx.repo.path });
   assert.deepEqual(rows.map(r => r.note), ['Walkthrough - booking flow', 'Walkthrough - by hand']);
-  assert.deepEqual(rows[1], { note: 'Walkthrough - by hand', commit: ctx.repo.head, date: '2026-11-01', cited: 2, changed: 0, missingCommit: false });
+  assert.deepEqual(rows[1], { note: 'Walkthrough - by hand', commit: ctx.repo.head, date: '2026-11-01', cited: 2, changed: 0, missingCommit: false, unchecked: false, noCommit: false });
   finish(ctx);
 });
 
@@ -198,11 +217,14 @@ test('a missing, unreadable or empty data file skips the note', t => {
     if (content === null) fs.rmSync(dataFile); else fs.writeFileSync(dataFile, content);
     ctx.vaultBefore = vaultBytes(ctx.vault);
     const r = look(ctx);
+    assert.deepEqual(vaultBytes(ctx.vault), ctx.vaultBefore);
     assert.equal(r.status, 0, r.err);
     assert.equal(r.out, 'none\n', String(content));
   }
   fs.writeFileSync(dataFile, good);
-  finish({ ...ctx, vaultBefore: vaultBytes(ctx.vault) });
+  ctx.vaultBefore = vaultBytes(ctx.vault);
+  look(ctx);
+  finish(ctx);
 });
 
 test('a missing walkthroughs folder prints none', t => {
@@ -240,6 +262,65 @@ test('a leading ~ is the home folder', t => {
   const args = ['--vault', '~/vault', '--folder', 'Walkthroughs', '--repo', 'booking-mini', '--repo-path', '~/booking-mini'];
   const r = spawnSync(process.execPath, [LOOK, ...args], { encoding: 'utf8', cwd: ctx.root, env: { ...process.env, HOME: ctx.root } });
   assert.equal(r.stdout.split('\n').filter(Boolean).length, 1, r.stdout + r.stderr);
+  assert.ok(r.stdout.startsWith(LINE), r.stdout);
+  finish(ctx);
+});
+
+test('an ambiguous short hash is resolved, not guessed', t => {
+  const ctx = setup(t);
+  const short = ctx.repo.head.slice(0, 4);
+  // grind a blob whose id starts like the commit's, so a bare short hash is ambiguous to `git diff`
+  for (let i = 0; ; i++) {
+    const body = `filler ${i}\n`;
+    const id = createHash('sha1').update(`blob ${Buffer.byteLength(body)}\0${body}`).digest('hex');
+    if (id.startsWith(short)) { execFileSync('git', ['hash-object', '-w', '--stdin'], { cwd: ctx.repo.path, input: body }); break; }
+  }
+  editNote(ctx, s => s.replace(`booking-mini@${ctx.repo.head}`, `booking-mini@${short}`));
+  fs.appendFileSync(path.join(ctx.repo.path, 'api/Dock.java'), 'int extra = 31;\n');
+  commitAll(ctx.repo.path, 'Change the dock check');
+  arm(ctx);
+  const r = look(ctx);
+  assert.match(r.lines[0], new RegExp(`commit ${short} · .* · 1 of 2 cited files changed since$`), r.out + r.err);
+  finish(ctx);
+});
+
+test('a cited path git refuses is reported, never counted as unchanged', t => {
+  const ctx = setup(t);
+  editData(ctx, d => { d.cited_files['booking-mini'].push('../outside.txt', '/etc/hosts'); });
+  fs.appendFileSync(path.join(ctx.repo.path, 'api/Dock.java'), 'int extra = 31;\n');
+  commitAll(ctx.repo.path, 'Change the dock check');
+  arm(ctx);
+  const r = look(ctx);
+  assert.equal(r.status, 0, r.err);
+  assert.match(r.lines[0], /· its cited files could not be checked$/);
+  assert.doesNotMatch(r.out, /have not changed/);
+  const row = lookUp({ vault: ctx.vault, folder: 'Walkthroughs', repo: 'booking-mini', repoPath: ctx.repo.path })[0];
+  assert.equal(row.unchecked, true);
+  finish(ctx);
+});
+
+test('a subfolder of the repo is refused, naming the top folder', t => {
+  const ctx = arm(setup(t));
+  const r = look(ctx, [], { args: ['--vault', ctx.vault, '--folder', 'Walkthroughs', '--repo', 'booking-mini', '--repo-path', path.join(ctx.repo.path, 'web')] });
+  assert.equal(r.status, 1);
+  assert.match(r.err, /top folder/);
+  assert.ok(r.err.includes(fs.realpathSync(ctx.repo.path)), r.err);
+  finish(ctx);
+});
+
+test('a list with no indent is read', t => {
+  const ctx = setup(t);
+  editNote(ctx, s => s.replace(/^  - /gm, '- '));
+  arm(ctx);
+  assert.ok(look(ctx).lines[0].startsWith(LINE));
+  finish(ctx);
+});
+
+test('a note with no recorded commit says so', t => {
+  const ctx = setup(t);
+  editNote(ctx, s => s.replace(/^commits:\n(  - .*\n)+/m, ''));
+  arm(ctx);
+  assert.match(look(ctx).lines[0], /· its commit was not recorded$/);
   finish(ctx);
 });
 
