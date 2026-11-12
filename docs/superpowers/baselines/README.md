@@ -24,6 +24,7 @@ against what we imagine the failures are.
 | [record-testing.md](record-testing.md) | `record-testing` | Omission (no recording, no note, no step log) and unsafe action (recording on a host not allowed) |
 | [daily-worklog.md](daily-worklog.md) | `daily-worklog` | Wrong shape and unsafe action: a weekly note instead of a month ledger, ceremonies folded, padding, posting without a yes or refusing to post, a re-post over a posted day |
 | [gap-stories.md](gap-stories.md) | `gap-stories` | Wrong shape and unsafe action: stories only in chat, held gaps drafted, a re-scope drafted as a new story, Jira writes without a preview and a yes |
+| [code-walkthrough.md](code-walkthrough.md) | `code-walkthrough` | Wrong shape and unsafe action: a chat answer or a page in the repo, a run started without a question, a reason stated as fact, a failing check loosened, a planning offer missing or repeated, an existing walkthrough ignored |
 
 ## Harness (same for every scenario)
 
