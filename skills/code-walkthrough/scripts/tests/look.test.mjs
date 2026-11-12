@@ -1,0 +1,252 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { tempRoot, bookingRepo, sampleData, makeVault, commitAll, makeIndexStale, repoSnapshot } from './helpers.mjs';
+import { lookUp } from '../lib/look.mjs';
+
+const BUILD = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
+const LOOK = new URL('../walkthrough-look.mjs', import.meta.url).pathname;
+const DAY = '2026-11-11';
+const NOTE = 'Walkthrough - booking flow.md';
+const LINE = '[[Walkthrough - booking flow]]';
+
+function setup(t) {
+  const root = tempRoot(t);
+  const repo = bookingRepo(root);
+  const vault = makeVault(root, { 'README.md': 'a vault\n' });
+  const dataFile = path.join(root, 'in', 'booking.json');
+  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
+  fs.writeFileSync(dataFile, JSON.stringify(sampleData(repo), null, 2));
+  const b = spawnSync(process.execPath, [BUILD, dataFile, '--out', path.join(root, 'work'), '--vault', vault, '--folder', 'Walkthroughs',
+    '--chalk', 'none', '--date', DAY, '--write'], { encoding: 'utf8', env: { ...process.env, CW_GH: '0' }, cwd: root });
+  assert.equal(b.status, 0, b.stdout + b.stderr);
+  return { root, repo, vault, folder: path.join(vault, 'Walkthroughs') };
+}
+
+// Called after the fixture's own edits, so only what the look-up does is measured.
+function arm(ctx) {
+  makeIndexStale(ctx.repo.path);
+  ctx.snapshot = repoSnapshot(ctx.repo.path);
+  ctx.vaultBefore = vaultBytes(ctx.vault);
+  return ctx;
+}
+
+function vaultBytes(dir) {
+  const out = {};
+  const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) walk(p); else out[path.relative(dir, p)] = fs.readFileSync(p).toString('base64');
+  } };
+  walk(dir);
+  return out;
+}
+
+function finish(ctx) {
+  const now = repoSnapshot(ctx.repo.path);
+  assert.equal(now.porcelain, ctx.snapshot.porcelain);
+  assert.deepEqual(now.index, ctx.snapshot.index);
+  assert.deepEqual(vaultBytes(ctx.vault), ctx.vaultBefore);
+}
+
+function look(ctx, extra = [], { args } = {}) {
+  const a = args || ['--vault', ctx.vault, '--folder', 'Walkthroughs', '--repo', 'booking-mini', '--repo-path', ctx.repo.path, ...extra];
+  const r = spawnSync(process.execPath, [LOOK, ...a], { encoding: 'utf8', cwd: ctx.root });
+  return { status: r.status, out: r.stdout, err: r.stderr, lines: r.stdout.split('\n').filter(Boolean) };
+}
+
+const editNote = (ctx, fn, name = NOTE) => {
+  const f = path.join(ctx.folder, name);
+  fs.writeFileSync(f, fn(fs.readFileSync(f, 'utf8')));
+};
+
+test('finds the walkthrough for the repo', t => {
+  const ctx = arm(setup(t));
+  const r = look(ctx);
+  assert.equal(r.status, 0, r.err);
+  assert.deepEqual(r.lines, [`${LINE} · commit ${ctx.repo.head} · built ${DAY} · its cited files have not changed since`]);
+  finish(ctx);
+});
+
+test('counts files changed since its commit', t => {
+  const ctx = setup(t);
+  fs.appendFileSync(path.join(ctx.repo.path, 'api/Dock.java'), 'int extra = 31;\n');
+  commitAll(ctx.repo.path, 'Change the dock check');
+  arm(ctx);
+  const r = look(ctx);
+  assert.deepEqual(r.lines, [`${LINE} · commit ${ctx.repo.head} · built ${DAY} · 1 of 2 cited files changed since`]);
+  assert.deepEqual(lookUp({ vault: ctx.vault, folder: 'Walkthroughs', repo: 'booking-mini', repoPath: ctx.repo.path }),
+    [{ note: 'Walkthrough - booking flow', commit: ctx.repo.head, date: DAY, cited: 2, changed: 1, missingCommit: false }]);
+  finish(ctx);
+});
+
+test('uncommitted and untracked changes count', t => {
+  const ctx = setup(t);
+  fs.appendFileSync(path.join(ctx.repo.path, 'api/Dock.java'), 'int extra = 31;\n');
+  commitAll(ctx.repo.path, 'Change the dock check');
+  fs.appendFileSync(path.join(ctx.repo.path, 'web/form.ts'), 'const more = 1;\n');
+  fs.writeFileSync(path.join(ctx.repo.path, 'notes.txt'), 'not cited\n');
+  arm(ctx);
+  assert.match(look(ctx).lines[0], /· 2 of 2 cited files changed since$/);
+  finish(ctx);
+});
+
+test('a file changed twice, committed and dirty, counts once', t => {
+  const ctx = setup(t);
+  fs.appendFileSync(path.join(ctx.repo.path, 'web/form.ts'), 'const a = 1;\n');
+  commitAll(ctx.repo.path, 'Edit the form');
+  fs.appendFileSync(path.join(ctx.repo.path, 'web/form.ts'), 'const b = 2;\n');
+  arm(ctx);
+  assert.match(look(ctx).lines[0], /· 1 of 2 cited files changed since$/);
+  finish(ctx);
+});
+
+test('a deleted and a staged cited file count', t => {
+  const ctx = setup(t);
+  fs.rmSync(path.join(ctx.repo.path, 'web/form.ts'));
+  fs.appendFileSync(path.join(ctx.repo.path, 'api/Dock.java'), 'int extra = 31;\n');
+  spawnSync('git', ['add', 'api/Dock.java'], { cwd: ctx.repo.path });
+  arm(ctx);
+  assert.match(look(ctx).lines[0], /· 2 of 2 cited files changed since$/);
+  finish(ctx);
+});
+
+test('a commit that is gone', t => {
+  const ctx = setup(t);
+  editNote(ctx, s => s.replace(`booking-mini@${ctx.repo.head}`, 'booking-mini@deadbee'));
+  arm(ctx);
+  const r = look(ctx);
+  assert.equal(r.status, 0, r.err);
+  assert.deepEqual(r.lines, [`${LINE} · commit deadbee · built ${DAY} · its commit is no longer in the repo`]);
+  assert.equal(lookUp({ vault: ctx.vault, folder: 'Walkthroughs', repo: 'booking-mini', repoPath: ctx.repo.path })[0].missingCommit, true);
+  finish(ctx);
+});
+
+test('a hash that could be an option is never given to git', t => {
+  const ctx = setup(t);
+  const target = path.join(ctx.repo.path, 'pwned');
+  for (const bad of ['--output=' + target, '-q', '--no-index', '', 'zzzzzzz', 'HEAD', 'abc1234^{commit}']) {
+    editNote(ctx, s => s.replace(/^  - "booking-mini@.*"$/m, `  - "booking-mini@${bad}"`));
+    arm(ctx);
+    const r = look(ctx);
+    assert.equal(r.status, 0, r.err);
+    assert.match(r.lines[0], /· its commit is no longer in the repo$/, bad);
+    assert.equal(fs.existsSync(target), false, bad);
+    finish(ctx);
+  }
+});
+
+test('file filter', t => {
+  const ctx = arm(setup(t));
+  assert.equal(look(ctx, ['--file', 'api/Other.java']).out, 'none\n');
+  assert.deepEqual(look(ctx, ['--file', 'api/Dock.java']).lines, [`${LINE} · commit ${ctx.repo.head} · built ${DAY} · its cited files have not changed since`]);
+  assert.equal(look(ctx, ['--file', 'api/Other.java', '--file', './web/form.ts']).lines.length, 1);
+  finish(ctx);
+});
+
+test('file filter still counts all cited files', t => {
+  const ctx = setup(t);
+  fs.appendFileSync(path.join(ctx.repo.path, 'web/form.ts'), 'const more = 1;\n');
+  arm(ctx);
+  assert.match(look(ctx, ['--file', 'api/Dock.java']).lines[0], /· 1 of 2 cited files changed since$/);
+  finish(ctx);
+});
+
+test('skips notes of other types and repos', t => {
+  const ctx = setup(t);
+  const note = fs.readFileSync(path.join(ctx.folder, NOTE), 'utf8');
+  fs.writeFileSync(path.join(ctx.folder, 'Reference - booking.md'), note.replace('type: code-walkthrough', 'type: reference'));
+  fs.writeFileSync(path.join(ctx.folder, 'Walkthrough - other.md'), note.replaceAll('booking-mini', 'other-app'));
+  fs.writeFileSync(path.join(ctx.folder, 'Sample.md'), '# no frontmatter\n');
+  fs.writeFileSync(path.join(ctx.folder, 'Broken.md'), '---\ntype: code-walkthrough\nrepos: [[[\n');
+  arm(ctx);
+  const r = look(ctx);
+  assert.equal(r.lines.length, 1, r.out);
+  assert.ok(r.lines[0].startsWith(LINE));
+  finish(ctx);
+});
+
+test('inline lists, quotes, BOM and Windows line endings', t => {
+  const ctx = setup(t);
+  const front = ['---', 'type: code-walkthrough', 'created: "2026-11-01"', 'repos: ["[[booking-mini]]", "[[other]]"]',
+    `commits: ['booking-mini@${ctx.repo.head}', other@abc1234]`, '---', '', '# Hand written', '', '![[booking-flow.html|height: 1100px]]', ''].join('\r\n');
+  fs.writeFileSync(path.join(ctx.folder, 'Walkthrough - by hand.md'), '﻿' + front);
+  arm(ctx);
+  const rows = lookUp({ vault: ctx.vault, folder: 'Walkthroughs', repo: 'booking-mini', repoPath: ctx.repo.path });
+  assert.deepEqual(rows.map(r => r.note), ['Walkthrough - booking flow', 'Walkthrough - by hand']);
+  assert.deepEqual(rows[1], { note: 'Walkthrough - by hand', commit: ctx.repo.head, date: '2026-11-01', cited: 2, changed: 0, missingCommit: false });
+  finish(ctx);
+});
+
+test('newest first', t => {
+  const ctx = setup(t);
+  const note = fs.readFileSync(path.join(ctx.folder, NOTE), 'utf8');
+  fs.writeFileSync(path.join(ctx.folder, 'Walkthrough - booking flow 2.md'), note.replace(`created: ${DAY}`, 'created: 2026-12-01'));
+  arm(ctx);
+  assert.deepEqual(look(ctx).lines.map(l => l.split(' · ')[2]), ['built 2026-12-01', `built ${DAY}`]);
+  finish(ctx);
+});
+
+test('a missing, unreadable or empty data file skips the note', t => {
+  const ctx = setup(t);
+  const dataFile = path.join(ctx.folder, 'booking-flow.walkthrough.json');
+  const good = fs.readFileSync(dataFile, 'utf8');
+  arm(ctx);
+  for (const content of [null, '{ not json', '[]', '{}', '{"cited_files":{"other":["a"]}}', '{"cited_files":{"booking-mini":"api/Dock.java"}}']) {
+    if (content === null) fs.rmSync(dataFile); else fs.writeFileSync(dataFile, content);
+    ctx.vaultBefore = vaultBytes(ctx.vault);
+    const r = look(ctx);
+    assert.equal(r.status, 0, r.err);
+    assert.equal(r.out, 'none\n', String(content));
+  }
+  fs.writeFileSync(dataFile, good);
+  finish({ ...ctx, vaultBefore: vaultBytes(ctx.vault) });
+});
+
+test('a missing walkthroughs folder prints none', t => {
+  const ctx = arm(setup(t));
+  const r = look(ctx, [], { args: ['--vault', ctx.vault, '--folder', 'Nowhere', '--repo', 'booking-mini', '--repo-path', ctx.repo.path] });
+  assert.equal(r.status, 0);
+  assert.equal(r.out, 'none\n');
+  finish(ctx);
+});
+
+test('a path that is not a repo says so', t => {
+  const ctx = arm(setup(t));
+  const plain = path.join(ctx.root, 'plain');
+  fs.mkdirSync(plain);
+  const r = look(ctx, [], { args: ['--vault', ctx.vault, '--folder', 'Walkthroughs', '--repo', 'booking-mini', '--repo-path', plain] });
+  assert.equal(r.status, 1);
+  assert.match(r.err, /is not a git repo/);
+  assert.doesNotMatch(r.err, /\n\s+at /);
+  finish(ctx);
+});
+
+test('bad arguments exit 2 with a usage line', t => {
+  const ctx = arm(setup(t));
+  for (const args of [[], ['--vault', ctx.vault], ['--bogus'], ['--vault'], ['--vault', ctx.vault, '--folder', 'W', '--repo', 'r', '--repo-path', ctx.repo.path, '--file'],
+    ['--vault', ctx.vault, '--folder', 'W', '--repo', 'r', '--repo-path', ctx.repo.path, 'stray']]) {
+    const r = look(ctx, [], { args });
+    assert.equal(r.status, 2, args.join(' '));
+    assert.match(r.err, /usage: walkthrough-look\.mjs/);
+  }
+  finish(ctx);
+});
+
+test('a leading ~ is the home folder', t => {
+  const ctx = arm(setup(t));
+  const args = ['--vault', '~/vault', '--folder', 'Walkthroughs', '--repo', 'booking-mini', '--repo-path', '~/booking-mini'];
+  const r = spawnSync(process.execPath, [LOOK, ...args], { encoding: 'utf8', cwd: ctx.root, env: { ...process.env, HOME: ctx.root } });
+  assert.equal(r.stdout.split('\n').filter(Boolean).length, 1, r.stdout + r.stderr);
+  finish(ctx);
+});
+
+test('read only', t => {
+  const ctx = setup(t);
+  fs.appendFileSync(path.join(ctx.repo.path, 'web/form.ts'), 'const more = 1;\n');
+  arm(ctx);
+  look(ctx);
+  finish(ctx);
+});
