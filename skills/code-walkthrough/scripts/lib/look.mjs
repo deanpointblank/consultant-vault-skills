@@ -69,9 +69,17 @@ const plainRelative = f => !f.startsWith('/') && !/^[A-Za-z]:/.test(f) && !f.spl
 // A cited path is checkable only when git names it exactly: it was in the commit under that name, or it is
 // new since and listed (tracked or untracked, not ignored). Anything else could be hidden from the counts.
 function checkable(repoPath, full, file) {
+  try {
+    if (!fs.lstatSync(path.join(repoPath, file)).isFile()) return false; // a link or a folder: git tracks something else
+  } catch (e) { if (e.code !== 'ENOENT') return false; }
+  let entry;
+  try {
+    const listed = gitRead(repoPath, ['ls-files', '-v', '-z', '--cached', '--others', '--exclude-standard', '--', file]).split('\0');
+    entry = listed.find(l => l.slice(2) === file);
+  } catch { return false; }
+  if (entry && (/[a-z]/.test(entry[0]) || entry[0] === 'S')) return false; // assume-unchanged or skip-worktree hides edits
   try { gitRead(repoPath, ['cat-file', '-e', `${full}:${file}`]); return true; } catch { /* maybe new since */ }
-  try { return gitRead(repoPath, ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', file]).split('\0').includes(file); }
-  catch { return false; }
+  return entry !== undefined;
 }
 
 // { changed, unchecked }: unchecked is true when any cited path could not be given to git or git failed.

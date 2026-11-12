@@ -6,7 +6,7 @@ export function gitRead(repoPath, args) {
   if (!READ_ONLY_GIT.includes(args[0])) throw new Error(`git ${args[0]} is refused: this tool is read only`);
   return execFileSync('git', ['-C', repoPath, ...args], {
     encoding: 'utf8',
-    env: { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1' },
+    env: { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1', GIT_NO_LAZY_FETCH: '1', GIT_TERMINAL_PROMPT: '0' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 }

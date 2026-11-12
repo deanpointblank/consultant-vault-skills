@@ -374,6 +374,52 @@ test('a file inside an embedded repo is not trusted', t => inexact(t, 'sub/file.
   for (const a of [['init', '-q'], ['add', '.'], ['commit', '-q', '-m', 'inner']]) execFileSync('git', a, { cwd: inner, env, stdio: 'ignore' });
 }));
 
+test('a symlink to a file, cited by the link name, is not trusted', t => inexact(t, 'lnk.java',
+  ctx => fs.symlinkSync('api/Dock.java', path.join(ctx.repo.path, 'lnk.java'))));
+test('a folder as a cited path is not trusted', t => inexact(t, 'api'));
+
+for (const [flag, label] of [['--assume-unchanged', 'assume-unchanged'], ['--skip-worktree', 'skip-worktree']]) {
+  test(`a ${label} cited file with a local edit is not trusted`, t => {
+    const ctx = setup(t);
+    execFileSync('git', ['update-index', flag, 'web/form.ts'], { cwd: ctx.repo.path });
+    fs.appendFileSync(path.join(ctx.repo.path, 'web/form.ts'), 'const hidden = 1;\n');
+    arm(ctx);
+    const r = look(ctx);
+    assert.match(r.lines[0], UNCHECKED, r.out);
+    assert.doesNotMatch(r.out, /have not changed/);
+    finish(ctx);
+  });
+}
+
+const objectNames = repo => {
+  const out = [];
+  const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) walk(p); else out.push(path.relative(repo, p));
+  } };
+  walk(path.join(repo, '.git', 'objects'));
+  return out.sort();
+};
+
+test('a blobless clone is not written to, and the line is honest', t => {
+  const ctx = setup(t);
+  execFileSync('git', ['config', 'uploadpack.allowFilter', 'true'], { cwd: ctx.repo.path });
+  fs.appendFileSync(path.join(ctx.repo.path, 'api/Dock.java'), 'int extra = 31;\n');
+  commitAll(ctx.repo.path, 'Change the dock check');
+  const clone = path.join(ctx.root, 'clone');
+  const c = spawnSync('git', ['clone', '-q', '--filter=blob:none', `file://${ctx.repo.path}`, clone], { encoding: 'utf8' });
+  if (c.status !== 0) return t.skip(`this git cannot make a blobless clone from a local remote: ${c.stderr.trim()}`);
+  ctx.repo = { ...ctx.repo, path: clone };
+  arm(ctx);
+  const before = objectNames(clone);
+  const r = look(ctx);
+  assert.equal(r.status, 0, r.err);
+  assert.deepEqual(objectNames(clone), before);
+  assert.doesNotMatch(r.out, /have not changed/);
+  assert.match(r.lines[0], /· (\d of \d cited files changed since|its cited files could not be checked)$/, r.out);
+  finish(ctx);
+});
+
 test('a note with no recorded commit says so', t => {
   const ctx = setup(t);
   editNote(ctx, s => s.replace(/^commits:\n(  - .*\n)+/m, ''));
