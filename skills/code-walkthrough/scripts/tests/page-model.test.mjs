@@ -1,17 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pageModel, foldRows } from '../lib/page.mjs';
+import { builtLine, checksShort, reasonsLine } from '../lib/words.mjs';
 import { tempRoot, bookingRepo, sampleData } from './helpers.mjs';
 
-const model = t => {
+const build = t => {
   const repo = bookingRepo(tempRoot(t));
   const data = sampleData(repo);
   data.built = '2026-11-11';
   data.repos[0].commit = repo.head;
-  data.repos[0].uncommitted = [];
+  data.repos[0].uncommitted = ['api/Dock.java'];
   data.checks = { code: { blocks: 4 }, quotes: { quotes: 3, saved: 0, savedOf: [] }, map: { built: true, arrows: 2, traced: 1, guesses: 1, broken: 0, layoutChecked: true } };
-  return pageModel(data);
+  return data;
 };
+const model = t => pageModel(build(t));
 
 test('model mirrors the sample', t => {
   const m = model(t);
@@ -22,6 +24,18 @@ test('model mirrors the sample', t => {
   assert.equal(m.extend[0].where, 'api/Dock.java:5-6');
   assert.equal(m.extend[0].stopN, 2);
   assert.equal(m.mapMissing, false);
+});
+
+test('model carries the finished header text', t => {
+  const data = build(t);
+  const m = pageModel(data);
+  assert.equal(m.title, 'Saving a booking, from the form to the dock check');
+  assert.equal(m.built, builtLine(data));
+  assert.match(m.built, /^Built from `booking-mini` at commit `[0-9a-f]{7}` plus uncommitted changes in 1 file on 2026-11-11$/);
+  assert.deepEqual(m.uncommittedFiles, ['api/Dock.java']);
+  assert.equal(m.checks, checksShort(data));
+  assert.equal(m.reasons, reasonsLine(data));
+  assert.equal(m.reasons, '3 recorded, 1 not recorded');
 });
 
 test('left-out row reads plainly', t => {
@@ -42,15 +56,12 @@ test('long blocks fold like the mockup', t => {
   assert.equal(b.folded, true);
   assert.equal(b.total, 21);
   assert.equal(b.showAll, 'Show all 21 lines');
-  const shown = b.rows.filter(r => !r.hidden && r.n).map(r => r.n);
-  for (const n of [1, 4, 5, 6, 30, 11, 21]) assert.ok(shown.includes(n), `line ${n} shown`);
-  const folds = b.rows.filter(r => r.fold);
-  assert.ok(folds.length > 0);
-  for (const f of folds) assert.ok(f.fold >= 3);
-  assert.deepEqual(folds.map(f => f.label), folds.map(f => `⋯ ${f.fold} more lines`));
-  // each fold row is followed by exactly that many hidden rows
-  b.rows.forEach((r, i) => { if (r.fold) { for (let k = 1; k <= r.fold; k++) assert.ok(b.rows[i + k].hidden); assert.ok(!b.rows[i + r.fold + 1]?.hidden); } });
-  assert.deepEqual(foldRows([{ n: 1, text: 'a' }]), [{ n: 1, text: 'a' }]);
+  const seq = b.rows.map(r => r.fold ? `fold ${r.fold}` : r.gap ? 'gap' : r.hidden ? `hidden ${r.n}` : `row ${r.n}`);
+  assert.deepEqual(seq, [
+    ...[1, 2, 3, 4, 5, 6].map(n => `row ${n}`), 'fold 4', ...[7, 8, 9, 10].map(n => `hidden ${n}`),
+    'row 11', 'gap', 'row 21', 'fold 8', ...[22, 23, 24, 25, 26, 27, 28, 29].map(n => `hidden ${n}`), 'row 30',
+  ]);
+  assert.deepEqual(b.rows.filter(r => r.fold).map(f => f.label), ['⋯ 4 more lines', '⋯ 8 more lines']);
 });
 
 test('guesses never enter the Why list', t => {
@@ -72,4 +83,12 @@ test('thin stops do not crash', () => {
 
 test('plain words only', t => {
   assert.doesNotMatch(JSON.stringify(model(t)), /data file|scene|map_step|left_out|key_lines|not-recorded|vault-note|design-doc|build-note|pull-request|code-comment/);
+});
+
+test('the fold limit is 14 numbered lines', () => {
+  const rows = n => Array.from({ length: n }, (_, i) => ({ n: i + 1, text: 'x', key: i + 1 === 8 }));
+  assert.equal(foldRows(rows(14)).length, 14);
+  const f = foldRows(rows(15));
+  assert.ok(f.some(r => r.fold));
+  assert.ok(f.length > 15);
 });

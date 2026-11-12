@@ -1,5 +1,5 @@
 import { codeRows } from './code.mjs';
-import { checksShort, reasonsLine, stopBadge, whyLabel, chipLabel, chipDetail } from './words.mjs';
+import { builtLine, checksShort, reasonsLine, stopBadge, whyLabel, chipLabel, chipDetail } from './words.mjs';
 
 export const FOLD_AT = 14;
 
@@ -48,7 +48,7 @@ export function pageModel(data) {
   const uncommittedFiles = (data.repos || []).flatMap(r => (r.uncommitted || []).map(f => multi ? `${r.name}: ${f}` : f));
   return {
     title: data.journey,
-    built: data.built,
+    built: builtLine(data),
     uncommittedFiles,
     checks: checksShort(data),
     reasons: reasonsLine(data),

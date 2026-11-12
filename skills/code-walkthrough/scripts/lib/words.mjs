@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { findSavedCopy } from './quotes.mjs';
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -20,18 +21,19 @@ export function builtLine(data) {
   return `Built from ${andJoin(commitList(data))}${plus(data)} on ${data.built}`;
 }
 
+const savedKeys = (q, kind) => new Set((q.savedOf && q.savedOf[kind]) || []);
+
 function savedPhrase(q) {
   const n = q.saved || 0;
   if (!n) return '';
-  const of = q.savedOf || [];
-  const prs = new Set(of.filter(k => String(k).includes('#')));
-  const tickets = new Set(of.filter(k => !String(k).includes('#')));
+  const tickets = savedKeys(q, 'ticket'), prs = savedKeys(q, 'pull-request');
   const what = (set, one, many) => set.size === 1 ? `a ${one}` : `${set.size} ${many}`;
   let tail = '';
   if (tickets.size && prs.size) tail = ' of tickets and pull requests';
   else if (tickets.size) tail = ` of ${what(tickets, 'ticket', 'tickets')}`;
   else if (prs.size) tail = ` of ${what(prs, 'pull request', 'pull requests')}`;
-  return ` (${n} in ${n === 1 ? 'a saved copy' : 'saved copies'}${tail})`;
+  const copy = n === 1 ? 'a saved copy' : 'saved copies';
+  return q.quotes === 1 ? ` (in ${copy}${tail})` : ` (${n} in ${copy}${tail})`;
 }
 
 const count = (n, one, many) => n === 1 ? one : many;
@@ -40,9 +42,12 @@ const NOT_BUILT = 'not built, because chalk-talk is not installed';
 
 export function checksShort(data) {
   const { quotes = {}, map = { built: false } } = data.checks || {};
-  const saved = quotes.saved ? ` (${quotes.saved} in saved copies)` : '';
-  const m = map.built ? `${map.traced} of ${map.arrows} map arrows traced, ${plural(map.guesses, 'guess', 'guesses')}` : `Map ${NOT_BUILT}`;
-  return `Code matches the files · ${quotes.quotes} quotes found${saved} · ${m}`;
+  const q = quotes.quotes;
+  const found = q === 0 ? 'no quotes to check' : `${plural(q, 'quote', 'quotes')} found`;
+  const saved = quotes.saved ? ` (${quotes.saved} in ${quotes.saved === 1 ? 'a saved copy' : 'saved copies'})` : '';
+  const arrows = map.arrows === 0 ? 'no map arrows' : `${map.traced} of ${map.arrows} map ${count(map.arrows, 'arrow', 'arrows')} traced, ${plural(map.guesses, 'guess', 'guesses')}`;
+  const m = map.built ? arrows : `Map ${NOT_BUILT}`;
+  return `Code matches the files · ${found}${saved} · ${m}`;
 }
 
 export function reasonsLine(data) {
@@ -54,16 +59,23 @@ export function replyLines(data) {
   const { code = {}, quotes = {}, map = { built: false } } = data.checks || {};
   const repos = data.repos || [];
   const where = repos.length === 1 ? `commit \`${repos[0].commit}\`` : andJoin(commitList(data));
-  const lines = [
-    `Code: all ${code.blocks} blocks match the files as built (${where}${plus(data)}).`,
-    `Reasons: all ${quotes.quotes} quotes were found word for word in their sources${savedPhrase(quotes)}.`,
-  ];
+  const b0 = code.blocks;
+  const codeLine = b0 === 1 ? `Code: the 1 block matches the file as built (${where}${plus(data)}).`
+    : b0 === 0 ? `Code: there are no code blocks to check (${where}${plus(data)}).`
+    : `Code: all ${b0} blocks match the files as built (${where}${plus(data)}).`;
+  const q0 = quotes.quotes;
+  const reasonLine = q0 === 0 ? 'Reasons: no reasons are recorded, so there are no quotes to check.'
+    : q0 === 1 ? `Reasons: the 1 quote was found word for word in its source${savedPhrase(quotes)}.`
+    : `Reasons: all ${q0} quotes were found word for word in their sources${savedPhrase(quotes)}.`;
+  const lines = [codeLine, reasonLine];
   if (!map.built) {
     lines.push('Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.');
     return lines;
   }
-  const g = map.guesses, b = brokenCount(map);
-  lines.push(`Map: ${map.traced} of ${map.arrows} arrows are traced to a line of code. ${g ? `${g} ${count(g, 'is', 'are')} marked as ${count(g, 'a guess', 'guesses')}` : 'None are marked as guesses'}. ${b ? `${b} ${count(b, 'is', 'are')} broken` : 'None are broken'}.`);
+  const g = map.guesses, br = brokenCount(map), n = map.arrows;
+  if (n === 0) lines.push('Map: there are no arrows to trace.');
+  else if (n === 1) lines.push(`Map: ${map.traced === 1 ? 'the 1 arrow is' : '0 of 1 arrow is'} traced to a line of code. ${g ? 'It is marked as a guess.' : 'It is not marked as a guess.'} ${br ? 'It is broken.' : 'It is not broken.'}`);
+  else lines.push(`Map: ${map.traced} of ${n} arrows are traced to a line of code. ${g ? `${g} ${count(g, 'is', 'are')} marked as ${count(g, 'a guess', 'guesses')}` : 'None are marked as guesses'}. ${br ? `${br} ${count(br, 'is', 'are')} broken` : 'None are broken'}.`);
   if (map.layoutChecked === false) lines.push('Map: not checked by eye, because Chrome was not found.');
   return lines;
 }
@@ -111,8 +123,11 @@ export function chipDetail(reason, data) {
   if (kind === 'vault-note') where += `, ${ref}`;
   if (kind === 'design-doc') where += `, ${ref?.path}`;
   if (kind === 'code-comment') where += `, ${ref?.file}:${ref?.line}`;
+  if (kind === 'build-note') where += `, ${path.basename(String(ref))}`;
   if (kind === 'ticket' || kind === 'pull-request') {
-    const copy = findSavedCopy(data, kind, kind === 'ticket' ? ref : (typeof ref === 'object' && ref ? ref : { number: ref }));
+    const pr = typeof ref === 'object' && ref ? ref : { number: ref };
+    const key = kind === 'ticket' ? String(ref) : `${pr.repo ?? ''}#${pr.number}`;
+    const copy = savedKeys(data.checks?.quotes || {}, kind).has(key) ? findSavedCopy(data, kind, kind === 'ticket' ? ref : pr) : null;
     if (copy) where += `, saved copy fetched ${copy.fetched}`;
   }
   return `“${reason.quote}” — ${where}`;
