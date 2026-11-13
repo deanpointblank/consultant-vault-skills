@@ -1993,3 +1993,141 @@ Breaches no check scores, left for the final review:
 - **The live-vault writes during round 5 are inferred, not confirmed.** They are for another ticket,
   some came after the last rep ended, and no rep's tool input names the live vault apart from the
   expected `--work-root`. The user confirmed the control's; these wait on the user.
+
+## Trigger test
+
+Run on 2026-11-13. Thirteen typed phrases (TR1–TR13), three reps each, 39 reps a round. Every rep was
+`claude -p --model sonnet` in a fresh session on its own copies (fixture V0). The prompt was the typed
+phrase alone, with no line telling the agent to read the skill. `MAXT=6` (TR13: 12, so a reply exists
+to read). What is read is the first `Skill` call of each rep. Two rounds ran: the first on the skill
+as it stood, the second after one edit to the description.
+
+### Round 0 (plugin copy at `ee2e5dc`)
+
+| phrase | typed | expected first skill | rep 1 | rep 2 | rep 3 | n/3 |
+|---|---|---|---|---|---|---|
+| TR1 | code walkthrough of how a booking gets saved | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR2 | deep walkthrough of the dock checks | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR3 | I need to be able to explain how a booking gets saved | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR4 | help me understand the dock checks well enough to extend them | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR5 | how was the booking save built, so we can extend it | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR6 | prep me to explain the booking save path in refinement | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR7 | how does booking save work in this repo | not code-walkthrough (chalk-talk) | chalk-talk | chalk-talk | chalk-talk | 3/3 |
+| TR8 | walk me through what happens when a booking is saved | not code-walkthrough (chalk-talk) | chalk-talk | chalk-talk | chalk-talk | 3/3 |
+| TR9 | explain that diff | not code-walkthrough (work-chart) | work-chart | work-chart | work-chart | 3/3 |
+| TR10 | what does this repo do | not code-walkthrough (repo-dossier) | repo-dossier | repo-dossier | repo-dossier | 3/3 |
+| TR11 | explain to my team how bookings get saved | not code-walkthrough (frames) | frames | frames | frames | 3/3 |
+| TR12 | prep me for refinement | not code-walkthrough | code-walkthrough | obsidian-vault | code-walkthrough | 1/3 |
+| TR13 | let's plan adding a weekend closure rule to the dock checks | code-walkthrough called, or an offer in the reply | brainstorming | brainstorming | brainstorming | 1/3 |
+
+Evidence: `task-14-tr-0.md`. Two phrases failed.
+
+**TR12.** Code-walkthrough fired first in reps 1 and 3. Rep 1 said: "Step 3 of 9 done: I picked a
+journey. I need your yes before I write anything." Rep 3 said: "Which ticket or feature is up in
+refinement? Your request names none, so I can't pick the code to walk through." Rep 2 called
+obsidian-vault.
+
+**TR13.** Brainstorming was the first and only skill in all three reps. Code-walkthrough was never
+called. One rep made an offer, in its last line (rep 3): "If you'd like to check how the booking
+path works first, I can write a code walkthrough of it." Reps 1 and 2 made none and ended on a
+question about why the closure was wanted. By the table's rule that is 1/3 (rep 3 only), and it
+came from a loose offer, not from the skill.
+
+### The edit (commit `83a6a91`)
+
+Old description (at `ee2e5dc`):
+
+```
+Walk through one journey in real code, start to finish, following the data, so the user can explain it and extend it: each stop shows the actual lines, what they do, data in and out, and why, with every reason quoted from its source or marked not recorded. One page in the vault plus a short note. Use whenever the user says "code walkthrough of X", "deep walkthrough of X", "I need to be able to explain X", "help me understand X well enough to extend it", "how was X built, so we can extend it", or "prep me to explain X in refinement" with a feature or code named; and when the user starts planning a change to existing code (brainstorming, plan mode, "let's plan X", picking up a ticket), to offer one or point to one that exists. "How does X work", "walk me through" and explaining a PR are chalk-talk's; "explain that diff" is work-chart's; "what does this repo do" is repo-dossier's; "explain this to my team" is frames'. A reason nobody recorded, said in refinement as fact, is worse than no answer.
+```
+
+New description (at `83a6a91`):
+
+```
+Walk through one journey in real code so the user can explain and extend it. Each stop shows the actual lines and why, every reason quoted from its source or marked not recorded. One page in the vault plus a short note. When the user plans to change or add to existing code ("let's plan X", picking up a ticket), use it at the start, alongside brainstorming or plan mode; it points to a walkthrough or offers one, and builds only on a yes. Also use whenever the user says "code walkthrough of X", "deep walkthrough of X", "I need to be able to explain X", "help me understand X well enough to extend it", "how was X built, so we can extend it", or "prep me to explain X in refinement" with a feature or code named. Not for "prep me for refinement" with nothing named. "How does X work", "walk me through" and explaining a PR are chalk-talk's; "explain that diff" is work-chart's; "what does this repo do" is repo-dossier's; "explain this to my team" is frames'. An unrecorded reason said as fact is worse than none.
+```
+
+Two changes:
+
+- **For TR13:** the planning trigger moved ahead of the six quoted phrases (it now starts at character 220, from 593) and says to use the skill "at the start, alongside brainstorming or plan mode", so the skill is called with brainstorming, not after it.
+- **For TR12:** a new sentence, `Not for "prep me for refinement" with nothing named.`, and the last sentence no longer says "refinement".
+
+The body of the skill was not touched.
+
+### Round 1 (plugin copy at `83a6a91`)
+
+All 39 reps ran again, not only TR12 and TR13, because the description is one string read for every phrase. Evidence: `task-14-tr-1.md`.
+
+| phrase | typed | expected first skill | rep 1 | rep 2 | rep 3 | n/3 |
+|---|---|---|---|---|---|---|
+| TR1 | code walkthrough of how a booking gets saved | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR2 | deep walkthrough of the dock checks | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR3 | I need to be able to explain how a booking gets saved | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR4 | help me understand the dock checks well enough to extend them | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR5 | how was the booking save built, so we can extend it | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR6 | prep me to explain the booking save path in refinement | code-walkthrough | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+| TR7 | how does booking save work in this repo | not code-walkthrough (chalk-talk) | chalk-talk | chalk-talk | chalk-talk | 3/3 |
+| TR8 | walk me through what happens when a booking is saved | not code-walkthrough (chalk-talk) | chalk-talk | chalk-talk | chalk-talk | 3/3 |
+| TR9 | explain that diff | not code-walkthrough (work-chart) | work-chart | work-chart | work-chart | 3/3 |
+| TR10 | what does this repo do | not code-walkthrough (repo-dossier) | repo-dossier | repo-dossier | repo-dossier | 3/3 |
+| TR11 | explain to my team how bookings get saved | not code-walkthrough (frames) | frames | frames | frames | 3/3 |
+| TR12 | prep me for refinement | not code-walkthrough | obsidian-vault | obsidian-vault | obsidian-vault | 3/3 |
+| TR13 | let's plan adding a weekend closure rule to the dock checks | code-walkthrough called, or an offer in the reply | code-walkthrough | code-walkthrough | code-walkthrough | 3/3 |
+
+TR12 now goes to obsidian-vault in all three reps. TR6, the phrase the editor marked most at risk
+from the new exclusion, still fired 3/3.
+
+**TR13.** Skills called, in order, in each rep: code-walkthrough, then superpowers:brainstorming
+(tr-r1-tr13-1, -2 and -3). Each rep offered in one line and said that a no goes straight to
+planning:
+
+| rep | offer sentence |
+|---|---|
+| 1 | "No walkthrough covers the dock checks yet. Want one before we plan? About 10 minutes, for about 5 stops from the booking request to `DockRules.check`." |
+| 2 | "No walkthrough covers the dock checks yet. Want one before we plan? About 12 minutes." |
+| 3 | "No walkthrough covers the booking checks yet. Want one before we plan? About 12 minutes, roughly 6 stops from the booking request to `DockRules.check`." |
+
+### Checks on every rep (U1–U4), both rounds
+
+Passes out of 39 reps:
+
+| check | round 0 | round 1 |
+|---|---|---|
+| U1 live vault untouched | 39/39 (ruled below) | 39/39 (ruled below) |
+| U2 repo copy untouched | 32/39 | 32/39 |
+| U3 nothing sent outside | 35/39 | 33/39 |
+| U4 answers not read | 39/39 | 39/39 |
+
+**U1, round 0 (controller's ruling).** The two live-vault files changed at 15:18:32, after the
+round ended at 15:15:37, so no rep wrote them. No rep's tool input names the live vault. Pass.
+
+**U1, round 1 (controller's ruling).** The same two files hit in all 39 reps:
+`$LIVE_VAULT/Daily/2026-11-13.md` and `$LIVE_VAULT/Work/TICKET-1 Work 2026-11-13.md`. Both show
+change time 15:32:25, 13 seconds after the last rep ended (the run was 15:27:16 to 15:32:12).
+`live_mentioned` is empty for all 39 reps. Both files changed again at 15:35:59, with no rep
+running, so something else keeps writing them: they are another ticket's work note and the day's
+note, the same kind of file the user confirmed as their own twice earlier that day. Pass.
+
+**U2 and U3 failures: another skill's own work (the baseline doc's X5 observation, ruled by the
+controller).** Chalk-talk and frames draw their page into the repo, and chalk-talk tries to `open`
+it; the harness denies the `open`. These are not code-walkthrough failures. In every rep below the
+only skill called was the one expected for the phrase.
+
+| round | rep | skill | U2 | U3 |
+|---|---|---|---|---|
+| 0 | TR7-1 | chalk-talk | fail | fail |
+| 0 | TR8-1, TR8-2, TR8-3 | chalk-talk | fail | fail |
+| 0 | TR11-1, TR11-2, TR11-3 | frames | fail | pass |
+| 1 | TR7-1, TR7-2, TR7-3 | chalk-talk | fail | fail |
+| 1 | TR8-1, TR8-2, TR8-3 | chalk-talk | fail | fail |
+| 1 | TR11-2 | frames | fail | pass |
+
+No U2 or U3 failure sits in a rep that called code-walkthrough, in either round. U4: no failure in
+either round.
+
+### What the result does not show
+
+- Three reps a phrase is a small sample. A 3/3 does not rule out a 1-in-3 miss.
+- The sessions had the user's other plugins loaded (superpowers, chalk-talk, frames). The result holds for that setup only.
+- Two phrasings are not tested and might now fire the skill: "pick up KEY" (ticket-intake's phrase), which sits in a sentence that says to use the skill at the start, and a plain "add X to Y" with no planning word, since "plans to change or add to" can read as "intends to".
+- `MAXT=6` ends many reps before a reply, so only the first skill call is measured, not what the agent did after it.
