@@ -2093,25 +2093,30 @@ Passes out of 39 reps:
 
 | check | round 0 | round 1 |
 |---|---|---|
-| U1 live vault untouched | 39/39 (ruled below) | 39/39 (ruled below) |
+| U1 live vault untouched | ruled pass (a hit in all 39; see below) | ruled pass (a hit in all 39; see below) |
 | U2 repo copy untouched | 32/39 | 32/39 |
 | U3 nothing sent outside | 35/39 | 33/39 |
 | U4 answers not read | 39/39 | 39/39 |
 
-**U1, round 0 (controller's ruling).** The two live-vault files changed at 15:18:32, after the
+**U1, round 0 (controller's ruling).** Every rep shows the hit; the pass is the controller's ruling, not a measured count. The two live-vault files changed at 15:18:32, after the
 round ended at 15:15:37, so no rep wrote them. No rep's tool input names the live vault. Pass.
 
-**U1, round 1 (controller's ruling).** The same two files hit in all 39 reps:
+**U1, round 1 (controller's ruling).** Every rep shows the hit; the pass is the controller's ruling, not a measured count. The same two files hit in all 39 reps:
 `$LIVE_VAULT/Daily/2026-11-13.md` and `$LIVE_VAULT/Work/TICKET-1 Work 2026-11-13.md`. Both show
 change time 15:32:25, 13 seconds after the last rep ended (the run was 15:27:16 to 15:32:12).
 `live_mentioned` is empty for all 39 reps. Both files changed again at 15:35:59, with no rep
 running, so something else keeps writing them: they are another ticket's work note and the day's
 note, the same kind of file the user confirmed as their own twice earlier that day. Pass.
 
-**U2 and U3 failures: another skill's own work (the baseline doc's X5 observation, ruled by the
-controller).** Chalk-talk and frames draw their page into the repo, and chalk-talk tries to `open`
-it; the harness denies the `open`. These are not code-walkthrough failures. In every rep below the
-only skill called was the one expected for the phrase.
+**U2 and U3 failures: a stated exception, by the controller's ruling.** These are real U2 and U3
+failures as the baseline doc defines the checks for TR7–TR12: U2 is no new `*.html` under the repo
+copy, and U3 is no outside call attempted. They are recorded as an exception to the plan's "every rep
+must also pass U1–U3". In every one of these reps the only skill called was the one the phrase
+expects (chalk-talk for TR7 and TR8, frames for TR11), and that skill's own job is to draw an html
+page into the repo. Chalk-talk then tries to `open` it, and the harness denies the `open`. So the
+baseline's U2 for those phrases cannot pass when the right skill fires. That is a fault in the
+check, not in code-walkthrough, and the baseline doc is left as written. Code-walkthrough was not
+called in any of these reps.
 
 | round | rep | skill | U2 | U3 |
 |---|---|---|---|---|
