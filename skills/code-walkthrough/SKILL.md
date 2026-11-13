@@ -121,7 +121,7 @@ Short, and never a retelling of the walkthrough. Leave out the lines that do not
 <the build's Reasons: line, as printed>
 <the build's Map: line or lines, as printed>
 Built from commit <abc1234>, with `<uncommitted path>` as it is on disk.
-Next journey: <name>. Want it? About <2 × its stops> minutes.
+Next journey: <the next one step 3 listed>. Want it? About <2 × its stops> minutes.   (only when step 3 split the request; otherwise offer no other walkthrough)
 Not recorded, questions for the team:
 1. <question>
 2. <question>
