@@ -19,17 +19,15 @@ What was asked decides where to start:
 
 ## Planning: the offer
 
-When the user starts planning a change to existing code (brainstorming a feature, plan mode, "let's plan X", picking up a ticket), add one step before any plan is written. It replaces and reorders nothing in brainstorming, writing plans or ticket-intake.
+When the user starts planning a change to a code repo (brainstorming a feature, plan mode, "let's plan X", picking up a ticket), add one step before any plan is written. It replaces and reorders nothing in brainstorming, writing plans or ticket-intake.
 
-In these cases make no offer and say nothing about walkthroughs, not even why there is none; go straight to planning:
-- brand-new code with nothing existing to walk through;
-- a change that stays within a few lines of one file;
+Skip the step, and say nothing about walkthroughs, for:
 - an area the user declined in this conversation (the area is the change being planned and every follow-up to it);
 - a walkthrough run under way.
 
 A walkthrough the user asks for outright is a run all the same.
 
-Otherwise look first, once per repo the change touches, with the vault and folder found as in step 1 of A run:
+Otherwise look first, whatever the size of the change, once per repo the change touches, with the vault and folder found as in step 1 of A run:
 
 ```
 node "<this skill's folder>/scripts/walkthrough-look.mjs" --vault <vault> --folder <folders.walkthroughs> --repo <repo folder name> --repo-path <repo top folder>
@@ -38,8 +36,9 @@ node "<this skill's folder>/scripts/walkthrough-look.mjs" --vault <vault> --fold
 `--repo` is the repo's folder name, as in `[[name]]` on its notes. `--repo-path` is its top folder (`git rev-parse --show-toplevel`). It prints `none`, or one line per walkthrough of that repo, newest first. For each line, open the data file beside the note (its page's name with `.html` swapped for `.walkthrough.json`): the walkthrough covers the change when its `cited_files` include files the change will touch.
 
 - **One covers it.** Say so in one line: the wikilink, its commit, its date, and how its look line ends. Read the note's outline and the stops that matter in the data file. Say which stops and extend points the change touches ("stop 4", "`src/billing/Invoice.java:40-58`"), and cite them in the plan.
-- **It covers it, but its line ends otherwise** (`N of M cited files changed since`, `its commit is no longer in the repo`, `its commit was not recorded`, `its cited files could not be checked`): point to it and read it all the same, say what the line said, and offer a rebuild with the time: "Rebuild it first? About <2 × its stops> minutes." Yes: A rebuild (end of A run); the yes answers the cost question. No: plan with it as it is. A rebuild is never offered as a new walkthrough.
-- **None covers it.** Offer one in a single line with the time, then wait for the answer before any plan: "No walkthrough covers the booking save path yet. Want one before we plan? About <2 × N stops> minutes."
+- **It covers it, but its line ends otherwise** (`N of M cited files changed since`, `its commit is no longer in the repo`, `its commit was not recorded`, `its cited files could not be checked`): do all of the above, then say what the line said and offer a rebuild with the time: "Rebuild it first? About <2 × its stops> minutes." Yes: A rebuild (end of A run); the yes answers the cost question. No: plan with it as it is. A rebuild is never offered as a new walkthrough.
+- **None covers it, and the change is brand-new code with nothing existing to walk through, or stays within a few lines of one file.** Make no offer and say nothing about walkthroughs, not even why there is none; go straight to planning.
+- **None covers it, for any other change.** Offer one in a single line with the time, then wait for the answer before any plan: "No walkthrough covers the booking save path yet. Want one before we plan? About <2 × N stops> minutes."
   - Yes: A run, the journey being the path the change will touch. The yes answers the cost question, so step 4 only confirms the journey. Then planning resumes with the walkthrough to hand.
   - No: plan on, with no further offer or mention of one for that area in this conversation.
 

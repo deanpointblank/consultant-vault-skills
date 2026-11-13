@@ -120,7 +120,7 @@ With several repos, every code block, every extend point, and every `design-doc`
 ## Reasons
 
 - Recorded: `{ text, quote, source: { kind, ref } }`. `text` gives the reason in plain words; `quote` is the source's own words saying why, which the build looks for; words that only say what the code does are no reason.
-- Not recorded: `{ text: "Why …?", source: { kind: "not-recorded" } }`. The text is the question and ends with `?`. No quote.
+- Not recorded: `{ text: "Why …?", source: { kind: "not-recorded" } }`. The text is the question alone and ends with `?`: the build fails one whose text ends with anything else, such as a remark after the question. No quote.
 - A quote is word for word, and starts and ends on whole words: a quote cut mid-word fails. The only differences allowed are runs of spaces and line breaks, curly versus straight quote marks, backticks, and `…` to join pieces that appear in that order.
 
 | `kind` | `ref` | The build reads |
