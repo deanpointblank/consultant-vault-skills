@@ -1,0 +1,141 @@
+---
+name: code-walkthrough
+description: Walk through one journey in real code, start to finish, following the data, so the user can explain it and extend it: each stop shows the actual lines, what they do, data in and out, and why, with every reason quoted from its source or marked not recorded. One page in the vault plus a short note. Use whenever the user says "code walkthrough of X", "deep walkthrough of X", "I need to be able to explain X", "help me understand X well enough to extend it", "how was X built, so we can extend it", or "prep me to explain X in refinement" with a feature or code named; and when the user starts planning a change to existing code (brainstorming, plan mode, "let's plan X", picking up a ticket), to offer one or point to one that exists. "How does X work", "walk me through" and explaining a PR are chalk-talk's; "explain that diff" is work-chart's; "what does this repo do" is repo-dossier's; "explain this to my team" is frames'. A reason nobody recorded, said in refinement as fact, is worse than no answer.
+---
+
+# Code walkthrough
+
+Follow the obsidian-vault skill's conventions. A walkthrough follows one journey through real code, start to finish, following the data: each stop shows the actual lines, what they do, data in and out, and why. It ends as three files in the vault, written by the build: a page, its data file and a short note. The page and the note are for the user's own reading.
+
+- Output goes only to the vault: never into a code repo or onto an outside service, even when the user mentions a handy place such as the repo's `docs/`. Asked outright for another place, say once, in the cost message, that the page holds code and local paths and the repo is visible to the client, then build to the vault. A copy elsewhere is the user's to make.
+- Read only on code repos: every git command runs as `GIT_OPTIONAL_LOCKS=0 git …`. No checkout, no stash, no `git worktree add`. `gh` and Jira are read only.
+- In a walkthrough, chalk-talk only draws the map, and the build runs it. Do not follow chalk-talk's own skill, and never write a `chalk-talks/` folder.
+- The commands are `node "<this skill's folder>/scripts/walkthrough-build.mjs"` and `node "<this skill's folder>/scripts/walkthrough-look.mjs"`.
+
+What was asked decides where to start:
+- A walkthrough of a feature or of code: A run.
+- Planning a change to existing code: Planning: the offer, ahead of the planning skill's own steps.
+- One question, such as "why is the timeout 30 seconds": answer it in chat by the rule in Reasons, from the places it lists. No run, no file.
+- A failing build handed over with its command: run that command as given and fix that data file in place, by Build and check. No cost question, and no flag changed.
+
+## Planning: the offer
+
+When the user starts planning a change to existing code (brainstorming a feature, plan mode, "let's plan X", picking up a ticket), add one step before any plan is written. It replaces and reorders nothing in brainstorming, writing plans or ticket-intake.
+
+No offer, and no word about walkthroughs at all, for:
+- brand-new code with nothing existing to walk through;
+- a change that stays within a few lines of one file;
+- an area the user declined in this conversation (the area is the change being planned and every follow-up to it);
+- a walkthrough run under way.
+
+Otherwise look first, once per repo the change touches:
+
+```
+node "<this skill's folder>/scripts/walkthrough-look.mjs" --vault <vault> --folder <folders.walkthroughs> --repo <repo folder name> --repo-path <repo top folder>
+```
+
+`--repo` is the repo's folder name, as in `[[name]]` on its notes. `--repo-path` is its top folder (`git rev-parse --show-toplevel`). It prints `none`, or one line per walkthrough of that repo, newest first. For each line, read the note's `## Stops`: it covers the change when its stops cite the code the change will touch.
+
+- **One covers it.** Say so in one line: the wikilink, its commit, its date, and how its look line ends. Read the note's outline and the stops that matter in its `.walkthrough.json`, beside the note. Say which stops and extend points the change touches ("stop 4", "`src/billing/Invoice.java:40-58`"), and cite them in the plan.
+- **It covers it, but its line ends otherwise** (`1 of 3 cited files changed since`, `its commit is no longer in the repo`, `its commit was not recorded`, `its cited files could not be checked`): point to it and read it all the same, say what the line said, and offer a rebuild with the time: "Rebuild it first? About 16 minutes." Yes: A run from step 2. No: plan with it as it is. A rebuild is never offered as a new walkthrough.
+- **None covers it.** Offer one in a single line with the time, then wait for the answer before any plan: "No walkthrough covers the booking save path yet. Want one before we plan? About 20 minutes."
+  - Yes: A run from step 2, the journey being the path the change will touch. The yes answers the cost question, so step 4 only confirms the journey. Then planning resumes with the walkthrough to hand.
+  - No: plan on, and say nothing more about walkthroughs for that area in this conversation.
+
+The time is about 2 minutes a stop. Never start a run without a yes.
+
+## A run
+
+1. **Vault and folder.** Find the vault and read `Meta/Config.md` by obsidian-vault. The folder is `folders.walkthroughs`; with no such key, use `Walkthroughs`, carry on, and ask about the key in one line of the reply, as work-chart does for `folders.work`. `active_client` is the data file's `client`. Each `work_roots` entry becomes one `--work-root`.
+2. **chalk-talk.** Look for `~/.claude/skills/chalk-talk/scripts/build.mjs`, then for `.claude/skills/chalk-talk/scripts/build.mjs` in the current project. Pass the folder that holds `scripts/`, such as `~/.claude/skills/chalk-talk`, as `--chalk`; given the `build.mjs` path itself, the build finds no map tool and leaves the map out. Found in neither place: `--chalk none`.
+3. **Pin the journey.** Find the repo or repos and the entry point, name the start and the end result, and sketch the stops. Read only enough to sketch. One journey per walkthrough: one start, one end result, about 8–14 stops. A request that names several journeys (creating, editing and deleting an order), or a sketch over 14 stops: pick the first for this run and list the rest as next. Note each repo's commit (`GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --short=7 HEAD`) and which files on the journey have uncommitted changes (`GIT_OPTIONAL_LOCKS=0 git -C <repo> status --porcelain`).
+4. **State the cost and ask once**, in one message. Leave out the lines that do not apply:
+
+   ```
+   Walkthrough of <journey>: from <start> to <end result>.
+   <repo> at commit <abc1234>. About <N> stops, about <2 × N> minutes. Map: <yes, drawn with chalk-talk | no, chalk-talk is not installed>.
+   Uncommitted changes in `<path from the repo root>`: the walkthrough covers it as it is on disk now.
+   It goes to the vault, not `<the place asked for>`: the page holds code and local paths, and the repo is visible to the client.
+   This run covers <the first journey>. Next, one walkthrough each: <the others>.
+   Go ahead?
+   ```
+
+   Nothing is written before the yes: no working folder, no data file.
+5. **Trace, following the data.** For each stop: the code blocks exactly as on disk, its key lines, what it does, data in and out, and short notes on syntax a reader may not know.
+6. **Find the reasons**, by Reasons.
+7. **Write the data file.** Read `references/data-file.md` first. The file is `$TMPDIR/code-walkthrough/<slug>/<slug>.walkthrough.json` (`<slug>`: the short name in lower case, words joined by `-`), never under a repo, the vault or a `work_roots` folder: the build refuses those.
+8. **Build, check and write**, by Build and check.
+9. **Reply**, by Reply.
+
+## Reasons
+
+Code holds no "why". The rule is firm, and it is the user's:
+- A recorded reason quotes its source word for word and names it.
+- When no source states the reason, the entry is "not recorded" and holds only the question: "Why are logs kept 14 days?"
+- A plausible guess goes only in the stop's `guesses`, shown apart and marked Guess, never in the Why list.
+
+Every choice at a stop that a teammate could ask about (a limit, a timeout, a rule, the order of calls) gets a Why entry, recorded or not recorded. A source counts only when it is about this code: this repo, its tickets, this feature.
+
+Look in these places, in this order, and cite every one that states a reason, in this order:
+1. **The vault.** Work notes (their `why` and `decided` columns), decision notes, ticket and handoff notes for the repo or the ticket, and meeting notes. Skip a note whose frontmatter has `visibility: private`, and discard a search hit inside one, unless the user named that note.
+2. **Design docs in the repo:** specs, plans, ADRs and README sections.
+3. **Commits, pull requests, and the Jira tickets they name:** `git log`, `git blame`, `gh pr view`. Jira is read only. For a ticket, look in its vault ticket note before keeping a saved copy.
+4. **Comments in the code.**
+5. **Build notes** left by AI coding sessions in the repo or its worktrees, such as `.superpowers/sdd/<plan>/task-N-report.md`, cited by file.
+
+Outside docs, such as a framework's documentation, may back a fact in "What it does" by name; they are never a reason. The search per stop may go to cheaper subagents (`haiku`); they return quotes with their sources, never reasons in their own words.
+
+## Build and check
+
+```
+node "<this skill's folder>/scripts/walkthrough-build.mjs" "$TMPDIR/code-walkthrough/<slug>/<slug>.walkthrough.json" --out "$TMPDIR/code-walkthrough/<slug>" --vault <vault> --folder <folders.walkthroughs> --chalk <chalk-talk folder | none> --work-root <each work_roots entry> --write
+```
+
+Nothing reaches the vault unless every check passes, so build with `--write` from the first round. Exit codes:
+- **0**: every check passed. It printed the reply lines (`Code:`, `Reasons:`, `Map:`, and a second `Map:` line when Chrome is missing), then one `WROTE <path>` per file.
+- **1**: a check or a shape rule failed. Each `FAIL <where>: <why>` line names the stop and the fault. Nothing was written.
+- **2**: bad arguments, an unreadable data file, or a refused place. Fix the command. To rebuild a walkthrough that is in the vault, copy its `.walkthrough.json` into the working folder and build from the copy.
+- **3**: `SAME DAY <names>`: this journey was already built today. Ask "Replace today's walkthrough, or keep both?" and rerun with `--same-day replace` or `--same-day keep`.
+
+The build writes what it learns back into the data file (`built`, the commits, the uncommitted files, `cited_files`, `checks`, `map_tool`, `earlier`). Never write those by hand.
+
+**Fix the data, never the check.**
+- Code differs from the file: re-read the lines and copy them again. Lines dropped from `text` are declared in `left_out`.
+- Quote not found: copy it again from the source, or make the entry not recorded, with its question.
+- Broken map arrow: cite the right lines, or mark the arrow `inferred` with the reason.
+
+At most three rounds. Still failing: stop, deliver nothing, and say in plain words what still fails.
+
+## Reply
+
+Short, and never a retelling of the walkthrough. Leave out the lines that do not apply:
+
+```
+[[Walkthrough - <short name>]]: <N> stops, <R> reasons recorded, <Q> not recorded.
+<the build's Code: line, as printed>
+<the build's Reasons: line, as printed>
+<the build's Map: line or lines, as printed>
+Built from commit <abc1234>, with `<uncommitted path>` as it is on disk.
+Next journey: <name>. Want it? About <M> minutes.
+Not recorded, questions for the team:
+1. <question>
+2. <question>
+Want any logged as open questions? Say the numbers.
+`Meta/Config.md` has no `walkthroughs` key under `folders`. Add `walkthroughs: Walkthroughs`?
+```
+
+The wikilink is the note's file name from its `WROTE` line, without `.md`. A question becomes an open-question note, through the open-questions skill, only when the user gives its number. The config changes only on a yes. The build's three files are the run's only vault writes: no daily-note line, no other note.
+
+## Work chart
+
+Explaining existing code on request is not a work row, so a run writes none. A run makes many reads, so work-chart's Stop hook may say "not yet in the work chart": run `<plugin root>/hooks/work-chart-stamp.sh` with no arguments, where `<plugin root>` is two folders above this skill's folder. A run that serves a ticket gets one row, through the work-chart skill: "Walked through <journey> for <KEY>: [[Walkthrough - …]]".
+
+## Common mistakes
+
+| Shortcut | Why it fails |
+|---|---|
+| "I skipped the animated chalk-talk page because you asked for something in `docs/`. I can build it from the same trace if you want it." | A folder the user mentions is not where a walkthrough goes. The repo is visible to the client and the page holds code and local paths; the build writes the page, its data file and the note to the vault |
+| "Go ahead with what? I asked which items should become tickets, and "yes" doesn't tell me which ones or where." | The run started before the cost question, so the yes had nothing to answer. Ask "Go ahead?" first; the yes starts the trace |
+| Loosening a check, editing a script, or shortening code without declaring `left_out` | The page then shows code that is not the file, or a reason nobody recorded. Fix the data |
+| A guess in the Why list | The user repeats it in refinement as fact. It goes in `guesses`, marked Guess |
+| A second planning offer after a no | One offer per area per conversation. After a no, plan, and leave walkthroughs out |
