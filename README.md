@@ -13,6 +13,7 @@ Agent skills for running a consulting engagement out of an Obsidian vault with C
 | `open-questions` | Tracks questions for client stakeholders from capture through answer. |
 | `reference-clipper` | Saves external docs and specs into the vault as clean markdown. |
 | `repo-dossier` | One standardized note per client repository, populated from the local clone. |
+| `code-walkthrough` | Walks through one journey in real code, stop by stop: the actual lines, data in and out, and why, with every reason quoted from its source or marked not recorded. One page in the vault with a live map, plus a short note. Offers one when you start planning a change. |
 | `glossary` | Client and domain jargon, with acronym aliases and provenance. |
 | `people` | Stakeholders, roles, and ownership. Professional context only. |
 | `decisions` | Lightweight ADRs with context, rejected options, and supersession chains. |
@@ -33,7 +34,7 @@ Agent skills for running a consulting engagement out of an Obsidian vault with C
 
 ## Install
 
-This repo is a Claude Code plugin marketplace containing one plugin, `consultant-vault`, which bundles all twenty-four skills. From Claude Code:
+This repo is a Claude Code plugin marketplace containing one plugin, `consultant-vault`, which bundles all twenty-five skills. From Claude Code:
 
 ```
 /plugin marketplace add <owner>/consultant-vault-skills
@@ -59,6 +60,10 @@ The plugin intentionally has no pinned `version`: every commit to this repo coun
 ## Hooks
 
 The plugin ships two hooks for work-chart. `hooks/work-chart-log.sh` runs after every tool call. When the call is work, it adds one line to a per-session activity log under `~/.config/vault-skills/work-log/`, marking it as an edit, an outward call (a Jira comment, a sent email), a research call, or a shell command. It records no file contents, command text or tool output, and it never prints. `hooks/work-chart-stop.sh` runs at the end of a turn. It reads the log since the last rows and asks Claude to write rows when it finds an edit, an outward call, five or more research and shell calls, or a touched repo whose uncommitted changes differ from the last rows. Both hooks count only work inside the folders listed under `work_roots` in `Meta/Config.md`, or inside the vault folder when that key is missing. One exception: marking that rows were written happens wherever that run happens, even outside those folders, since the tool that does it lives outside every root. Both are silent when no vault is configured. Neither writes to a repo or the vault. The Stop hook deletes activity logs older than 14 days. Tests: `bash hooks/tests/test-work-chart-hook.sh`.
+
+## code-walkthrough and chalk-talk
+
+`code-walkthrough` draws its map with the third-party `chalk-talk` skill (github.com/oztrkemree/chalk-talk, MIT), which this plugin does not ship or edit. It looks for `chalk-talk/scripts/build.mjs` in `~/.claude/skills/`, then in the current project's `.claude/skills/`. Without it, the walkthrough page is built without the map, and the page and the reply say so. The map loads its fonts from Google Fonts; no project data goes with that request, and offline the map uses fallback fonts. The page itself makes no requests. Tests: `node --test 'skills/code-walkthrough/scripts/tests/*.test.mjs'`.
 
 ## Output style
 

@@ -15,6 +15,7 @@ folders:
   conflicts: Conflicts
   runbooks: Runbooks
   work: Work
+  walkthroughs: Walkthroughs
   tickets: Tickets
   status: Status
   archive: Archive
@@ -60,6 +61,7 @@ Skills read the frontmatter above at the start of every task. Edit values here, 
 - `folders` — rename these to match your vault. Skills construct every path from these values, so a rename here is all it takes to restructure.
 - `folders.runbooks` — runbooks and their index. runbook-capture writes here; runbook-run reads and updates.
 - `folders.work` — one work note per ticket per day, plus `Work.base`. work-chart writes here; handoff reads it.
+- `folders.walkthroughs` — code walkthroughs: one note per journey, with its page and data file. code-walkthrough writes here; with the key missing it uses `Walkthroughs` and asks once whether to add it.
 - `work_roots` — the folders whose work goes in the work chart, one per line under the key (`  - ~/Code/StrideClients/UsCold`); a leading `~` is your home folder. Work in any repo or file inside one of them counts, wherever Claude Code was started. Empty: only the vault folder counts. Setup suggests the folder that holds the vault's repo and the client repos beside it.
 - `daily_note_format` — must match Settings → Daily notes → Date format in Obsidian, otherwise skill-written entries and app-created daily notes land in different files.
 - `meeting_types` — the allowed values for `meeting_type` on meeting notes. Keep the list short: trends are computed within a type, so two names for the same kind of meeting splits your data.

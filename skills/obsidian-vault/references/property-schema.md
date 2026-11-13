@@ -6,7 +6,7 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 
 | Property | Format | Example |
 |----------|--------|---------|
-| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference`, `work`, `proposal` | `meeting` |
+| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference`, `work`, `proposal`, `code-walkthrough` | `meeting` |
 | `client` | slug from config `clients` | `uscold` |
 | `created` | `YYYY-MM-DD` | `2026-07-17` |
 | `jira` | optional list of ticket keys | `- PFD-65810` |
@@ -136,6 +136,21 @@ One note per ticket per day, filename `KEY Work YYYY-MM-DD.md` (or `Work - <topi
 | `repos` | list of quoted wikilinks | repo dossiers touched |
 | `areas` | list of plain strings | parts of the codebase touched, in the reader's words |
 | `changes` | integer | number of rows in the note |
+
+## type: code-walkthrough
+
+One note per journey through real code, `Walkthrough - <short journey name>.md` in the walkthroughs folder, beside its page `<journey-slug>.html` and data file `<journey-slug>.walkthrough.json`. Written once by code-walkthrough after every check passes; a rebuild gets dated names and links the earlier note.
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `repos` | list of quoted wikilinks | same names as on `work` and `runbook` notes |
+| `commits` | list of quoted `repo@hash` | quoted, so a hash is never read as a number |
+| `uncommitted` | optional list of quoted `repo: path` | cited files that differed from the commit at build time; left out when none |
+| `journey` | quoted string | the plain title |
+| `stops` | integer | |
+| `reasons_recorded` | integer | Why entries with a source and a quote |
+| `reasons_not_recorded` | integer | Why entries with only a question |
+| `jira` | optional list of ticket keys | the ticket the walkthrough serves |
 
 ## type: proposal
 
