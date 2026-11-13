@@ -37,7 +37,7 @@ node "<this skill's folder>/scripts/walkthrough-look.mjs" --vault <vault> --fold
 
 - **One covers it.** Say so in one line: the wikilink, its commit, its date, and how its look line ends. Read the note's outline and the stops that matter in the data file. Say which stops and extend points the change touches ("stop 4", "`src/billing/Invoice.java:40-58`"), and cite them in the plan.
 - **It covers it, but its line ends otherwise** (`N of M cited files changed since`, `its commit is no longer in the repo`, `its commit was not recorded`, `its cited files could not be checked`): do all of the above, then say what the line said and offer a rebuild with the time: "Rebuild it first? About <2 × its stops> minutes." Yes: A rebuild (end of A run); the yes answers the cost question. No: plan with it as it is. A rebuild is never offered as a new walkthrough.
-- **None covers it, and the change is brand-new code with nothing existing to walk through, or stays within a few lines of one file.** Make no offer and say nothing about walkthroughs, not even why there is none; go straight to planning.
+- **None covers it, and the change is brand-new code with nothing existing to walk through, or adds no behaviour** (a reworded comment, a renamed variable, new wording for a label). A new rule, check or branch adds behaviour, however few lines it takes, because it has to fit the code around it. In these two cases make no offer and say nothing about walkthroughs, not even why there is none; go straight to planning.
 - **None covers it, for any other change.** Offer one in a single line with the time, then wait for the answer before any plan: "No walkthrough covers the booking save path yet. Want one before we plan? About <2 × N stops> minutes."
   - Yes: A run, the journey being the path the change will touch. The yes answers the cost question, so step 4 only confirms the journey. Then planning resumes with the walkthrough to hand.
   - No: plan on, with no further offer or mention of one for that area in this conversation.
@@ -125,7 +125,7 @@ Not recorded, questions for the team:
 1. <question>
 2. <question>
 Want any logged as open questions? Say the numbers.
-`Meta/Config.md` has no `walkthroughs` key under `folders`. Add `walkthroughs: Walkthroughs`?
+`Meta/Config.md` has no `walkthroughs` key under `folders`. Add `walkthroughs: Walkthroughs`?   (always the last line when step 1 found no key)
 ```
 
 The wikilink is the note's `WROTE` file name without `.md`. `<R>` and `<Q>` are the note's `reasons_recorded` and `reasons_not_recorded`, and the list holds every not-recorded question, in stop order. A build given `--chalk none` while chalk-talk is installed prints a wrong Map line: say the command left the map out. A question becomes an open-question note, through the open-questions skill, only when the user gives its number. The config changes only on a yes. Apart from a ticket's work row and what work-chart writes with it, the build's three files are the run's only vault writes: no daily-note line, no other note.
