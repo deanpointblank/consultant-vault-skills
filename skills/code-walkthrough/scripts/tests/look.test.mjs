@@ -14,13 +14,15 @@ const DAY = '2026-11-11';
 const NOTE = 'Walkthrough - booking flow.md';
 const LINE = '[[Walkthrough - booking flow]]';
 
-function setup(t) {
+function setup(t, change = () => {}) {
   const root = tempRoot(t);
   const repo = bookingRepo(root);
   const vault = makeVault(root, { 'README.md': 'a vault\n' });
   const dataFile = path.join(root, 'in', 'booking.json');
   fs.mkdirSync(path.dirname(dataFile), { recursive: true });
-  fs.writeFileSync(dataFile, JSON.stringify(sampleData(repo), null, 2));
+  const data = sampleData(repo);
+  change(data, repo);
+  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
   const b = spawnSync(process.execPath, [BUILD, dataFile, '--out', path.join(root, 'work'), '--vault', vault, '--folder', 'Walkthroughs',
     '--chalk', 'none', '--date', DAY, '--write'], { encoding: 'utf8', env: { ...process.env, CW_GH: '0' }, cwd: root });
   assert.equal(b.status, 0, b.stdout + b.stderr);
@@ -390,6 +392,28 @@ for (const [flag, label] of [['--assume-unchanged', 'assume-unchanged'], ['--ski
     finish(ctx);
   });
 }
+
+// The build lists such files as uncommitted; the look-up, which compares against the commit, cannot vouch for them.
+test('a walkthrough built over an ignored or flagged cited file is never reported unchanged', t => {
+  const cases = {
+    ignored: (d, repo) => {
+      fs.writeFileSync(path.join(repo.path, '.gitignore'), 'gen/\n');
+      commitAll(repo.path, 'Ignore generated code');
+      fs.mkdirSync(path.join(repo.path, 'gen'));
+      fs.writeFileSync(path.join(repo.path, 'gen', 'out.js'), 'const generated = 1;\n');
+      d.extend.push({ stop: 's1', file: 'gen/out.js', lines: [1, 1], text: 'Generated code.' });
+    },
+    flagged: (d, repo) => execFileSync('git', ['update-index', '--assume-unchanged', 'web/form.ts'], { cwd: repo.path }),
+  };
+  for (const [name, change] of Object.entries(cases)) {
+    const ctx = arm(setup(t, change));
+    const r = look(ctx);
+    assert.equal(r.status, 0, r.err);
+    assert.match(r.lines[0], UNCHECKED, `${name}: ${r.out}`);
+    assert.doesNotMatch(r.out, /have not changed/);
+    finish(ctx);
+  }
+});
 
 const objectNames = repo => {
   const out = [];

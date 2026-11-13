@@ -44,11 +44,19 @@ function firstDiff(want, got) {
   return 1;
 }
 
-export function checkCode(data, { readFile = fs.readFileSync } = {}) {
+const MISNAMED = 'git names this file differently; use the path as git names it';
+
+// misnamed(repo name, file): true when git does not name the file exactly so; such a file is never read.
+export function checkCode(data, { readFile = fs.readFileSync, misnamed = () => false } = {}) {
   const failures = [];
   let blocks = 0;
   const attempt = (where, fn) => {
     try { fn(); } catch (e) { failures.push({ where, why: e.message }); }
+  };
+  const gitNamesOtherwise = (where, o) => {
+    if (!misnamed(repoByName(data, o.repo).name, o.file)) return false;
+    failures.push({ where, why: MISNAMED });
+    return true;
   };
   for (const stop of data.stops) {
     (stop.code || []).forEach((block, i) => {
@@ -58,6 +66,7 @@ export function checkCode(data, { readFile = fs.readFileSync } = {}) {
       if (bad) { failures.push({ where: named, why: `the block ${bad}` }); return; }
       attempt(named, () => {
         const where = named;
+        if (gitNamesOtherwise(where, block)) return;
         const [a, b] = block.lines;
         const exp = expectedText(read(data, block, readFile), block.lines, block.left_out);
         if (exp.error) { failures.push({ where, why: exp.error }); return; }
@@ -75,6 +84,7 @@ export function checkCode(data, { readFile = fs.readFileSync } = {}) {
     const bad = fieldProblem(e, false);
     if (bad) { failures.push({ where, why: `the extend point ${bad}` }); return; }
     attempt(where, () => {
+      if (gitNamesOtherwise(where, e)) return;
       const exp = expectedText(read(data, e, readFile), e.lines);
       if (exp.error) failures.push({ where, why: exp.error });
     });

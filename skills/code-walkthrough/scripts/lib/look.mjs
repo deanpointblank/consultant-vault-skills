@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { gitRead, isCommitHash } from './git.mjs';
+import { gitRead, isCommitHash, plainRelative } from './git.mjs';
 
 // Our own copy of the build command's `home`: that file runs its main when imported.
 export const home = p => p.replace(/^~(?=\/|$)/, os.homedir());
@@ -63,8 +63,6 @@ function fullCommit(repoPath, hash) {
   if (!isCommitHash(hash)) return null;
   try { return gitRead(repoPath, ['rev-parse', '--verify', '--end-of-options', `${hash}^{commit}`]).trim() || null; } catch { return null; }
 }
-
-const plainRelative = f => !f.startsWith('/') && !/^[A-Za-z]:/.test(f) && !f.split('/').includes('..');
 
 // A cited path is checkable only when git names it exactly: it was in the commit under that name, or it is
 // new since and listed (tracked or untracked, not ignored). Anything else could be hidden from the counts.

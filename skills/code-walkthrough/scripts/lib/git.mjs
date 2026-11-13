@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 export const READ_ONLY_GIT = ['rev-parse', 'status', 'log', 'show', 'diff', 'cat-file', 'ls-files'];
@@ -24,21 +26,52 @@ export function gitRead(repoPath, args) {
   });
 }
 
+// A path git can be given: relative, and never stepping out of the repo.
+export const plainRelative = f => !f.startsWith('/') && !/^[A-Za-z]:/.test(f) && !f.split('/').includes('..');
+
+// The repo's top folder, when repoPath is a folder below it; null at the top folder, or outside any repo.
+export function topFolderAbove(repoPath) {
+  let prefix;
+  try { prefix = gitRead(repoPath, ['rev-parse', '--show-prefix']).trim(); } catch { return null; }
+  if (!prefix) return null;
+  try { return gitRead(repoPath, ['rev-parse', '--show-toplevel']).trim(); } catch { return ''; }
+}
+
+// { commit, uncommitted, misnamed } for the cited files of a repo, given from its top folder.
+// uncommitted: the files that differ from the commit, or whose edits git would not show: changed, staged,
+// deleted, untracked (ignored or not), or flagged assume-unchanged or skip-worktree.
+// misnamed: the files on disk that git does not list under exactly that name (`./`, `//`, `..`, another
+// letter case, a link, a folder, a file of an embedded repo). A file not on disk is left to the code check.
 export function repoFacts(repoPath, files) {
   let commit;
   try { commit = gitRead(repoPath, ['rev-parse', '--short=7', 'HEAD']).trim(); }
   catch { throw new Error(`${repoPath} is not a git repo`); }
-  const uncommitted = [];
-  if (files.length) {
-    const parts = gitRead(repoPath, ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', ...files]).split('\0');
+  const tags = new Map();
+  const asked = files.filter(plainRelative);
+  if (asked.length) {
+    // No --exclude-standard, so ignored files are listed too, tagged `?` like any untracked file.
+    for (const l of gitRead(repoPath, ['ls-files', '-v', '-z', '--cached', '--others', '--', ...asked]).split('\0')) if (l.length > 2) tags.set(l.slice(2), l[0]);
+  }
+  const misnamed = [], named = [], differ = new Set();
+  for (const f of files) {
+    const tag = tags.get(f);
+    let onDisk = null;
+    try { onDisk = fs.lstatSync(path.join(repoPath, f)); } catch { /* not there: the code check says the file is gone */ }
+    if (onDisk && (!onDisk.isFile() || tag === undefined)) { misnamed.push(f); continue; }
+    if (tag === undefined) continue;
+    named.push(f);
+    if (tag === '?' || tag === 'S' || /[a-z]/.test(tag)) differ.add(f);
+  }
+  if (named.length) {
+    const parts = gitRead(repoPath, ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', ...named]).split('\0');
     for (let i = 0; i < parts.length; i++) {
       const entry = parts[i];
       if (entry.length < 4) continue;
-      uncommitted.push(entry.slice(3));
+      differ.add(entry.slice(3));
       if (/[RC]/.test(entry.slice(0, 2))) i++;
     }
   }
-  return { commit, uncommitted };
+  return { commit, uncommitted: files.filter(f => differ.has(f)), misnamed };
 }
 
 export const isCommitHash = s => typeof s === 'string' && /^[0-9a-f]{4,40}$/i.test(s);

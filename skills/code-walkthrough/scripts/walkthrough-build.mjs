@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadData, shapeErrors, repoByName } from './lib/data.mjs';
-import { repoFacts } from './lib/git.mjs';
+import { repoFacts, topFolderAbove } from './lib/git.mjs';
 import { checkCode } from './lib/code.mjs';
 import { checkQuotes } from './lib/quotes.mjs';
 import { chalkTalkAt, buildMap } from './lib/map.mjs';
@@ -117,6 +117,13 @@ function main() {
 
   for (const [what, p] of keepOut) if (inside(dataReal, p)) refuse(`${args.dataFile} is inside ${what}, and the build rewrites its data file; copy the data file to the working folder and build from the copy`);
 
+  // Cited paths are named from the top folder, as git and the look-up name them.
+  for (const r of data.repos) {
+    const repoPath = repoByName(data, r.name).path;
+    const top = topFolderAbove(repoPath);
+    if (top !== null) refuse(`the repo ${r.name} is given as ${repoPath}, which is inside a repo, not its top folder; set its path to the top folder${top ? `, ${top}` : ''}`);
+  }
+
   const shape = shapeErrors(data);
   if (shape.length) { console.log(shape.map(e => `FAIL the walkthrough: ${e}`).join('\n')); return 1; }
 
@@ -127,14 +134,18 @@ function main() {
   for (const r of data.repos) cited[r.name] = new Set();
   for (const b of [...data.stops.flatMap(s => s.code || []), ...(data.extend || [])]) cited[repoByName(data, b.repo).name].add(b.file);
   data.cited_files = {};
+  const misnamedIn = {};
   for (const r of data.repos) {
     const files = [...cited[r.name]].sort();
     data.cited_files[r.name] = files;
-    try { Object.assign(r, repoFacts(repoByName(data, r.name).path, files)); }
-    catch (e) { failures.push({ where: r.name, why: e.message.split('\n')[0] }); }
+    try {
+      const { misnamed, ...facts } = repoFacts(repoByName(data, r.name).path, files);
+      Object.assign(r, facts);
+      misnamedIn[r.name] = new Set(misnamed);
+    } catch (e) { failures.push({ where: r.name, why: e.message.split('\n')[0] }); }
   }
 
-  const code = checkCode(data);
+  const code = checkCode(data, { misnamed: (repo, file) => misnamedIn[repo]?.has(file) === true });
   failures.push(...code.failures);
   const { failures: quoteFailures, ...quotes } = checkQuotes(data, { vault, gh: process.env.CW_GH !== '0' });
   failures.push(...quoteFailures);

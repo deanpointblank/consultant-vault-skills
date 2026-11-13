@@ -11,7 +11,7 @@ const repoIn = (t, extra = {}) => makeRepo(path.join(tempRoot(t), 'r'), { files,
 test('facts on a clean repo', t => {
   const r = repoIn(t);
   const want = execFileSync('git', ['rev-parse', '--short=7', 'HEAD'], { cwd: r.path, encoding: 'utf8' }).trim();
-  assert.deepEqual(repoFacts(r.path, ['api/Dock.java']), { commit: want, uncommitted: [] });
+  assert.deepEqual(repoFacts(r.path, ['api/Dock.java']), { commit: want, uncommitted: [], misnamed: [] });
 });
 
 test('modified cited file is uncommitted', t => {

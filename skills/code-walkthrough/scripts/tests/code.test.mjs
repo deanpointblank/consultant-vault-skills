@@ -76,6 +76,17 @@ test('deleted file fails that stop', t => {
   assert.ok(r.failures.some(f => f.where.startsWith('s2 ')));
 });
 
+test('a block or extend point git names differently fails, unread', t => {
+  const { d } = setup(t);
+  const read = [];
+  const readFile = (f, enc) => { read.push(path.basename(f)); return fs.readFileSync(f, enc); };
+  const r = checkCode(d, { readFile, misnamed: (repo, file) => repo === 'booking-mini' && file === 'api/Dock.java' });
+  const why = 'git names this file differently; use the path as git names it';
+  assert.deepEqual(r.failures, [
+    { where: 's2 api/Dock.java:1-30', why }, { where: 's3 api/Dock.java:25-30', why }, { where: 'extend 1', why }]);
+  assert.deepEqual(read, ['form.ts', 'form.ts']);
+});
+
 test('extend point lines must exist', t => {
   const { d } = setup(t);
   d.extend[0].lines = [29, 31];

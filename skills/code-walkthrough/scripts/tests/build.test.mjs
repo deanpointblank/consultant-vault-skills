@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { tempRoot, bookingRepo, sampleData, makeVault, makeRepo, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
+import { spawnSync, execFileSync } from 'node:child_process';
+import { tempRoot, bookingRepo, sampleData, makeVault, makeRepo, commitAll, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
 
 const SCRIPT = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
 const DAY1 = '2026-11-11';
@@ -332,6 +332,94 @@ test('bad input is a plain message, never a stack trace', t => {
   assert.ok(notRepoRun.lines.some(l => /^FAIL booking-mini: .*not a git repo/.test(l)), notRepoRun.out);
   const none = spawnSync(process.execPath, [SCRIPT], { encoding: 'utf8' });
   assert.equal(none.status, 2);
+  finish(ctx);
+});
+
+// A cited path git does not name exactly fails its block, the way the look-up will not trust it (look.test.mjs, `inexact`).
+const MISNAMED = 'git names this file differently; use the path as git names it';
+function misnamed(t, cited, plant = () => {}) {
+  const ctx = setup(t, (d, repo) => { plant(repo.path); d.stops[2].code[0].file = cited; });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.ok(r.lines.includes(`FAIL s3 ${cited}:25-30: ${MISNAMED}`), r.out);
+  assert.doesNotMatch(r.out + r.err, /Command failed|\n\s+at /);
+  assert.deepEqual(vaultFiles(ctx), []);
+  finish(ctx);
+}
+const dockCopy = (repoPath, to) => { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(path.join(repoPath, 'api/Dock.java'), to); };
+
+test('a doubled slash in a cited path fails', t => misnamed(t, 'api//Dock.java'));
+test('a ./ segment in a cited path fails', t => misnamed(t, 'api/./Dock.java'));
+test('a cited path that leaves the repo fails', t => misnamed(t, '../outside.java', repo => dockCopy(repo, path.join(repo, '..', 'outside.java'))));
+
+test('wrong letter case in a cited path fails', t => {
+  const probe = path.join(tempRoot(t), 'Case.txt');
+  fs.writeFileSync(probe, 'x');
+  if (!fs.existsSync(probe.replace('Case', 'case'))) return t.skip('this disk respects letter case, so git cannot be fooled this way');
+  misnamed(t, 'api/dock.java');
+});
+
+test('a path through a committed symlink fails', t => misnamed(t, 'link/Dock.java', repo => {
+  fs.symlinkSync('api', path.join(repo, 'link'));
+  commitAll(repo, 'Link the api folder');
+}));
+test('a symlink to a file, cited by the link name, fails', t => misnamed(t, 'lnk.java', repo => {
+  fs.symlinkSync('api/Dock.java', path.join(repo, 'lnk.java'));
+  commitAll(repo, 'Link the dock file');
+}));
+test('a folder as a cited path fails', t => misnamed(t, 'api'));
+test('a file inside an embedded repo fails', t => misnamed(t, 'sub/file.java', repo => {
+  makeRepo(path.join(repo, 'sub'), { files: { 'file.java': fs.readFileSync(path.join(repo, 'api/Dock.java'), 'utf8') }, message: 'inner' });
+  commitAll(repo, 'Add the inner repo');
+}));
+
+test('ignored cited files are listed as uncommitted', t => {
+  const ctx = setup(t, (d, repo) => {
+    fs.writeFileSync(path.join(repo.path, '.gitignore'), 'local.txt\ngen/\n');
+    commitAll(repo.path, 'Ignore local and generated files');
+    fs.writeFileSync(path.join(repo.path, 'local.txt'), 'a local setting\n');
+    fs.mkdirSync(path.join(repo.path, 'gen'));
+    fs.writeFileSync(path.join(repo.path, 'gen', 'out.js'), 'const generated = 1;\n');
+    d.extend.push({ stop: 's1', file: 'local.txt', lines: [1, 1], text: 'A local setting.' }, { stop: 's1', file: 'gen/out.js', lines: [1, 1], text: 'Generated code.' });
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.deepEqual(readJson(ctx.dataFile).repos[0].uncommitted, ['gen/out.js', 'local.txt']);
+  assert.match(r.out, /plus uncommitted changes in 2 files\)\./);
+  finish(ctx);
+});
+
+for (const flag of ['--assume-unchanged', '--skip-worktree']) {
+  test(`a cited file flagged ${flag.slice(2)} is listed as uncommitted`, t => {
+    const ctx = setup(t, (d, repo) => execFileSync('git', ['update-index', flag, 'web/form.ts'], { cwd: repo.path }));
+    const r = run(ctx);
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.deepEqual(readJson(ctx.dataFile).repos[0].uncommitted, ['web/form.ts']);
+    finish(ctx);
+  });
+}
+
+test('an untracked cited file is listed as uncommitted', t => {
+  const ctx = setup(t, (d, repo) => {
+    fs.writeFileSync(path.join(repo.path, 'web', 'new rule.ts'), 'const fresh = 1;\n');
+    d.extend.push({ stop: 's1', file: 'web/new rule.ts', lines: [1, 1], text: 'A new rule.' });
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.deepEqual(readJson(ctx.dataFile).repos[0].uncommitted, ['web/new rule.ts']);
+  finish(ctx);
+});
+
+test('a repo path below its top folder is refused, naming the top folder', t => {
+  const ctx = setup(t, (d, repo) => { d.repos[0].path = path.join(repo.path, 'web'); });
+  const before = fs.readFileSync(ctx.dataFile);
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.match(r.err, /not its top folder/);
+  assert.ok(r.err.includes(fs.realpathSync(ctx.repo.path)), r.err);
+  assert.deepEqual(fs.readFileSync(ctx.dataFile), before);
+  assert.equal(fs.existsSync(ctx.out), false);
+  assert.deepEqual(vaultFiles(ctx), []);
   finish(ctx);
 });
 
