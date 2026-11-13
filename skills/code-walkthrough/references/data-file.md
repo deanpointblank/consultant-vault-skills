@@ -1,6 +1,6 @@
 # The data file
 
-One JSON file holds the whole walkthrough: `$TMPDIR/code-walkthrough/<slug>/<slug>.walkthrough.json`. The build checks it, adds what it learns, and copies it into the vault beside the page and the note.
+One JSON file holds the whole walkthrough: `${TMPDIR:-/tmp}/code-walkthrough/<slug>/<slug>.walkthrough.json`. The build checks it, adds what it learns, and copies it into the vault beside the page and the note.
 
 A complete example: one repo, two stops, a ticket read from a saved copy. In stop 2, lines 6–15 of `src/store.js` (a helper and the blank lines around it) are left out of `text` and declared in `left_out`.
 
@@ -50,7 +50,7 @@ A complete example: one repo, two stops, a ticket read from a saved copy. In sto
       "reasons": [
         { "text": "Totals are kept in cents, so two systems never round differently.",
           "quote": "Totals are stored in cents, never as decimals, so two systems never round the same amount differently.",
-          "source": { "kind": "design-doc", "ref": { "path": "docs/adr/0002-store-cents.md" } } },
+          "source": { "kind": "design-doc", "ref": { "path": "design/0002-store-cents.md" } } },
         { "text": "The ticket asks for the total to be saved with the invoice.",
           "quote": "The total must be saved with the invoice",
           "source": { "kind": "ticket", "ref": "LED-42" } }
@@ -88,7 +88,7 @@ A complete example: one repo, two stops, a ticket read from a saved copy. In sto
 - `repos`: `{ name, path }` per repo. `name` is the repo's folder name, as in `[[name]]` on its notes; `path` is its top folder, absolute (a leading `~` is allowed).
 - `stops`: in journey order (below).
 - `map`: `{ style: "studio", nodes, edges, groups }` (below).
-- `extend` (optional): where new behaviour would attach: `{ stop, file, lines: [a, b], text }`, with `stop` a stop's `id` and `text` what to add there.
+- `extend`: where new behaviour would attach, one entry per place a likely change would go, on every walkthrough: `{ stop, file, lines: [a, b], text }`, with `stop` a stop's `id` and `text` what to add there and what else it would touch.
 - `sources` (optional): saved copies of a ticket or a pull request: `{ kind, ref, fetched: "YYYY-MM-DD", text }`, with `ref` in the same form as the reason's and `text` as fetched.
 
 The build fills `built`, `repos[].commit`, `repos[].uncommitted`, `cited_files`, `checks`, `map_tool` and `earlier`. Never write them by hand.
@@ -129,14 +129,14 @@ With several repos, every code block, every extend point, and every `design-doc`
 | `design-doc` | `{ "repo"?, "path" }`, the path from the repo root | the file on disk |
 | `commit` | `{ "repo"?, "hash" }`, a real hex hash | the commit message |
 | `pull-request` | `{ "repo"?, "number" }`, a whole number, not a string | `gh pr view`, else the saved copy in `sources` |
-| `ticket` | `"LED-42"`; `"note"` on `source` is the vault ticket note's path | that note, else the saved copy in `sources` |
+| `ticket` | `"LED-42"`; `"note"` on `source` is the vault ticket note's path | that note when it can be read, and a quote not in it fails; the saved copy in `sources` only when there is no readable note |
 | `code-comment` | `{ "repo"?, "file", "line" }`, `line` a whole number | that one line on disk. For a comment over several lines, quote one line and cite that line |
 | `build-note` | an absolute path, with no `~` | the file |
 | `not-recorded` | none | nothing |
 
 ## Map
 
-`map.nodes`, `map.edges` and `map.groups` are in chalk-talk's own scene format: read the Nodes, Edges, Code, Proof, Groups, Steps, "Layout rules the engine applies" and "Report messages and how to fix them" sections of `~/.claude/skills/chalk-talk/references/scene-spec.md`. The build copies them into the map unchanged, and turns each layout error into a `FAIL map layout: …` line: fix it by moving blocks or shortening labels.
+`map.nodes`, `map.edges` and `map.groups` are in chalk-talk's own scene format: read the Nodes, Edges, Code, Proof, Groups, Steps, "Layout rules the engine applies" and "Report messages and how to fix them" sections of `<the chalk-talk folder>/references/scene-spec.md`. The build copies them into the map unchanged, and turns each layout error into a `FAIL map layout: …` line: fix it by moving blocks or shortening labels.
 
 - A block: `{ id, kind, label, sub, at: [col, row], code: "file:a-b" }`. About 12 blocks at most.
 - An arrow: `{ id, from, to, label, code: "file:a-b", calls: "text found in those lines" }`, or `inferred: "why no line can be cited"` in place of `code` and `calls`. An arrow with neither fails the build.
