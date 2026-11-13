@@ -103,6 +103,7 @@ The build writes what it learns back into the data file (`built`, the commits, t
 - Code differs from the file: re-read the lines and copy them again. Lines dropped from `text` are declared in `left_out`.
 - Quote not found: copy it again from the source, or make the entry not recorded, with its question.
 - Broken map arrow: cite the right lines, or mark the arrow `inferred` with the reason.
+- `FAIL map layout: …`: move a block to a free cell or shorten a label, as the line says. Never drop the map with `--chalk none`.
 
 At most three rounds. Still failing: stop, deliver nothing, and say in plain words what still fails.
 

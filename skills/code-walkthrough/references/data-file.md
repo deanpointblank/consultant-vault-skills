@@ -128,15 +128,15 @@ With several repos, every code block, every extend point, and every `design-doc`
 | `vault-note` | `"Decisions/2026-09-04 Title.md"`, the path inside the vault | the note. A `visibility: private` note only with `"named_by_user": true` on `source`, for a note the user named |
 | `design-doc` | `{ "repo"?, "path" }`, the path from the repo root | the file on disk |
 | `commit` | `{ "repo"?, "hash" }`, a real hex hash | the commit message |
-| `pull-request` | `{ "repo"?, "number" }` | `gh pr view`, else the saved copy in `sources` |
+| `pull-request` | `{ "repo"?, "number" }`, a whole number, not a string | `gh pr view`, else the saved copy in `sources` |
 | `ticket` | `"LED-42"`; `"note"` on `source` is the vault ticket note's path | that note, else the saved copy in `sources` |
-| `code-comment` | `{ "repo"?, "file", "line" }` | that one line on disk. For a comment over several lines, quote one line and cite that line |
+| `code-comment` | `{ "repo"?, "file", "line" }`, `line` a whole number | that one line on disk. For a comment over several lines, quote one line and cite that line |
 | `build-note` | an absolute path, with no `~` | the file |
 | `not-recorded` | none | nothing |
 
 ## Map
 
-`map.nodes`, `map.edges` and `map.groups` are in chalk-talk's own scene format: read the Nodes, Edges, Code, Proof, Groups and Steps sections of `~/.claude/skills/chalk-talk/references/scene-spec.md`. The build copies them into the map unchanged.
+`map.nodes`, `map.edges` and `map.groups` are in chalk-talk's own scene format: read the Nodes, Edges, Code, Proof, Groups, Steps, "Layout rules the engine applies" and "Report messages and how to fix them" sections of `~/.claude/skills/chalk-talk/references/scene-spec.md`. The build copies them into the map unchanged, and turns each layout error into a `FAIL map layout: …` line: fix it by moving blocks or shortening labels.
 
 - A block: `{ id, kind, label, sub, at: [col, row], code: "file:a-b" }`. About 12 blocks at most.
 - An arrow: `{ id, from, to, label, code: "file:a-b", calls: "text found in those lines" }`, or `inferred: "why no line can be cited"` in place of `code` and `calls`. An arrow with neither fails the build.
