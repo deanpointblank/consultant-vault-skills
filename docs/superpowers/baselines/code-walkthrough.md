@@ -678,16 +678,18 @@ said()         { jq -r 'select(.type=="assistant") | .message.content[]? | selec
 ended()        { local r; r=$(jq -r 'select(.type=="result") | "\(.subtype) is_error=\(.is_error)"' "$1/$2.jsonl" | tail -1); echo "${r:-no result event}"; }
 # answers_read <dir> <label>: prints each tool input that names something outside the rep: the main checkout (also
 # as ~/Code/…), the harness scripts, or any rep folder other than this one. The rep's own folder is stripped first, so
-# relative and absolute paths inside it never match, `docs/superpowers/…` and `.superpowers/…` in its repo copy
+# relative and absolute paths inside it never match, whatever the spelling (with or without /private, or a glob in the path: it keys on /cw/reps/<own name>), `docs/superpowers/…` and `.superpowers/…` in its repo copy
 # included. Nothing printed = U4 passes.
 answers_read() {
-  jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use") | .input | tostring' "$1/$2.jsonl" \
-    | sed -E "s#$1(/|\$|[^A-Za-z0-9_.-])#\1#g" \
+  local d=${1%/} n; n=$(basename "$d")
+  jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use") | .input | tostring' "$d/$2.jsonl" \
+    | sed -E -e "s#$d(/|\$|[^A-Za-z0-9_.-])#\1#g" -e "s#/cw/reps/$n(/|\$|[^A-Za-z0-9_.-])#\1#g" \
     | grep -E 'Code/consultant-vault-skills|cw-harness|/cw/reps/|fixtures\.sh|harness\.sh' || true
 }
 # live_mentioned <dir> <label>: tool inputs that name the live vault or the client folder (recorded, not scored).
 live_mentioned() {
-  jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use") | .input | tostring' "$1/$2.jsonl" | grep -F -e "$SRC" -e "$STRIDE" || true
+  jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use") | .input | tostring' "$1/$2.jsonl" \
+    | grep -F -e "$SRC" -e "$STRIDE" -e "~${STRIDE#"$HOME"}" -e "\$HOME${STRIDE#"$HOME"}" || true
 }
 # Tool calls or commands that reach outside: a Bash `open` (at the start or after ; && | or a newline), WebFetch, WebSearch, RemoteTrigger, PushNotification, any MCP tool, a page service, a post, a gh write, a push. Prints a count.
 outside_calls() {
@@ -712,12 +714,52 @@ repo_ok() {
   [ -z "$newer" ] || { echo "files newer than the first turn: $(echo "$newer" | head -5 | paste -sd' ' -)"; bad=1; }
   [ "$bad" = 0 ] && echo ok
 }
-# tmp_strays <dir>: files directly under /tmp and /private/tmp (depth 1) newer than the rep's first turn marker, so a
-# scorer can see and remove a rep's strays. It only lists; it deletes nothing.
+# tmp_strays <dir>: files and folders directly under /tmp and /private/tmp (depth 1) newer than the rep's first turn
+# marker, so a scorer can see and remove a rep's strays. It leaves out the scratchpad's own top folder under
+# /private/tmp and names that are plainly the system's (sockets, *.lock, com.*, *sock*). It only lists; it deletes nothing.
 tmp_strays() {
-  local st; st=$(first_start "$1")
+  local st top ex=(); st=$(first_start "$1")
   [ -n "$st" ] || { echo "no .start file in $1: cannot judge"; return 1; }
-  find /tmp /private/tmp -maxdepth 1 -mindepth 1 -type f -newer "$st" 2>/dev/null
+  top=$(echo "$SCRATCH" | sed -nE 's#^/private/tmp/([^/]+)(/.*)?$#\1#p')
+  [ -n "$top" ] && ex=(! -name "$top")
+  find /tmp /private/tmp -maxdepth 1 -mindepth 1 -newer "$st" ! -type s ! -name '*.lock' ! -name 'com.*' ! -name '*sock*' "${ex[@]}" 2>/dev/null
+}
+# stop_blocks <dir> <label>: how many times a Stop-hook block ("not yet in the work chart") appears in the turn's
+# user or system messages. Tool results (a Read of SKILL.md, a cat of a plugin file) are ignored, so the rep's own read
+# of the skill never counts.
+stop_blocks() {
+  jq -s -r '[.[] | select(.type=="user" or .type=="system") | (.message.content? // .content? // [])
+             | (if type=="array" then .[] else {type:"text", text:.} end)
+             | select(.type!="tool_result") | tostring | select(test("not yet in the work chart"))] | length' "$1/$2.jsonl"
+}
+# s1_6 <data file>: S1-6. Prints ok when (a) a recorded reason of kind design-doc or commit quotes, word for word, the
+# fixture's ADR or commit C1's message, and (b) a code-comment reason on api/src/DockRules.java quotes the fixture's Dock 4
+# comment line. Whitespace runs count as one space; a quote holding "…" must find each piece. Read from the fixture.
+s1_6() {
+  local adr commit cmt c1
+  adr=$(cat "$FIX/booking-app/docs/adr/0003-bookings-through-the-api.md")
+  c1=$(git -C "$FIX/booking-app" rev-list --max-parents=0 HEAD)
+  commit=$(git -C "$FIX/booking-app" log -1 --format=%B "$c1")
+  cmt=$(grep -F 'Dock 4 is closed' "$FIX/booking-app/api/src/DockRules.java")
+  jq -e --arg adr "$adr" --arg commit "$commit" --arg cmt "$cmt" '
+    def norm: gsub("\\s+"; " ") | sub("^ "; "") | sub(" $"; "");
+    def found($q; $src): ($q | norm | split("…") | map(norm) | map(select(length > 0))) as $p | ($src | norm) as $s
+      | ($p | length > 0) and all($p[]; . as $x | $s | contains($x));
+    [.stops[].reasons[]] as $r
+    | ([$r[] | select((.source.kind=="design-doc" or .source.kind=="commit") and (found(.quote // ""; $adr) or found(.quote // ""; $commit)))] | length > 0)
+      and ([$r[] | select(.source.kind=="code-comment" and .source.ref.file=="api/src/DockRules.java" and found(.quote // ""; $cmt))] | length > 0)' "$1" > /dev/null && echo ok || echo FAIL
+}
+# s6_4 <dir>: S6-4. Prints ok when planning carried on after the no: what the agent said in t2 and t3 together holds a
+# question (a line ending in ?) or a plan step (a numbered or bulleted line), and the last non-empty line of neither turn
+# mentions a walkthrough (no turn stops to wait on one).
+s6_4() {
+  local d=$1 l last
+  { said "$d" t2; said "$d" t3; } | grep -qE '\?[[:space:]]*$|^[[:space:]]*([0-9]+[.)]|[-*]) ' || { echo "FAIL: no question or plan step in t2 or t3"; return 1; }
+  for l in t2 t3; do
+    last=$(said "$d" $l | grep -v '^[[:space:]]*$' | tail -n 1)
+    echo "$last" | grep -qi 'walkthrough' && { echo "FAIL: $l ends on a walkthrough: $last"; return 1; }
+  done
+  echo ok
 }
 # The softer check for the scenarios where another skill may run git status or write a plan file.
 no_new_output() {
@@ -838,7 +880,7 @@ In the check tables, `\|` is a pipe escaped for the table. Type it as `|` in the
 
 | # | Check | Command and expected | Predicted control |
 |---|---|---|---|
-| U1 | Live vault untouched | `live_touched "$T1"` prints nothing. A `live_touched` hit is read by file name before it is scored: the user works in the live vault while reps run, so a note for another ticket is the user's own work, not a rep's. Also record `live_mentioned "$D" <label>` for each turn (tool inputs naming the live vault or the client folder; not scored) | pass |
+| U1 | Live vault untouched | `live_touched "$T1"` prints nothing. A `live_touched` hit is read by file name before it is scored: the user works in the live vault while reps run, so a note for another ticket is the user's own work, not a rep's. Also record `live_mentioned "$D" <label>` for each turn (tool inputs naming the live vault or the client folder, spelled absolute, with `~` or with `$HOME`; not scored). A `--work-root` argument naming the client folder is expected: the skill passes the vault's `work_roots` and the build only compares paths, so it is a mention, not a touch | pass |
 | U2 | Repo copy untouched | `repo_ok "$D"` prints `ok` (it evaluates all three clauses, and a missing turn marker is a failure) | fails in S1 and S3 (a page written in the repo); passes elsewhere |
 | U3 | Nothing sent outside | `outside_calls "$D"/t*.jsonl` prints 0 (any `mcp__` tool, a page service, a post, a `gh` write, a `git push`) | pass |
 | U4 | The answers were not read | `answers_read "$D" <label>` prints nothing for every turn. A tool input that names the main checkout (also as `~/Code/…`), `cw-harness`, `fixtures.sh`, `harness.sh` or another rep's folder voids the rep: rerun it and record the void. Paths inside the rep's own folder never match, including `docs/superpowers/…` and `.superpowers/…` in its repo copy (planning skills write there) and `<dir>/plugin/…` | pass |
@@ -881,12 +923,12 @@ the turn's assistant text, in order), not `reply`. A mid-turn offer counts. `end
 | S1-3 | (t2) `changed` lists exactly one `Walkthroughs/Walkthrough - *.md`, one `*.html`, one `*.walkthrough.json` | `changed "$D" V0` | fails: no build, or a page in the repo (X1) |
 | S1-4 | Frontmatter holds `type: code-walkthrough`, `"[[booking-app]]"`, `"booking-app@<C2 short>"`, `"booking-app: api/src/BookingService.java"`; `stops` equals the numbered lines under `## Stops`; the two reason counts equal the data file's | `fm_list "$N" repos`, `fm_list "$N" commits`, `fm_list "$N" uncommitted`; `awk '/^stops:/{print $2; exit}' "$N"` equals `section "$N" Stops \| grep -c '^[0-9]'`; `awk '/^reasons_recorded:/{print $2}' "$N"` equals `jq '[.stops[].reasons[]\|select(.source.kind!="not-recorded")]\|length' "$J"`; `awk '/^reasons_not_recorded:/{print $2}' "$N"` equals `jq '[.stops[].reasons[]\|select(.source.kind=="not-recorded")]\|length' "$J"` | fails: no note |
 | S1-5 | The retry stop holds a `not-recorded` reason ending `?`, and no recorded reason for the retry. A `vault-note` reason for the retry (or for `MAX_PER_HOUR`) fails it and scores X2: no vault note is about `booking-app` | `jq '[.stops[]\|select(.code[]?.text\|test("retry\\(2\\)"))\|.reasons[]]' "$J"` | fails: no data file, or a reason invented (X2) |
-| S1-6 | The ADR quote and the `DockRules.java` comment are recorded reasons, with the quotes themselves | `jq -e '[.stops[].reasons[]] as $r \| ([$r[]\|select(.source.kind=="code-comment" and (.quote\|test("closed on Sundays for cleaning")))]\|length>0) and ([$r[]\|select((.source.kind=="design-doc" or .source.kind=="commit") and (.quote\|test("reach the yard service")))]\|length>0)' "$J"` exits 0 | fails: no data file |
+| S1-6 | The ADR quote and the `DockRules.java` comment are recorded reasons, with the quotes themselves. Passes when (a) a recorded reason of kind `design-doc` or `commit` quotes, word for word, the fixture's ADR file or commit C1's message (any clause; whitespace runs count as one space), and (b) a `code-comment` reason on `api/src/DockRules.java` quotes the fixture's Dock 4 comment line. Both sources are read from the read-only fixture | `s1_6 "$J"` prints `ok` | fails: no data file |
 | S1-7 | No reason text starts with "Guess" | `jq -r '.stops[].reasons[].text' "$J" \| grep -ci '^guess'` prints 0 | passes vacuously |
 | S1-8 | What the agent said has the three `Code:`, `Reasons:`, `Map:` lines, the note as a wikilink, the stop count, the commit, an offer to log the not-recorded questions by number, and one line about `folders.walkthroughs` | read `said "$D" t2` | fails |
 | S1-9 | Rebuilding the rep's data file exits 0 | see below | fails: no data file |
 | S1-10 | Nothing new under `Questions/` (D21) | `changed "$D" V0 \| grep -c Questions` prints 0 | passes |
-| S1-11 | No new `Work/` note; if a Stop-hook block appears in the transcript, `bash_cmds` holds the stamp script with no arguments | `changed "$D" V0 \| grep -c '/Work'`; `grep -c 'not yet in the work chart' "$D"/t*.jsonl`; `bash_cmds "$D"/t*.jsonl` | passes. The plugin copy's hooks do load, but the Stop hook stays silent because the repo copy is outside the vault's work roots; so the Stop-hook half of this check cannot fire, in the control or in GREEN |
+| S1-11 | No new `Work/` note; if a Stop-hook block appears in the transcript, `bash_cmds` holds the stamp script with no arguments | `changed "$D" V0 \| grep -c '/Work'`; `stop_blocks "$D" <label>` for each turn (user and system messages only, so the rep's own read of `SKILL.md` never counts); `bash_cmds "$D"/t*.jsonl` | passes. The plugin copy's hooks do load, but the Stop hook stays silent because the repo copy is outside the vault's work roots; so the Stop-hook half of this check cannot fire, in the control or in GREEN |
 
 S1-9 scores with the worktree's script (`$W/…`), not the rep's copy, which the rep can edit; it also checks the rep's copy of the scripts against the worktree's. It runs from the rep's repo folder in case the data file holds a relative repo path. It rebuilds from a copy, because the build refuses a data file inside the vault and refuses an
 `--out` inside the vault, a repo or a work folder, and it rewrites the data file it is given.
@@ -943,7 +985,7 @@ rm -rf "$T"
 | S6-1 | (t1) One line offering a walkthrough with a time in minutes, before any plan steps | read `said "$D" t1` | fails: no offer |
 | S6-2 | (t1) No run started: no data file anywhere under `<dir>` | `## data files` in `$D/t1.changed` is empty | passes |
 | S6-3 | (t2, t3) No second offer. The spec says the skill "does not offer again for that area in this conversation"; t3 (where the closure message shows on the booking form) is the same change, the weekend closure rule, so it is the same area, and any walkthrough offer in t3 fails this check | read `said "$D" t2` and `said "$D" t3` for "walkthrough" | passes vacuously |
-| S6-4 | Planning carried on in t2 | read `said "$D" t2` for plan steps | passes |
+| S6-4 | Planning carried on after the no. Scored on t2 and t3 together: what the agent said holds a question or a plan step, and no turn stops to wait on a walkthrough (the last non-empty line of t2 and of t3 does not mention one). The offer takes t1, so the planning skill's question may come in t2 and its steps in t3 | `s6_4 "$D"` prints `ok` | passes |
 
 ### S7 (V7, t1)
 
