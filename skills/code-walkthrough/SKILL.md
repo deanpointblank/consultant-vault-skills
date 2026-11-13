@@ -21,7 +21,7 @@ What was asked decides where to start:
 
 When the user starts planning a change to existing code (brainstorming a feature, plan mode, "let's plan X", picking up a ticket), add one step before any plan is written. It replaces and reorders nothing in brainstorming, writing plans or ticket-intake.
 
-No offer, and no mention of one, for:
+In these cases make no offer and say nothing about walkthroughs, not even why there is none; go straight to planning:
 - brand-new code with nothing existing to walk through;
 - a change that stays within a few lines of one file;
 - an area the user declined in this conversation (the area is the change being planned and every follow-up to it);
@@ -65,7 +65,7 @@ The time is about 2 minutes a stop, from a rough count of the stops. Never start
    Nothing is written before the yes: no working folder, no data file.
 5. **Trace, following the data.** For each stop: the code blocks exactly as on disk, its key lines, what it does, data in and out, and short notes on syntax a reader may not know. Then where the code would be extended: for each place a likely change would go, the file and lines, what to add there, and its stop.
 6. **Find the reasons**, by Reasons.
-7. **Write the data file**, with its stops and its extend points. Read `references/data-file.md` first. The file is `${TMPDIR:-/tmp}/code-walkthrough/<slug>/<slug>.walkthrough.json` (`<slug>`: the short name in lower case, words joined by `-`), never under a repo, the vault or a `work_roots` folder: the build refuses those.
+7. **Write the data file**, with its stops and its extend points. Read `references/data-file.md` first. Find the working folder once, in the shell: `echo "${TMPDIR:-/tmp}/code-walkthrough/<slug>"` (`<slug>`: the short name in lower case, words joined by `-`). Use the printed path as it is for the data file (`<working folder>/<slug>.walkthrough.json`), for `--out`, and for any helper script you write; outside the vault, a run makes nothing anywhere else. The build refuses a working folder under a repo, the vault or a `work_roots` folder.
 8. **Build, check and write**, by Build and check.
 9. **Reply**, by Reply.
 
@@ -78,7 +78,7 @@ Code holds no "why". The rule is firm, and it is the user's:
 - When no source states the reason, the entry is "not recorded" and holds only the question: "Why are logs kept 14 days?"
 - A plausible guess goes only in the stop's `guesses`, shown apart and marked Guess, never in the Why list.
 
-Every choice at a stop that a teammate could ask about (a limit, a timeout, a rule, the order of calls) gets a Why entry, recorded or not recorded. A source counts only when it is about this code: this repo, its tickets, this feature.
+Every choice at a stop that a teammate could ask about (a limit, a timeout, a rule, the order of calls) gets a Why entry, recorded or not recorded. A source counts only when it is about this code (this repo, its tickets, this feature) and says why the code is the way it is. A line that says what the code does is not a reason, whatever kind of source it is in.
 
 Look in these places, in this order, and cite every one that states a reason, in this order:
 1. **The vault.** Work notes (their `why` and `decided` columns), decision notes, ticket and handoff notes for the repo or the ticket, and meeting notes. Skip a note whose frontmatter has `visibility: private`, and discard a search hit inside one, unless the user named that note.
@@ -92,7 +92,7 @@ Outside docs, such as a framework's documentation, may back a fact in "What it d
 ## Build and check
 
 ```
-node "<this skill's folder>/scripts/walkthrough-build.mjs" "${TMPDIR:-/tmp}/code-walkthrough/<slug>/<slug>.walkthrough.json" --out "${TMPDIR:-/tmp}/code-walkthrough/<slug>" --vault <vault> --folder <folders.walkthroughs> --chalk <chalk-talk folder | none> --work-root <each work_roots entry> --write
+node "<this skill's folder>/scripts/walkthrough-build.mjs" "<working folder>/<slug>.walkthrough.json" --out "<working folder>" --vault <vault> --folder <folders.walkthroughs> --chalk <chalk-talk folder | none> --work-root <each work_roots entry> --write
 ```
 
 Nothing reaches the vault unless every check passes, so build with `--write` from the first round. Exit codes:
@@ -129,7 +129,7 @@ Want any logged as open questions? Say the numbers.
 `Meta/Config.md` has no `walkthroughs` key under `folders`. Add `walkthroughs: Walkthroughs`?
 ```
 
-The wikilink is the note's file name from its `WROTE` line, without `.md`. A build given `--chalk none` while chalk-talk is installed prints a wrong Map line: say the command left the map out. A question becomes an open-question note, through the open-questions skill, only when the user gives its number. The config changes only on a yes. Apart from a ticket's work row and what work-chart writes with it, the build's three files are the run's only vault writes: no daily-note line, no other note.
+The wikilink is the note's `WROTE` file name without `.md`. `<R>` and `<Q>` are the note's `reasons_recorded` and `reasons_not_recorded`, and the list holds every not-recorded question, in stop order. A build given `--chalk none` while chalk-talk is installed prints a wrong Map line: say the command left the map out. A question becomes an open-question note, through the open-questions skill, only when the user gives its number. The config changes only on a yes. Apart from a ticket's work row and what work-chart writes with it, the build's three files are the run's only vault writes: no daily-note line, no other note.
 
 ## Work chart
 

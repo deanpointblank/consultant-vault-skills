@@ -1,6 +1,6 @@
 # The data file
 
-One JSON file holds the whole walkthrough: `${TMPDIR:-/tmp}/code-walkthrough/<slug>/<slug>.walkthrough.json`. The build checks it, adds what it learns, and copies it into the vault beside the page and the note.
+One JSON file holds the whole walkthrough: `<working folder>/<slug>.walkthrough.json`, where `<working folder>` is the path `echo "${TMPDIR:-/tmp}/code-walkthrough/<slug>"` prints in the shell, used as printed. The build checks it, adds what it learns, and copies it into the vault beside the page and the note.
 
 A complete example: one repo, two stops, a ticket read from a saved copy. In stop 2, lines 6–15 of `src/store.js` (a helper and the blank lines around it) are left out of `text` and declared in `left_out`.
 
@@ -119,7 +119,7 @@ With several repos, every code block, every extend point, and every `design-doc`
 
 ## Reasons
 
-- Recorded: `{ text, quote, source: { kind, ref } }`. `text` gives the reason in plain words; `quote` is the source's own words, which the build looks for.
+- Recorded: `{ text, quote, source: { kind, ref } }`. `text` gives the reason in plain words; `quote` is the source's own words saying why, which the build looks for; words that only say what the code does are no reason.
 - Not recorded: `{ text: "Why …?", source: { kind: "not-recorded" } }`. The text is the question and ends with `?`. No quote.
 - A quote is word for word, and starts and ends on whole words: a quote cut mid-word fails. The only differences allowed are runs of spaces and line breaks, curly versus straight quote marks, backticks, and `…` to join pieces that appear in that order.
 
