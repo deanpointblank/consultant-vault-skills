@@ -94,6 +94,13 @@ const failLine = f => `FAIL ${f.where}: ${f.why}`;
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
+  // `none` is a word, not a folder. Any other value must hold chalk-talk, or the map and its check would quietly go.
+  let chalk = null;
+  if (args.chalk !== 'none') {
+    const dir = path.resolve(args.chalk);
+    chalk = chalkTalkAt(dir);
+    if (!chalk) refuse(`no chalk-talk at ${dir}; pass the folder that holds scripts/build.mjs, or none`);
+  }
   let dataReal;
   try { dataReal = fs.realpathSync.native(args.dataFile); } catch { refuse(`${args.dataFile} cannot be read`); }
   args.dataFile = dataReal;
@@ -152,7 +159,6 @@ function main() {
 
   let map = { built: false };
   let mapHtml = null;
-  const chalk = chalkTalkAt(path.resolve(args.chalk));
   if (chalk) {
     try {
       const m = buildMap(data, { chalk: chalk.dir, out, slug });

@@ -434,6 +434,52 @@ test('a GIT_DIR in the caller\'s environment does not move the checks to another
   finish(ctx);
 });
 
+// A stand-in chalk-talk whose build stops at once, saying so: its failure line proves the build used the folder.
+const standInChalk = dir => {
+  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'scripts', 'build.mjs'), "console.error('build: the stand-in ran'); process.exit(1);\n");
+  return dir;
+};
+
+test('--chalk none is the word none, never a folder of that name', t => {
+  const ctx = setup(t);
+  standInChalk(path.join(ctx.root, 'none'));
+  const r = run(ctx, [], { chalk: 'none' });
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.ok(r.lines.some(l => l.startsWith('Map: not built, because chalk-talk is not installed.')), r.out);
+  assert.equal(readJson(ctx.dataFile).map_tool, undefined);
+  finish(ctx);
+});
+
+test('a --chalk that is not a chalk-talk folder is refused, before anything is written', t => {
+  const ctx = setup(t);
+  const stand = standInChalk(path.join(ctx.root, 'stand-in'));
+  const empty = path.join(ctx.root, 'empty');
+  fs.mkdirSync(empty);
+  const before = fs.readFileSync(ctx.dataFile);
+  for (const chalk of [empty, path.join(stand, 'scripts', 'build.mjs'), path.join(ctx.root, 'missing')]) {
+    const r = run(ctx, ['--write'], { chalk });
+    assert.equal(r.status, 2, `${chalk}: ${r.out}${r.err}`);
+    assert.ok(r.err.includes(`no chalk-talk at ${chalk}; pass the folder that holds scripts/build.mjs, or none`), r.err);
+    assert.doesNotMatch(r.err, /\n\s+at /);
+    assert.deepEqual(fs.readFileSync(ctx.dataFile), before);
+    assert.equal(fs.existsSync(ctx.out), false);
+  }
+  assert.deepEqual(vaultFiles(ctx), []);
+  finish(ctx);
+});
+
+test('a --chalk folder that holds scripts/build.mjs is used, even given relative to the working directory', t => {
+  const ctx = setup(t);
+  standInChalk(path.join(ctx.root, 'stand-in'));
+  const r = run(ctx, ['--write'], { chalk: 'stand-in' });
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.ok(r.lines.includes('FAIL map: chalk-talk could not build the map: the stand-in ran'), r.out);
+  assert.equal(readJson(ctx.dataFile).map_tool.name, 'chalk-talk');
+  assert.deepEqual(vaultFiles(ctx), []);
+  finish(ctx);
+});
+
 test('plain words in the note', t => {
   const ctx = setup(t);
   assert.equal(run(ctx).status, 0);
