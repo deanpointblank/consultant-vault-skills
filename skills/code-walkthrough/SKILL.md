@@ -96,7 +96,7 @@ node "<this skill's folder>/scripts/walkthrough-build.mjs" "<working folder>/<sl
 
 Nothing reaches the vault unless every check passes, so build with `--write` from the first round. Exit codes:
 - **0**: every check passed. It printed the reply lines (`Code:`, `Reasons:`, `Map:`, and a second `Map:` line when Chrome is missing), then one `WROTE <path>` per file.
-- **1**: a check or a shape rule failed. Each `FAIL <where>: <why>` line says where (a stop, a reason, the map, the walkthrough) and what is wrong. Nothing reached the vault; the data file now holds the build's own fields. Shape failures print alone, before any other check: fix them all, and count that as a round.
+- **1**: a check or a shape rule failed. Each `FAIL <where>: <why>` line says where (a stop, a reason, the map, the walkthrough) and what is wrong. Nothing reached the vault; after a check failure, the data file holds the build's own fields. Shape failures print alone, before any other check: fix them all, and count that as a round.
 - **2**: the message says what: a bad argument, a refused place, or a data file the build cannot use (such as one with no `client`). Fix that; it is not a check round.
 - **3**: `SAME DAY <names>`: this journey was already built today. Ask "Replace today's walkthrough, or keep both?" and rerun with `--same-day replace` or `--same-day keep`.
 
@@ -139,7 +139,7 @@ Explaining existing code on request is not a work row, so a run writes none. A r
 | Shortcut | Why it fails |
 |---|---|
 | "I skipped the animated chalk-talk page because you asked for something in `docs/`. I can build it from the same trace if you want it." | A folder the user mentions is not where a walkthrough goes: the page holds code and local paths. The build writes the page, its data file and the note to the vault |
-| "Go ahead with what? I asked which items should become tickets, and "yes" doesn't tell me which ones or where." | The run started before the cost question, so the yes had nothing to answer. Ask "Go ahead?" first; the yes starts the trace |
+| Starting the trace before asking "Go ahead?" | The user has not agreed to the time it takes. Ask "Go ahead?" first; the yes starts the trace |
 | Loosening a check, editing a script, or shortening code without declaring `left_out` | The page then shows code that is not the file, or a reason nobody recorded. Fix the data |
 | A guess in the Why list | The user repeats it in refinement as fact. It goes in `guesses`, marked Guess |
 | A second planning offer after a no | One offer per area per conversation. After a no, plan, and mention no walkthrough unless the user asks for one |

@@ -72,7 +72,7 @@ A complete example: one repo, two stops, a ticket read from a saved copy. In sto
     ],
     "groups": []
   },
-  "extend": [{ "stop": "s2", "file": "src/store.js", "lines": [16, 20], "text": "Add a new field to the saved row here." }],
+  "extend": [{ "stop": "s2", "file": "src/store.js", "lines": [16, 20], "text": "Add a new field to the saved row here; the invoices table needs a column for it too." }],
   "sources": [{ "kind": "ticket", "ref": "LED-42", "fetched": "2026-11-13", "text": "Post an invoice. The total must be saved with the invoice, in cents." }]
 }
 ```

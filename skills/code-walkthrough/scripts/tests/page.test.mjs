@@ -147,6 +147,13 @@ test('embedJson hides every < and the line separators', () => {
   assert.equal(embedJson(null), 'null');
 });
 
+// page.js goes inline into a <script> block, where "<!--" followed later by "<script" changes how the block ends.
+test('the page script holds no comment opener or script tag', () => {
+  const js = fs.readFileSync(path.join(HERE, '..', '..', 'assets', 'page.js'), 'utf8');
+  const at = js.search(/<!--|<script/i);
+  assert.equal(at, -1, `page.js line ${js.slice(0, at).split('\n').length}: ${js.slice(at, at + 12)}`);
+});
+
 test('the map page loses its caption bar and nothing else', () => {
   const page = '<html><head><title>m</title></head><body><p>x</p></body></html>';
   assert.equal(prepareMap(page), '<html><head><title>m</title><style>.bar{display:none!important}</style></head><body><p>x</p></body></html>');

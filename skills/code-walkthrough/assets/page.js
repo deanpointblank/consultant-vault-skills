@@ -81,7 +81,7 @@
 
   /* ---------- one stop: code, notes, and what, data and why ---------- */
 
-  const COMMENT = /^\s*(\/\/|#(\s|$)|\/\*|\*(\s|\/|$)|--\s|<!--)/;
+  const COMMENT = /^\s*(\/\/|#(\s|$)|\/\*|\*(\s|\/|$)|--\s|[<]!--)/; // [<]: no comment opener in an inline script
 
   function codeRow(r, expand) {
     if (r.gap) return h('div', { class: 'row gap' }, h('span', { class: 'no' }), h('span', { class: 'tx' }, r.label));
