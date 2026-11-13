@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { tempRoot, bookingRepo, sampleData, makeVault, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
+import { tempRoot, bookingRepo, sampleData, makeVault, makeRepo, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
 
 const SCRIPT = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
 const DAY1 = '2026-11-11';
@@ -332,6 +332,17 @@ test('bad input is a plain message, never a stack trace', t => {
   assert.ok(notRepoRun.lines.some(l => /^FAIL booking-mini: .*not a git repo/.test(l)), notRepoRun.out);
   const none = spawnSync(process.execPath, [SCRIPT], { encoding: 'utf8' });
   assert.equal(none.status, 2);
+  finish(ctx);
+});
+
+test('a GIT_DIR in the caller\'s environment does not move the checks to another repo', t => {
+  const ctx = setup(t);
+  const other = makeRepo(path.join(ctx.root, 'other'), { files: { 'other.txt': 'another repo\n' }, message: 'Another repo' });
+  const r = run(ctx, [], { env: { GIT_DIR: path.join(other.path, '.git') } });
+  assert.equal(r.status, 0, r.out + r.err);
+  const d = readJson(ctx.dataFile);
+  assert.equal(d.repos[0].commit, ctx.repo.head);
+  assert.deepEqual(d.repos[0].uncommitted, []);
   finish(ctx);
 });
 

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { gitRead, repoFacts } from '../lib/git.mjs';
+import { gitRead, repoFacts, gitEnv } from '../lib/git.mjs';
 import { tempRoot, makeRepo, makeIndexStale, repoSnapshot } from './helpers.mjs';
 
 const files = { 'api/Dock.java': 'a\n', 'web/form.ts': 'b\n' };
@@ -43,6 +43,21 @@ test('facts leave the repo untouched', t => {
   const after = repoSnapshot(r.path);
   assert.equal(after.porcelain, before.porcelain);
   assert.ok(before.index.equals(after.index));
+});
+
+test('git is never given the caller\'s GIT_DIR and the like', () => {
+  const listed = execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' }).split('\n').filter(Boolean);
+  const saved = Object.fromEntries(listed.map(k => [k, process.env[k]]));
+  let env;
+  try {
+    for (const k of listed) process.env[k] = '/nowhere';
+    env = gitEnv();
+  } finally {
+    for (const k of listed) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; }
+  }
+  assert.deepEqual(listed.filter(k => k in env), []);
+  assert.equal(env.GIT_OPTIONAL_LOCKS, '0');
+  assert.equal(env.PATH, process.env.PATH);
 });
 
 test('cited paths are literal, not wildcards', t => {

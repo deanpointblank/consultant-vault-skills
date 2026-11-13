@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { repoByName } from './data.mjs';
-import { gitRead, isCommitHash } from './git.mjs';
+import { gitRead, gitEnv, isCommitHash } from './git.mjs';
 import { splitLines } from './code.mjs';
 
 export const normalizeForQuote = s => s.normalize('NFC')
@@ -130,7 +130,7 @@ function sourceText(data, source, { vault, gh }) {
       if (gh) {
         try {
           const out = execFileSync('gh', ['pr', 'view', String(ref.number), '--json', 'title,body,comments'], {
-            cwd: repo.path, encoding: 'utf8', timeout: 15000, env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }, stdio: ['ignore', 'pipe', 'pipe'],
+            cwd: repo.path, encoding: 'utf8', timeout: 15000, env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'],
           });
           const j = JSON.parse(out);
           return { text: [j.title, j.body, ...(j.comments || []).map(c => c.body)].filter(Boolean).join('\n\n') };

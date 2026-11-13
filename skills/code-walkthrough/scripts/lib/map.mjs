@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { repoByName } from './data.mjs';
+import { gitEnv } from './git.mjs';
 
 const TEN_MINUTES = 10 * 60 * 1000;
 const SCENE_TAG = '<script id="scene" type="application/json">';
@@ -114,7 +115,7 @@ export function buildMap(data, { chalk, out, slug } = {}) {
 
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(scenePath, JSON.stringify(scene, null, 2) + '\n');
-  const run = { cwd: dir, env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: TEN_MINUTES };
+  const run = { cwd: dir, env: gitEnv(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: TEN_MINUTES };
 
   try { execFileSync(process.execPath, [path.join(chalk, 'scripts', 'build.mjs'), scenePath, page], run); }
   catch (e) {

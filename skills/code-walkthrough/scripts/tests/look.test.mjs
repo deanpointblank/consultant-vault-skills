@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { tempRoot, bookingRepo, sampleData, makeVault, commitAll, makeIndexStale, repoSnapshot } from './helpers.mjs';
+import { tempRoot, bookingRepo, sampleData, makeVault, makeRepo, commitAll, makeIndexStale, repoSnapshot } from './helpers.mjs';
 import { lookUp } from '../lib/look.mjs';
 
 const BUILD = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
@@ -52,9 +52,9 @@ function finish(ctx) {
   assert.deepEqual(vaultBytes(ctx.vault), ctx.vaultBefore);
 }
 
-function look(ctx, extra = [], { args } = {}) {
+function look(ctx, extra = [], { args, env = {} } = {}) {
   const a = args || ['--vault', ctx.vault, '--folder', 'Walkthroughs', '--repo', 'booking-mini', '--repo-path', ctx.repo.path, ...extra];
-  const r = spawnSync(process.execPath, [LOOK, ...a], { encoding: 'utf8', cwd: ctx.root });
+  const r = spawnSync(process.execPath, [LOOK, ...a], { encoding: 'utf8', cwd: ctx.root, env: { ...process.env, ...env } });
   return { status: r.status, out: r.stdout, err: r.stderr, lines: r.stdout.split('\n').filter(Boolean) };
 }
 
@@ -417,6 +417,16 @@ test('a blobless clone is not written to, and the line is honest', t => {
   assert.deepEqual(objectNames(clone), before);
   assert.doesNotMatch(r.out, /have not changed/);
   assert.match(r.lines[0], /· (\d of \d cited files changed since|its cited files could not be checked)$/, r.out);
+  finish(ctx);
+});
+
+test('a GIT_DIR in the caller\'s environment does not move the look-up to another repo', t => {
+  const ctx = setup(t);
+  const other = makeRepo(path.join(ctx.root, 'other'), { files: { 'other.txt': 'another repo\n' }, message: 'Another repo' });
+  arm(ctx);
+  const r = look(ctx, [], { env: { GIT_DIR: path.join(other.path, '.git') } });
+  assert.equal(r.status, 0, r.err);
+  assert.deepEqual(r.lines, [`${LINE} · commit ${ctx.repo.head} · built ${DAY} · its cited files have not changed since`]);
   finish(ctx);
 });
 

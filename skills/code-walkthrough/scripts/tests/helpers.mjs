@@ -4,13 +4,15 @@ import path from 'node:path';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { expectedText } from '../lib/code.mjs';
+import { gitEnv } from '../lib/git.mjs';
 import { BUDGET_MS } from '../lib/settings.mjs';
 
 const IDENTITY = {
   GIT_AUTHOR_NAME: 'Test Author', GIT_AUTHOR_EMAIL: 'author@example.com',
   GIT_COMMITTER_NAME: 'Test Author', GIT_COMMITTER_EMAIL: 'author@example.com',
 };
-const git = (cwd, args) => execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...IDENTITY }, stdio: ['ignore', 'pipe', 'pipe'] });
+// gitEnv: a caller's GIT_DIR or GIT_INDEX_FILE (a git hook sets them) would send fixture commits into another repo.
+const git = (cwd, args) => execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...gitEnv(), ...IDENTITY }, stdio: ['ignore', 'pipe', 'pipe'] });
 
 export function tempRoot(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw-test-'));
@@ -49,8 +51,7 @@ export function makeIndexStale(repoPath) {
 }
 
 export function repoSnapshot(repoPath) {
-  const env = { ...process.env, GIT_OPTIONAL_LOCKS: '0' };
-  const porcelain = execFileSync('git', ['status', '--porcelain=v1'], { cwd: repoPath, encoding: 'utf8', env });
+  const porcelain = execFileSync('git', ['status', '--porcelain=v1'], { cwd: repoPath, encoding: 'utf8', env: gitEnv() });
   const idx = path.join(repoPath, '.git', 'index');
   return { porcelain, index: fs.existsSync(idx) ? fs.readFileSync(idx) : null };
 }
