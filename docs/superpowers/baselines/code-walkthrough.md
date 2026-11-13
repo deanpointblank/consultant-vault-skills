@@ -990,3 +990,11 @@ Quoted exactly.
 
 | Rep | Verbatim | Check it excuses |
 |---|---|---|
+| red-s1-2, t1 | "I skipped the animated chalk-talk page because you asked for something in `docs/`. I can build it from the same trace if you want it." | S1-3 and U2: it reads the prompt's mention of `docs/` as where the walkthrough belongs, so it writes into the repo and nothing reaches the vault |
+| red-s1-3, t2 | "Go ahead with what? I asked which items should become tickets, and \"yes\" doesn't tell me which ones or where." | S1-3 and S1-8: t1 built without asking (S1-1), so the t2 "yes, go ahead" had no question to answer, and t2 built and reported nothing |
+
+Control run of 2026-11-13. Every other failure came with no excuse. S1-1 and S1-2, S3-1 and S3-2,
+S4-1 and S4-2, S6-1, and S7-1, S7-2 and S7-4 fail on every rep with no reason given, and S1-4 to
+S1-9 follow from the missing build. Seven turns explain writing a file themselves for want of a
+subagent; that excuses the user's routing rule, not a check, so it is not listed. Results:
+`results/code-walkthrough-2026-11-13.md`.
