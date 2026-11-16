@@ -3,20 +3,16 @@
 // Verified 2026-11-12: outcome 1.
 export const OUTCOME = 1;
 
-// Verified 2026-11-12: the map page sits in the walkthrough page as a JSON string and is set as the frame's srcdoc.
-export const FRAME_METHOD = 'srcdoc';
-
-// Verified 2026-11-12: capture-phase listeners stop every key and pointer event on the board; no overlay.
-export const MAP_INPUT = 'blocked';
+// Verified 2026-11-12, and built into assets/page.js, so not set here: the map page sits in the walkthrough page
+// as a JSON string and is set as the frame's srcdoc; capture-phase listeners stop every key and pointer event on
+// the board, with no overlay; the page sets the frame's documentElement.dataset.theme once after chalk.ready and
+// on every toggle.
 
 // Verified 2026-11-12: a style added before </head> hides the map's caption bar.
 export const CAPTION_BAR = 'hidden';
 
 // Verified 2026-11-12: the map's own code panel stays.
 export const CODE_PANEL = 'kept';
-
-// Verified 2026-11-12: the page sets the frame's documentElement.dataset.theme, once after chalk.ready and on every toggle.
-export const THEME_METHOD = "the page sets the frame's `documentElement.dataset.theme`, once after `chalk.ready` and on every toggle";
 
 // Verified 2026-11-12: 1100 px (900 px could be taller; the embed read well at 1100).
 export const EMBED_HEIGHT = 1100;
