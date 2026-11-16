@@ -39,6 +39,9 @@ function savedPhrase(q) {
 const count = (n, one, many) => n === 1 ? one : many;
 const brokenCount = m => (Array.isArray(m.broken) ? m.broken.length : m.broken || 0);
 const NOT_BUILT = 'not built, because chalk-talk is not installed';
+// The build sets leftOut only when --chalk none was given while chalk-talk is installed; older data files never have it.
+const LEFT_OUT = 'left out by the command';
+const leftOut = m => m.leftOut === true;
 
 export function checksShort(data) {
   const { quotes = {}, map = { built: false } } = data.checks || {};
@@ -46,7 +49,7 @@ export function checksShort(data) {
   const found = q === 0 ? 'no quotes to check' : `${plural(q, 'quote', 'quotes')} found`;
   const saved = quotes.saved ? ` (${quotes.saved} in ${quotes.saved === 1 ? 'a saved copy' : 'saved copies'})` : '';
   const arrows = map.arrows === 0 ? 'no map arrows' : `${map.traced} of ${map.arrows} map ${count(map.arrows, 'arrow', 'arrows')} traced, ${plural(map.guesses, 'guess', 'guesses')}`;
-  const m = map.built ? arrows : `Map ${NOT_BUILT}`;
+  const m = map.built ? arrows : `Map ${leftOut(map) ? LEFT_OUT : NOT_BUILT}`;
   return `Code matches the files · ${found}${saved} · ${m}`;
 }
 
@@ -69,7 +72,7 @@ export function replyLines(data) {
     : `Reasons: all ${q0} quotes were found word for word in their sources${savedPhrase(quotes)}.`;
   const lines = [codeLine, reasonLine];
   if (!map.built) {
-    lines.push('Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.');
+    lines.push(leftOut(map) ? `Map: ${LEFT_OUT}.` : 'Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.');
     return lines;
   }
   const g = map.guesses, br = brokenCount(map), n = map.arrows;

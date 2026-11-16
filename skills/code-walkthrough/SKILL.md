@@ -128,7 +128,7 @@ Want any logged as open questions? Say the numbers.
 `Meta/Config.md` has no `walkthroughs` key under `folders`. Add `walkthroughs: Walkthroughs`?   (always the last line when step 1 found no key)
 ```
 
-The wikilink is the note's `WROTE` file name without `.md`. `<R>` and `<Q>` are the note's `reasons_recorded` and `reasons_not_recorded`, and the list holds every not-recorded question, in stop order. A build given `--chalk none` while chalk-talk is installed prints a wrong Map line: say the command left the map out. A question becomes an open-question note, through the open-questions skill, only when the user gives its number. The config changes only on a yes. Apart from a ticket's work row and what work-chart writes with it, the build's three files are the run's only vault writes: no daily-note line, no other note.
+The wikilink is the note's `WROTE` file name without `.md`. `<R>` and `<Q>` are the note's `reasons_recorded` and `reasons_not_recorded`, and the list holds every not-recorded question, in stop order. A question becomes an open-question note, through the open-questions skill, only when the user gives its number. The config changes only on a yes. Apart from a ticket's work row and what work-chart writes with it, the build's three files are the run's only vault writes: no daily-note line, no other note.
 
 ## Work chart
 

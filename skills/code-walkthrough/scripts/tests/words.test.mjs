@@ -52,6 +52,19 @@ test('map not built and not checked by eye', () => {
   assert.equal(un[3], 'Map: not checked by eye, because Chrome was not found.');
 });
 
+test('a map the command left out, while chalk-talk is installed, says so', () => {
+  const left = mk({ checks: { ...mk().checks, map: { built: false, leftOut: true } } });
+  assert.deepEqual(replyLines(left).slice(2), ['Map: left out by the command.']);
+  assert.equal(checksShort(left), 'Code matches the files · 22 quotes found · Map left out by the command');
+});
+
+// A build where chalk-talk was missing stores only { built: false }, as every older data file does.
+test('a map not built, with nothing saying it was left out, keeps the not-installed lines', () => {
+  const old = mk({ checks: { ...mk().checks, map: { built: false } } });
+  assert.deepEqual(replyLines(old).slice(2), ['Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.']);
+  assert.equal(checksShort(old), 'Code matches the files · 22 quotes found · Map not built, because chalk-talk is not installed');
+});
+
 test('header line', () => {
   assert.equal(checksShort(quotes({ saved: 2, savedOf: { ticket: ['A-1'], 'pull-request': [] } })), 'Code matches the files · 22 quotes found (2 in saved copies) · 12 of 15 map arrows traced, 3 guesses');
   assert.equal(checksShort(mk({ checks: { ...mk().checks, map: { built: false } } })), 'Code matches the files · 22 quotes found · Map not built, because chalk-talk is not installed');

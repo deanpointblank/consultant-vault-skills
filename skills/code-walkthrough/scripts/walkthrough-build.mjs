@@ -167,7 +167,11 @@ function main() {
       map = { built: m.html != null, arrows: m.arrows, traced: m.traced, guesses: m.guesses, broken: m.broken, layoutChecked: m.layout.checked };
     } catch (e) { failures.push({ where: 'map', why: e.message }); }
     data.map_tool = { name: 'chalk-talk', commit: chalk.commit };
-  } else delete data.map_tool;
+  } else {
+    delete data.map_tool;
+    // chalk-talk installed where SKILL.md step 2 looks (the home folder, then the project the command runs in): the command left the map out.
+    if ([os.homedir(), process.cwd()].some(d => chalkTalkAt(path.join(d, '.claude', 'skills', 'chalk-talk')))) map.leftOut = true;
+  }
   data.checks = { code: { blocks: code.blocks }, quotes, map };
 
   const writeData = () => fs.writeFileSync(args.dataFile, JSON.stringify(data, null, 2) + '\n');

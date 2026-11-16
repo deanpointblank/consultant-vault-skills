@@ -20,14 +20,18 @@ function setup(t, change = d => d, { dirty = false } = {}) {
   const dataFile = path.join(root, 'in', 'booking.json');
   fs.mkdirSync(path.dirname(dataFile), { recursive: true });
   fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
-  const ctx = { root, repo, vault, data, dataFile, out: path.join(root, 'work'), folder: path.join(vault, 'Walkthroughs') };
+  // A home folder with no chalk-talk in it, so the real one cannot change what a --chalk none build says.
+  const noChalkHome = path.join(root, 'no-chalk-home');
+  fs.mkdirSync(noChalkHome);
+  const ctx = { root, repo, vault, data, dataFile, noChalkHome, out: path.join(root, 'work'), folder: path.join(vault, 'Walkthroughs') };
   ctx.snapshot = repoSnapshot(repo.path);
   return ctx;
 }
 
 function run(ctx, extra = [], { chalk = 'none', file = ctx.dataFile, out = ctx.out, date = DAY1, env = {} } = {}) {
   const args = [SCRIPT, file, '--out', out, '--vault', ctx.vault, '--folder', 'Walkthroughs', '--chalk', chalk, '--date', date, ...extra];
-  const r = spawnSync(process.execPath, args, { encoding: 'utf8', env: { ...process.env, CW_GH: '0', ...env }, cwd: ctx.root });
+  const home = chalk === 'none' ? { HOME: ctx.noChalkHome } : {};
+  const r = spawnSync(process.execPath, args, { encoding: 'utf8', env: { ...process.env, CW_GH: '0', ...home, ...env }, cwd: ctx.root });
   return { status: r.status, out: r.stdout, err: r.stderr, lines: r.stdout.split('\n') };
 }
 
@@ -449,6 +453,50 @@ test('--chalk none is the word none, never a folder of that name', t => {
   assert.ok(r.lines.some(l => l.startsWith('Map: not built, because chalk-talk is not installed.')), r.out);
   assert.equal(readJson(ctx.dataFile).map_tool, undefined);
   finish(ctx);
+});
+
+// chalk-talk is installed where SKILL.md step 2 looks: under the home folder, or under the project the command runs in.
+// The stand-in fails if it runs, so a passing build also shows --chalk none never ran it.
+function saysLeftOut(ctx, r) {
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.ok(r.lines.includes('Map: left out by the command.'), r.out);
+  assert.doesNotMatch(r.out, /not installed/);
+  const d = readJson(ctx.dataFile);
+  assert.deepEqual(d.checks.map, { built: false, leftOut: true });
+  assert.equal(d.map_tool, undefined);
+  assert.ok(fs.readFileSync(path.join(ctx.out, 'booking-flow.html'), 'utf8').includes('Map left out by the command'));
+  finish(ctx);
+}
+
+test('--chalk none while chalk-talk is in the home folder says the command left the map out', t => {
+  const ctx = setup(t);
+  const home = path.join(ctx.root, 'chalk-home');
+  standInChalk(path.join(home, '.claude', 'skills', 'chalk-talk'));
+  saysLeftOut(ctx, run(ctx, [], { env: { HOME: home } }));
+});
+
+test('--chalk none while chalk-talk is in the project says the command left the map out', t => {
+  const ctx = setup(t);
+  standInChalk(path.join(ctx.root, '.claude', 'skills', 'chalk-talk'));
+  saysLeftOut(ctx, run(ctx));
+});
+
+function saysNotInstalled(ctx, r) {
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.ok(r.lines.includes('Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.'), r.out);
+  assert.deepEqual(readJson(ctx.dataFile).checks.map, { built: false });
+  assert.ok(fs.readFileSync(path.join(ctx.out, 'booking-flow.html'), 'utf8').includes('Map not built, because chalk-talk is not installed'));
+  finish(ctx);
+}
+
+test('--chalk none while chalk-talk is in neither place keeps the not-installed lines', t => {
+  const ctx = setup(t);
+  saysNotInstalled(ctx, run(ctx));
+});
+
+test('a rebuild where chalk-talk is missing drops the left-out mark an earlier build stored', t => {
+  const ctx = setup(t, d => { d.checks = { code: { blocks: 4 }, quotes: { quotes: 3 }, map: { built: false, leftOut: true } }; });
+  saysNotInstalled(ctx, run(ctx));
 });
 
 test('a --chalk that is not a chalk-talk folder is refused, before anything is written', t => {
