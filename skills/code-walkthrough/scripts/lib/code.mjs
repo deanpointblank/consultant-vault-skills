@@ -44,7 +44,8 @@ function firstDiff(want, got) {
   return 1;
 }
 
-const MISNAMED = 'git names this file differently; use the path as git names it';
+// Two spellings that look right land here: an accented name in another byte form, and a file of a nested repo or submodule.
+const MISNAMED = 'git names this file differently; use the path as git names it, copied from git ls-files. If the file is in a repo inside this one, such as a submodule, list that repo as its own repos entry';
 
 // misnamed(repo name, file): true when git does not name the file exactly so; such a file is never read.
 export function checkCode(data, { readFile = fs.readFileSync, misnamed = () => false } = {}) {

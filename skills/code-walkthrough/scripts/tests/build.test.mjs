@@ -340,7 +340,7 @@ test('bad input is a plain message, never a stack trace', t => {
 });
 
 // A cited path git does not name exactly fails its block, the way the look-up will not trust it (look.test.mjs, `inexact`).
-const MISNAMED = 'git names this file differently; use the path as git names it';
+const MISNAMED = 'git names this file differently; use the path as git names it, copied from git ls-files. If the file is in a repo inside this one, such as a submodule, list that repo as its own repos entry';
 function misnamed(t, cited, plant = () => {}) {
   const ctx = setup(t, (d, repo) => { plant(repo.path); d.stops[2].code[0].file = cited; });
   const r = run(ctx, ['--write']);
@@ -349,6 +349,7 @@ function misnamed(t, cited, plant = () => {}) {
   assert.doesNotMatch(r.out + r.err, /Command failed|\n\s+at /);
   assert.deepEqual(vaultFiles(ctx), []);
   finish(ctx);
+  return r;
 }
 const dockCopy = (repoPath, to) => { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(path.join(repoPath, 'api/Dock.java'), to); };
 
@@ -372,10 +373,26 @@ test('a symlink to a file, cited by the link name, fails', t => misnamed(t, 'lnk
   commitAll(repo, 'Link the dock file');
 }));
 test('a folder as a cited path fails', t => misnamed(t, 'api'));
-test('a file inside an embedded repo fails', t => misnamed(t, 'sub/file.java', repo => {
-  makeRepo(path.join(repo, 'sub'), { files: { 'file.java': fs.readFileSync(path.join(repo, 'api/Dock.java'), 'utf8') }, message: 'inner' });
-  commitAll(repo, 'Add the inner repo');
-}));
+test('a file inside an embedded repo fails, saying to list that repo on its own', t => {
+  const r = misnamed(t, 'sub/file.java', repo => {
+    makeRepo(path.join(repo, 'sub'), { files: { 'file.java': fs.readFileSync(path.join(repo, 'api/Dock.java'), 'utf8') }, message: 'inner' });
+    commitAll(repo, 'Add the inner repo');
+  });
+  assert.match(r.out, /If the file is in a repo inside this one, such as a submodule, list that repo as its own repos entry/);
+});
+
+// The same accented name typed in another byte form (decomposed) looks the same on screen but is not git's name.
+test('an accented name in another byte form fails, saying to copy the path from git ls-files', t => {
+  const name = 'api/café résumé.java';
+  const probe = path.join(tempRoot(t), 'café'.normalize('NFC'));
+  fs.writeFileSync(probe, 'x');
+  if (!fs.existsSync(path.join(path.dirname(probe), 'café'.normalize('NFD')))) return t.skip('this disk tells the two byte forms apart, so the file is simply not found');
+  const r = misnamed(t, name.normalize('NFD'), repo => {
+    dockCopy(repo, path.join(repo, name.normalize('NFC')));
+    commitAll(repo, 'Add an accented name');
+  });
+  assert.match(r.out, /use the path as git names it, copied from git ls-files/);
+});
 
 test('ignored cited files are listed as uncommitted', t => {
   const ctx = setup(t, (d, repo) => {
