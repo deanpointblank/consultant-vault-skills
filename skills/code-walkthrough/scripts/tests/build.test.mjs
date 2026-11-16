@@ -252,6 +252,43 @@ test('a data file reached through a link and .. is judged where it really is', t
   finish(ctx);
 });
 
+test('a link planted at an output name in the working folder is replaced, never written through', t => {
+  const ctx = setup(t);
+  fs.mkdirSync(ctx.out, { recursive: true });
+  const soft = path.join(ctx.root, 'soft-target.txt'), hard = path.join(ctx.root, 'hard-target.txt');
+  fs.writeFileSync(soft, 'keep me\n');
+  fs.writeFileSync(hard, 'keep me too\n');
+  fs.symlinkSync(soft, path.join(ctx.out, 'booking-flow.html'));
+  fs.symlinkSync(soft, path.join(ctx.out, 'booking-flow.walkthrough.json'));
+  fs.linkSync(hard, path.join(ctx.out, NOTE));
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.equal(fs.readFileSync(soft, 'utf8'), 'keep me\n');
+  assert.equal(fs.readFileSync(hard, 'utf8'), 'keep me too\n');
+  for (const n of [NOTE, 'booking-flow.html', 'booking-flow.walkthrough.json']) {
+    const st = fs.lstatSync(path.join(ctx.out, n));
+    assert.ok(st.isFile() && st.nlink === 1, n);
+    assert.deepEqual(fs.readFileSync(path.join(ctx.folder, n)), fs.readFileSync(path.join(ctx.out, n)), n);
+  }
+  assert.match(fs.readFileSync(path.join(ctx.folder, NOTE), 'utf8'), /^---\ntype: code-walkthrough\n/);
+  finish(ctx);
+});
+
+test('a data file with a second name on disk (a hard link) is refused and left alone', t => {
+  const ctx = setup(t);
+  fs.mkdirSync(ctx.folder, { recursive: true });
+  const twin = path.join(ctx.folder, 'booking-flow.walkthrough.json');
+  fs.linkSync(ctx.dataFile, twin);
+  const before = fs.readFileSync(ctx.dataFile);
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.match(r.err, /has another name on disk \(a hard link\)/);
+  assert.deepEqual(fs.readFileSync(twin), before);
+  assert.equal(fs.existsSync(ctx.out), false);
+  assert.deepEqual(vaultFiles(ctx), ['booking-flow.walkthrough.json']);
+  finish(ctx);
+});
+
 test('a missing folder reached through .. is refused', t => {
   const ctx = setup(t);
   const r = run(ctx, [], { out: `${ctx.root}/nope/../vault/x` });

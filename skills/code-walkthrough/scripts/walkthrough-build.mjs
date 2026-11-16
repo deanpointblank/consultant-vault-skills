@@ -104,6 +104,9 @@ function main() {
   let dataReal;
   try { dataReal = fs.realpathSync.native(args.dataFile); } catch { refuse(`${args.dataFile} cannot be read`); }
   args.dataFile = dataReal;
+  // No path check can see a second name (a hard link) for the data file, and rewriting it would change that file too.
+  const dataStat = fs.statSync(dataReal);
+  if (dataStat.isFile() && dataStat.nlink > 1) refuse(`${dataReal} has another name on disk (a hard link), and the build rewrites its data file; copy the data file to a new file and build from the copy`);
   const loaded = loadData(args.dataFile);
   if (loaded.error) refuse(loaded.error);
   const data = loaded.data;
@@ -186,11 +189,13 @@ function main() {
 
   const files = { page: assemblePage(pageModel(data), mapHtml), note: noteText(data, names) };
   fs.mkdirSync(out, { recursive: true });
-  fs.writeFileSync(path.join(out, names.page), files.page);
-  fs.writeFileSync(path.join(out, names.note), files.note);
+  // Each name is removed first, so a link planted at it is replaced, never written through.
+  const put = (name, content) => { const p = path.join(out, name); fs.rmSync(p, { force: true }); fs.writeFileSync(p, content, { flag: 'wx' }); };
+  put(names.page, files.page);
+  put(names.note, files.note);
   // The input may already be this very file: never copy it onto itself.
   const outData = path.join(out, names.data);
-  if (outData !== dataReal) fs.writeFileSync(outData, fs.readFileSync(args.dataFile));
+  if (outData !== dataReal) put(names.data, fs.readFileSync(args.dataFile));
 
   if (args.write) {
     const copies = [names.page, names.data, names.note];
