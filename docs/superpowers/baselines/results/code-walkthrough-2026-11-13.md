@@ -2564,3 +2564,20 @@ either round.
 - The sessions had the user's other plugins loaded (superpowers, chalk-talk, frames). The result holds for that setup only.
 - Two phrasings are not tested and might now fire the skill: "pick up KEY" (ticket-intake's phrase), which sits in a sentence that says to use the skill at the start, and a plain "add X to Y" with no planning word, since "plans to change or add to" can read as "intends to".
 - `MAXT=6` ends many reps before a reply, so only the first skill call is measured, not what the agent did after it.
+
+### Round 7 (one rep each of seven scenarios, on 5c1c3ce, 2026-11-16)
+
+Twelve commits since round 6 (`9c96d25`) changed some script output and some `SKILL.md` wording. This round reran one rep of each scenario they touch: S1, S4, S5, S6, S7, S8a, S8b. S2 and S3 were not rerun. All seven ended `success`; none void. Each rep's plugin copy matches `5c1c3ce`.
+
+- **Score: 29 of 29 scenario checks.** U2, U3 and U4: 21 of 21. U1: hits, not ruled.
+- **No fails and no not-scorable.** No check that passed in all three round-6 reps failed here. S4-2, which was 2 of 3 in round 6, passed. One rep each shows no rate.
+- **U1.** Three live-vault files changed: one during the run (11:10:21) and two after the last rep ended (11:11:47). The two later ones are another ticket's notes and the day's note. No tool input names the live vault, apart from the expected `--work-root`. Not judged.
+- **a. S5 not-recorded list:** yes. It holds both questions the build printed, with the build's numbers 1 and 2.
+- **b. S5 Map line:** the build printed "Map: left out by the command." The reply did not copy it as printed: it added "You ran the build with `--chalk none`, so the page has no map." It called no build line wrong.
+- **c. S1 and S4 cost messages:** no stray bracket note. Each asks one question ("Go ahead?").
+- **d. S1 and S5 replies:** no stray bracket note. S1 has no "Next journey" line, since the request was not split.
+- **e. Look-up:** S6 and S7 ran it with `--file`. S6 got `none`; S7 got one line ending "2 of 4 cited files changed since". Both are as `SKILL.md` describes. S8a and S8b did not run it (as in rounds 3, 5 and 6).
+- **f. Step 3 and "Built from commit":** S1 ran `git status --porcelain --ignored`. Its "Built from commit" line agrees with the data file's `uncommitted`. S5 did not run step 3 (a fix-the-build run); its line also agrees.
+- S5's reply list was correct here. In round 6 none of the three were. One rep only.
+- S1 passed on its second build. The first failed on a duplicate id in the map; the rep fixed it.
+- The harness's default worktree path no longer exists. The S1-9 and S5-2 rebuilds used the main checkout at `5c1c3ce`.
