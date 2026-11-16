@@ -65,6 +65,7 @@ export function chalkDir() {
 const isFile = f => { try { return fs.statSync(f).isFile(); } catch { return false; } };
 
 // Our own copy of chalk-talk's findChrome (scripts/check.mjs), so page tests run without chalk-talk.
+// Copied from chalk-talk, MIT licence: https://github.com/oztrkemree/chalk-talk (commit 4f88ead).
 export function findChrome() {
   if (process.env.CHROME) return process.env.CHROME;
   const env = process.env, cands = [];
@@ -88,6 +89,7 @@ export function findChrome() {
 // check.mjs gives each Chrome run about 30 s of real time before it stops waiting.
 const WATCHDOG_MS = 30_000;
 
+// Copied from chalk-talk's killTree (scripts/check.mjs), MIT licence: https://github.com/oztrkemree/chalk-talk (commit 4f88ead).
 function killTree(child) {
   if (child.exitCode !== null || child.signalCode !== null) return;
   if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
