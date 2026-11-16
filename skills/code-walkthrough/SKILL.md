@@ -14,7 +14,7 @@ Follow the obsidian-vault skill's conventions. A walkthrough follows one journey
 
 What was asked decides where to start:
 - To understand, explain or extend a feature or a path through code, in any of the description's phrases: A run, which starts with the cost question.
-- Planning a change to existing code: Planning: the offer, ahead of the planning skill's own steps.
+- Planning a change to a code repo: Planning: the offer, ahead of the planning skill's own steps.
 - A single "why" about one choice in the code (one value, one rule, one call): answer it in chat by the rule in Reasons, from the places it lists. No run, no file.
 
 ## Planning: the offer
