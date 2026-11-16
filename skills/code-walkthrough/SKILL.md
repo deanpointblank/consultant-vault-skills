@@ -30,10 +30,10 @@ A walkthrough the user asks for outright is a run all the same.
 Otherwise look first, whatever the size of the change, once per repo the change touches, with the vault and folder found as in step 1 of A run:
 
 ```
-node "<this skill's folder>/scripts/walkthrough-look.mjs" --vault <vault> --folder <folders.walkthroughs> --repo <repo folder name> --repo-path <repo top folder>
+node "<this skill's folder>/scripts/walkthrough-look.mjs" --vault <vault> --folder <folders.walkthroughs> --repo <repo folder name> --repo-path <repo top folder> [--file <path from the repo top>]...
 ```
 
-`--repo` is the repo's folder name, as in `[[name]]` on its notes. `--repo-path` is its top folder (`git rev-parse --show-toplevel`). It prints `none`, or one line per walkthrough of that repo, newest first. For each line, open the data file beside the note (its page's name with `.html` swapped for `.walkthrough.json`): the walkthrough covers the change when its `cited_files` include files the change will touch.
+`--repo` is the repo's folder name, as in `[[name]]` on its notes. `--repo-path` is its top folder (`git rev-parse --show-toplevel`). It prints `none`, or one line per walkthrough of that repo, newest first. Give one `--file` per file the change will touch, when you know them: it then prints only the walkthroughs that cite one of them. Without `--file`, for each line, open the data file beside the note (its page's name with `.html` swapped for `.walkthrough.json`): the walkthrough covers the change when its `cited_files` include files the change will touch.
 
 - **One covers it.** Say so in one line: the wikilink, its commit, its date, and how its look line ends. Read the note's outline and the stops that matter in the data file. Say which stops and extend points the change touches ("stop 4", "`src/billing/Invoice.java:40-58`"), and cite them in the plan.
 - **It covers it, but its line ends otherwise** (`N of M cited files changed since`, `its commit is no longer in the repo`, `its commit was not recorded`, `its cited files could not be checked`): do all of the above, then say what the line said and offer a rebuild with the time: "Rebuild it first? About <2 × its stops> minutes." Yes: A rebuild (end of A run); the yes answers the cost question. No: plan with it as it is. A rebuild is never offered as a new walkthrough.
