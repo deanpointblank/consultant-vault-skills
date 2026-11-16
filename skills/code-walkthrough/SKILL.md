@@ -53,7 +53,7 @@ The time is about 2 minutes a stop, from a rough count of the stops. Never start
 
    ```
    Walkthrough of <journey>: from <start> to <end result>.
-   <repo> at commit <abc1234>.   (one line per repo)
+   <repo> at commit <abc1234>.
    About <N> stops, about <2 × N> minutes. Map: <yes, drawn with chalk-talk | no, chalk-talk is not installed>.
    Uncommitted changes in `<path from the repo root>`: the walkthrough covers it as it is on disk now.
    It goes to the vault, not `<the place asked for>`: the page holds code and local paths.
@@ -61,7 +61,7 @@ The time is about 2 minutes a stop, from a rough count of the stops. Never start
    Go ahead?
    ```
 
-   Nothing is written before the yes: no working folder, no data file.
+   Give the commit line once per repo. Nothing is written before the yes: no working folder, no data file.
 5. **Trace, following the data.** For each stop: the code blocks exactly as on disk, its key lines, what it does, data in and out, and short notes on syntax a reader may not know. Then where the code would be extended: for each place a likely change would go, the file and lines, what to add there, and its stop.
 6. **Find the reasons**, by Reasons.
 7. **Write the data file**, with its stops and its extend points. Read `references/data-file.md` first. Find the working folder once, in the shell: `echo "${TMPDIR:-/tmp}/code-walkthrough/<slug>"` (`<slug>`: the short name in lower case, words joined by `-`). Use the printed path as it is for the data file (`<working folder>/<slug>.walkthrough.json`), for `--out`, and for any helper script you write; outside the vault, a run makes nothing anywhere else. The build refuses a working folder under a repo, the vault or a `work_roots` folder.
@@ -120,14 +120,14 @@ Short, and never a retelling of the walkthrough. Leave out the lines that do not
 <the build's Reasons: line, as printed>
 <the build's Map: line or lines, as printed>
 Built from commit <abc1234>, with `<uncommitted path>` as it is on disk.
-Next journey: <the next one step 3 listed>. Want it? About <2 × its stops> minutes.   (only when step 3 split the request; otherwise offer no other walkthrough)
+Next journey: <the next one step 3 listed>. Want it? About <2 × its stops> minutes.
 Not recorded, questions for the team:
 <the build's numbered questions, as printed>
 Want any logged as open questions? Say the numbers.
-`Meta/Config.md` has no `walkthroughs` key under `folders`. Add `walkthroughs: Walkthroughs`?   (always the last line when step 1 found no key)
+`Meta/Config.md` has no `walkthroughs` key under `folders`. Add `walkthroughs: Walkthroughs`?
 ```
 
-The wikilink is the note's `WROTE` file name without `.md`. `<R>` and `<Q>` are the note's `reasons_recorded` and `reasons_not_recorded`, and the list holds every not-recorded question, in stop order. A question becomes an open-question note, through the open-questions skill, only when the user gives its number. The config changes only on a yes. Apart from a ticket's work row and what work-chart writes with it, the build's three files are the run's only vault writes: no daily-note line, no other note.
+The `Next journey:` line goes in only when step 3 split the request; otherwise offer no other walkthrough. The `Meta/Config.md` line is always the last line when step 1 found no key. The wikilink is the note's `WROTE` file name without `.md`. `<R>` and `<Q>` are the note's `reasons_recorded` and `reasons_not_recorded`, and the list holds every not-recorded question, in stop order. A question becomes an open-question note, through the open-questions skill, only when the user gives its number. The config changes only on a yes. Apart from a ticket's work row and what work-chart writes with it, the build's three files are the run's only vault writes: no daily-note line, no other note.
 
 ## Work chart
 
