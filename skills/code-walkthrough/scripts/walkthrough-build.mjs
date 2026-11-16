@@ -8,7 +8,7 @@ import { checkCode } from './lib/code.mjs';
 import { checkQuotes } from './lib/quotes.mjs';
 import { chalkTalkAt, buildMap } from './lib/map.mjs';
 import { pageModel, assemblePage } from './lib/page.mjs';
-import { replyLines } from './lib/words.mjs';
+import { replyLines, questionLines } from './lib/words.mjs';
 import { slugOf, noteBaseOf, chooseNames } from './lib/names.mjs';
 import { noteText } from './lib/note.mjs';
 
@@ -182,7 +182,7 @@ function main() {
   if (failures.length) { console.log(failures.map(failLine).join('\n')); return 1; }
 
   const names = chooseNames({ folderPath, slug, noteBase: noteBaseOf(data.short_name), date: args.date, sameDay: args.sameDay });
-  console.log(replyLines(data).join('\n'));
+  console.log([...replyLines(data), ...questionLines(data)].join('\n'));
   if (names.clash) { console.log(`SAME DAY ${names.clash.join(', ')}`); return 3; }
   if (names.earlier) data.earlier = names.earlier; else delete data.earlier;
   writeData();

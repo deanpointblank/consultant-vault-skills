@@ -95,7 +95,7 @@ node "<this skill's folder>/scripts/walkthrough-build.mjs" "<working folder>/<sl
 ```
 
 Nothing reaches the vault unless every check passes, so build with `--write` from the first round. Exit codes:
-- **0**: every check passed. It printed the reply lines (`Code:`, `Reasons:`, `Map:`, and a second `Map:` line when Chrome is missing), then one `WROTE <path>` per file.
+- **0**: every check passed. It printed the reply lines (`Code:`, `Reasons:`, `Map:`, a second `Map:` line when Chrome is missing, and the numbered not-recorded questions), then one `WROTE <path>` per file.
 - **1**: a check or a shape rule failed. Each `FAIL <where>: <why>` line says where (a stop, a reason, the map, the walkthrough) and what is wrong. Nothing reached the vault; after a check failure, the data file holds the build's own fields. Shape failures print alone, before any other check: fix them all, and count that as a round.
 - **2**: the message says what: a bad argument, a refused place, or a data file the build cannot use (such as one with no `client`). Fix that; it is not a check round.
 - **3**: `SAME DAY <names>`: this journey was already built today. Ask "Replace today's walkthrough, or keep both?" and rerun with `--same-day replace` or `--same-day keep`.
@@ -122,8 +122,7 @@ Short, and never a retelling of the walkthrough. Leave out the lines that do not
 Built from commit <abc1234>, with `<uncommitted path>` as it is on disk.
 Next journey: <the next one step 3 listed>. Want it? About <2 × its stops> minutes.   (only when step 3 split the request; otherwise offer no other walkthrough)
 Not recorded, questions for the team:
-1. <question>
-2. <question>
+<the build's numbered questions, as printed>
 Want any logged as open questions? Say the numbers.
 `Meta/Config.md` has no `walkthroughs` key under `folders`. Add `walkthroughs: Walkthroughs`?   (always the last line when step 1 found no key)
 ```

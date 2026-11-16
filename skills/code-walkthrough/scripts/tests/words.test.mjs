@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { checkQuotes } from '../lib/quotes.mjs';
 import { tempRoot, bookingRepo, sampleData } from './helpers.mjs';
-import { reasonCounts, builtLine, checksShort, reasonsLine, replyLines, stopBadge, outlineTail, whyLabel, chipLabel, chipDetail } from '../lib/words.mjs';
+import { reasonCounts, builtLine, checksShort, reasonsLine, replyLines, questionLines, stopBadge, outlineTail, whyLabel, chipLabel, chipDetail } from '../lib/words.mjs';
 
 const mk = (over = {}) => ({
   built: '2026-11-11',
@@ -63,6 +63,16 @@ test('a map not built, with nothing saying it was left out, keeps the not-instal
   const old = mk({ checks: { ...mk().checks, map: { built: false } } });
   assert.deepEqual(replyLines(old).slice(2), ['Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.']);
   assert.equal(checksShort(old), 'Code matches the files · 22 quotes found · Map not built, because chalk-talk is not installed');
+});
+
+test('not-recorded questions are numbered across the walkthrough, in stop order, one per line', () => {
+  const gap = text => ({ text, source: { kind: 'not-recorded' } });
+  const rec = { text: 'x', quote: 'x', source: { kind: 'commit', ref: { hash: 'abcdef1' } } };
+  const data = { stops: [{ reasons: [rec, gap('Why does the form retry twice?')] }, { reasons: [rec] }, { reasons: [gap('Why does the API send it on at once?'), gap('Why is the limit\n500?')] }] };
+  assert.deepEqual(questionLines(data), ['1. Why does the form retry twice?', '2. Why does the API send it on at once?', '3. Why is the limit 500?']);
+  assert.equal(questionLines(data).length, reasonCounts(data).notRecorded);
+  assert.deepEqual(questionLines({ stops: [{ reasons: [rec] }] }), []);
+  assert.deepEqual(questionLines({}), []);
 });
 
 test('header line', () => {

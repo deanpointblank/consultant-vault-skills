@@ -83,6 +83,11 @@ export function replyLines(data) {
   return lines;
 }
 
+// The reply's not-recorded questions, ready to copy: numbered across the walkthrough, in stop order, one per line.
+export function questionLines(data) {
+  return all(data).filter(isGap).map((r, i) => `${i + 1}. ${String(r.text).replace(/\s+/g, ' ').trim()}`);
+}
+
 const gaps = stop => (stop.reasons || []).filter(isGap).length;
 
 export function stopBadge(stop) {

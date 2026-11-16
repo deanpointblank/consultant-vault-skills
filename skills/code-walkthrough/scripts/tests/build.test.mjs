@@ -68,6 +68,28 @@ test('without --write nothing reaches the vault', t => {
   finish(ctx);
 });
 
+test('the not-recorded questions print numbered, in stop order, right after the reply lines', t => {
+  const ctx = setup(t, d => { d.stops[2].reasons.push({ text: 'Why does the API send it on at once?', source: { kind: 'not-recorded' } }); });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 0, r.out + r.err);
+  const map = r.lines.findLastIndex(l => l.startsWith('Map: '));
+  assert.deepEqual(r.lines.slice(map + 1, map + 3), ['1. Why does the form retry twice?', '2. Why does the API send it on at once?'], r.out);
+  assert.ok(r.lines[map + 3].startsWith('WROTE '), r.out);
+  finish(ctx);
+});
+
+test('with every reason recorded, the build prints no question lines', t => {
+  const ctx = setup(t, (d, repo) => {
+    const quote = 'Every booking goes through the API so the yard service hears about it.';
+    d.stops[0].reasons = [{ text: quote, quote, source: { kind: 'commit', ref: { hash: repo.head } } }];
+  });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.ok(r.lines[r.lines.findLastIndex(l => l.startsWith('Map: ')) + 1].startsWith('WROTE '), r.out);
+  assert.ok(!r.lines.some(l => /^\d+\. /.test(l)), r.out);
+  finish(ctx);
+});
+
 test('the data file gets what the build learned', t => {
   const ctx = setup(t);
   assert.equal(run(ctx).status, 0);
