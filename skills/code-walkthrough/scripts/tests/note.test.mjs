@@ -64,7 +64,7 @@ test('body, outcome 1', t => {
     '',
     `![[booking-flow.html|height: ${EMBED_HEIGHT}px]]`,
     '',
-    'Not showing, or too small? Open [[booking-flow.html]], or use the "open in browser" button on the page above.',
+    'Not showing, or too small? Open [[booking-flow.html]], or use the "open in external browser" button on the page above.',
     '',
   ]);
 });
@@ -83,7 +83,7 @@ test('body, outcome 2', t => {
   const button = noteText(data, NAMES, { outcome: 2, openLink: 'button' }).split('\n');
   assert.equal(button[i + 2], 'Use the "open in external browser" button on the page below to read this walkthrough.');
   assert.ok(button.includes(`![[booking-flow.html|height: ${EMBED_HEIGHT}px]]`));
-  const fallback = 'Not showing, or too small? Open [[booking-flow.html]], or use the "open in browser" button on the page above.';
+  const fallback = 'Not showing, or too small? Open [[booking-flow.html]], or use the "open in external browser" button on the page above.';
   assert.ok(link.includes(fallback) && button.includes(fallback));
   for (const lines of [link, button]) assert.ok(lines.indexOf(fallback) > lines.indexOf(`![[booking-flow.html|height: ${EMBED_HEIGHT}px]]`));
 });
