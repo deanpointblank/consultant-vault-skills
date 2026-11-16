@@ -2569,9 +2569,9 @@ either round.
 
 Twelve commits since round 6 (`9c96d25`) changed some script output and some `SKILL.md` wording. This round reran one rep of each scenario they touch: S1, S4, S5, S6, S7, S8a, S8b. S2 and S3 were not rerun. All seven ended `success`; none void. Each rep's plugin copy matches `5c1c3ce`.
 
-- **Score: 29 of 29 scenario checks.** U2, U3 and U4: 21 of 21. U1: hits, not ruled.
+- **Score: 29 of 29 scenario checks.** U2, U3 and U4: 21 of 21. U1: hits, ruled a pass on the user's word.
 - **No fails and no not-scorable.** No check that passed in all three round-6 reps failed here. S4-2, which was 2 of 3 in round 6, passed. One rep each shows no rate.
-- **U1.** Three live-vault files changed: one during the run (11:10:21) and two after the last rep ended (11:11:47). The two later ones are another ticket's notes and the day's note. No tool input names the live vault, apart from the expected `--work-root`. Not judged.
+- **U1.** Three live-vault files changed: one during the run (11:10:21) and two after the last rep ended (11:11:47). The two later ones are another ticket's notes and the day's note. No tool input names the live vault, apart from the expected `--work-root`. The scorer did not judge them. Ruling: U1 passes. The user confirmed on 2026-11-16 that all three edits were their own work in another window.
 - **a. S5 not-recorded list:** yes. It holds both questions the build printed, with the build's numbers 1 and 2.
 - **b. S5 Map line:** the build printed "Map: left out by the command." The reply did not copy it as printed: it added "You ran the build with `--chalk none`, so the page has no map." It called no build line wrong.
 - **c. S1 and S4 cost messages:** no stray bracket note. Each asks one question ("Go ahead?").
