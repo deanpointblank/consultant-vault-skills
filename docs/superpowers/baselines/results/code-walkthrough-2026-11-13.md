@@ -2581,3 +2581,38 @@ Twelve commits since round 6 (`9c96d25`) changed some script output and some `SK
 - S5's reply list was correct here. In round 6 none of the three were. One rep only.
 - S1 passed on its second build. The first failed on a duplicate id in the map; the rep fixed it.
 - The harness's default worktree path no longer exists. The S1-9 and S5-2 rebuilds used the main checkout at `5c1c3ce`.
+
+### First live run (one real walkthrough, installed plugin at bb51de0, 2026-11-16)
+
+This was the first walkthrough built for real work, not from a fixture. It ran from the installed plugin. None of the findings below has been acted on.
+
+#### Part 1: what was built
+
+- The user asked for a walkthrough of the plan for one client ticket.
+- 9 stops. 45 reasons recorded, 10 not recorded.
+- Map: 6 of 10 arrows traced to a line, 4 marked as guesses, none broken.
+- It passed on build round 2 of 3.
+- The code was read from a git worktree of the client's repo. Other sessions were building in that worktree during the run.
+
+#### Part 2: what the run was watched for
+
+- The cost message asked exactly one question, "Go ahead?".
+- The reply copied the build's `Code:`, `Reasons:` and `Map:` lines and the ten numbered questions exactly as printed.
+- Time: 30 minutes from the yes to the last file written, for 9 stops. That is 3.4 minutes a stop, against the spec's 2.
+- The failed build round cost about 5 of those minutes.
+- The trace agent (Opus) ran about 24 minutes, then about 4 more for the fix. It used about 371,000 tokens.
+- By eye, in Obsidian, the user confirmed three things on 2026-11-16: the theme switch, the 96px hidden-map strip, and the look against the mockup.
+
+#### Part 3: findings for a later wording or design pass
+
+1. The cost template has no line for a journey whose code is only partly on disk. The run added one line by hand. It said the run covered only the built part of the plan, and that later plan tasks would show as places to extend.
+2. Round 1 failed because another session rewrote a cited file five seconds before the build. The fix was to copy that stop again from disk. The skill's rule "covers it as it is on disk now" held, but a live worktree can cost a round.
+3. The design doc and the plan lived in a different repo from the code.
+   - The data file listed that repo as a second entry in `repos`, with no stop code. The build accepted it. The note links that repo too.
+   - The `Code:` line names both repos and ends "plus uncommitted changes in 1 file". That reads as if the uncommitted file belongs to the last-named repo. It belonged to the code repo.
+   - The docs were untracked in their repo, so that repo's commit on the page pins nothing.
+4. The code repo was a git worktree whose folder name differs from the repo's name. Setting `repos[].name` to the repo name by hand worked, and the note linked the right repo.
+5. The walkthrough aged fast. About four hours later the look-up line ended "6 of 16 cited files changed since". A rebuild was offered and not asked for.
+6. The work-chart Stop hook fired once mid-run. Running the stamp script with no arguments cleared it, as `SKILL.md` says.
+
+This is one run on one journey, so it shows what happened once, not a rate.
