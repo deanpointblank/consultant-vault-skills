@@ -12,6 +12,8 @@
 
   const KEY_MAP = 'code-walkthrough:map';
   const KEY_THEME = 'code-walkthrough:theme';
+  const KEY_SPLIT = 'code-walkthrough:split';
+  const SPLIT = { min: 20, max: 80, start: 46 };   // the map's share of the page, in percent
   const SHORT = 800;   // px high: in a shorter frame the map starts as its strip
   const WORDS = {
     prev: '← Prev', next: 'Next →', hideMap: 'Hide map', showMap: 'Show map', toDark: 'Dark', toLight: 'Light',
@@ -292,6 +294,22 @@
     const mapState = state.mapState === 'full' ? 'strip' : 'full';
     store.set(KEY_MAP, mapState);
     setMapState(mapState);
+  });
+
+  function setSplit(share, { save = true } = {}) {
+    const n = Math.round(Math.min(SPLIT.max, Math.max(SPLIT.min, share)));
+    $('read').style.setProperty('--map-h', n + '%');
+    $('split').setAttribute('aria-valuenow', String(n));
+    if (save) store.set(KEY_SPLIT, String(n));
+  }
+  // Up and Page Up shrink the map; Down and Page Down grow it. Left and Right stay with the stop.
+  $('split').addEventListener('keydown', ev => {
+    if (ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
+    const now = Number($('split').getAttribute('aria-valuenow'));
+    const to = { ArrowUp: now - 5, ArrowDown: now + 5, PageUp: now - 15, PageDown: now + 15, Home: SPLIT.min, End: SPLIT.max, Enter: SPLIT.start }[ev.key];
+    if (to == null) return;
+    ev.preventDefault();
+    setSplit(to);
   });
 
   const setNarrow = () => { html.dataset.narrow = NARROW.matches ? '1' : '0'; };

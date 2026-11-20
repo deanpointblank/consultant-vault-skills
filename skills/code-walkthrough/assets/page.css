@@ -71,9 +71,13 @@ button:focus-visible, [tabindex]:focus-visible, summary:focus-visible, a:focus-v
 main { flex: 1; min-height: 0; position: relative; }
 
 /* ---------- Read: the map, its bar, then the stop ---------- */
-#read { height: 100%; display: grid; grid-template-rows: minmax(180px, 46%) auto minmax(0, 1fr); background: var(--surface); }
-html[data-map="strip"] #read { grid-template-rows: var(--strip) auto minmax(0, 1fr); }
-html[data-map="none"] #read { grid-template-rows: auto minmax(0, 1fr); }
+#read { height: 100%; display: grid; grid-template-rows: minmax(180px, var(--map-h, 46%)) 6px auto minmax(0, 1fr); background: var(--surface); }
+html[data-map="strip"] #read { grid-template-rows: var(--strip) 0 auto minmax(0, 1fr); }
+html[data-map="none"] #read { grid-template-rows: 0 auto minmax(0, 1fr); }
+#split { position: relative; cursor: row-resize; touch-action: none; background: var(--surface); }
+#split::after { content: ""; position: absolute; left: 0; right: 0; top: 2px; height: 2px; background: var(--border-strong); }
+#split:hover::after, #split:focus-visible::after { background: var(--accent); }
+html[data-map="strip"] #split, html[data-map="none"] #split { visibility: hidden; }
 /* Out of view, the map keeps its size: chalk-talk measures its text when it loads. */
 html:not([data-view="read"]) #read { position: fixed; top: 0; left: -200vw; width: 100vw; height: 100vh; visibility: hidden; }
 #map-wrap { min-height: 0; background: var(--surface); }

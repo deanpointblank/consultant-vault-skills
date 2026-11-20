@@ -513,6 +513,77 @@ test('narrow and short frames', needsMap, async t => {
   assert.deepEqual(big.shown, ['full', 'Hide map', 'full']);
 });
 
+test('the divider sits between the map and the bar, with its ARIA values', needsMap, async t => {
+  const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), (r, k) => {
+    const s = k.$('#split');
+    r.order = [s.previousElementSibling.id, s.nextElementSibling.id];
+    r.attrs = ['role', 'aria-orientation', 'aria-label', 'aria-valuemin', 'aria-valuemax', 'aria-valuenow', 'tabindex'].map(a => s.getAttribute(a));
+    r.height = s.getBoundingClientRect().height;
+  });
+  assert.deepEqual(r.order, ['map-wrap', 'bar']);
+  assert.deepEqual(r.attrs, ['separator', 'horizontal', 'Map size', '20', '80', '46', '0']);
+  assert.equal(r.height, 6);
+});
+
+test('the divider moves with keys, within 20 and 80', needsMap, async t => {
+  const keys = (r, k) => {
+    const s = k.$('#split');
+    s.focus();
+    r.seen = [];
+    for (const key of ['ArrowDown', 'PageDown', 'End', 'ArrowDown', 'Home', 'ArrowUp', 'PageUp']) {
+      k.key(s, key);
+      r.seen.push(s.getAttribute('aria-valuenow'));
+      if (key === 'End') {
+        r.frame = k.$('#map-frame').getBoundingClientRect().height;
+        r.read = k.$('#read').getBoundingClientRect().height;
+      }
+    }
+    k.key(s, 'Enter');
+    r.seen.push(s.getAttribute('aria-valuenow'));
+    r.stored = localStorage.getItem('code-walkthrough:split');
+    r.narrow = k.html.dataset.narrow;
+    k.key(s, 'End');
+    r.end = s.getAttribute('aria-valuenow');
+    r.before = k.html.dataset.stop;
+    k.key(s, 'ArrowRight');
+    r.after = k.html.dataset.stop;
+  };
+  const page = assemblePage(pageModel(sample()), sampleMap());
+  const r = await run(t, page, keys);
+  assert.deepEqual(r.seen, ['51', '66', '80', '80', '20', '20', '20', '46']);
+  assert.ok(Math.abs(r.frame - r.read * 0.8) <= 2, `frame ${r.frame}px of ${r.read}px`);
+  assert.equal(r.stored, '46');
+  assert.deepEqual([r.before, r.after], ['1', '2']);
+  const tall = await run(t, page, keys, { size: [800, 1000] });
+  assert.equal(tall.narrow, '1');
+  assert.equal(tall.end, '80');
+});
+
+test('the divider hides with the strip and without a map', needsMap, async t => {
+  const probe = (r, k) => {
+    const s = k.$('#split');
+    const state = () => {
+      document.activeElement.blur();
+      s.focus();
+      return [getComputedStyle(s).visibility, s.getBoundingClientRect().height, document.activeElement === s];
+    };
+    r.full = state();
+    k.$('#hide-map').click();
+    r.strip = state();
+    k.$('#hide-map').click();
+    r.again = state();
+  };
+  const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), probe);
+  assert.deepEqual(r.strip, ['hidden', 0, false]);
+  assert.deepEqual(r.again, ['visible', 6, true]);
+  const none = await run(t, assemblePage(pageModel(sample()), null), (r, k) => {
+    const s = k.$('#split');
+    s.focus();
+    r.none = [getComputedStyle(s).visibility, s.getBoundingClientRect().height, document.activeElement === s];
+  });
+  assert.deepEqual(none.none, ['hidden', 0, false]);
+});
+
 test('storage that throws', needsMap, async t => {
   const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), (r, k) => {
     r.throws = (() => { try { return !window.localStorage; } catch (e) { return e.name; } })();
