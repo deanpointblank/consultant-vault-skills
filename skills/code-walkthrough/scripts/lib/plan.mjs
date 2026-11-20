@@ -1,3 +1,5 @@
+import { plainRelative } from './git.mjs';
+
 export const isPlan = data => data?.mode === 'plan';
 
 export const STATUSES = ['new', 'changed', 'unchanged', 'elsewhere'];
@@ -25,6 +27,7 @@ export function sketchErrors(data) {
       const at = `stop ${id} code block ${i + 1}`;
       // fieldProblem's words, since a sketch skips fieldProblem.
       if (typeof b.file !== 'string' || !b.file) errors.push(`${at} has no file name`);
+      else if (!plainRelative(b.file) || b.file.startsWith('./')) errors.push(`${at} is a sketch, so its file must be a path from the repo top`);
       if (typeof b.new_file !== 'boolean') errors.push(`${at} is a sketch, so it needs new_file as true or false`);
       if (typeof b.text !== 'string') errors.push(`${at} has no text`);
       else {

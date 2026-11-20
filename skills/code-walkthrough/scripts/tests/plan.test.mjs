@@ -33,6 +33,9 @@ for (const [title, edit, line] of [
   ['a sketch has no lines', (s, k) => { k.lines = [1, 2]; }, 'stop s3 code block 1 is a sketch, so it cannot have lines, key_lines or left_out'],
   ['after with new_file', (s, k) => { k.new_file = true; }, 'stop s3 code block 1 has after and new_file together; use one'],
   ['a sketch needs a file name', (s, k) => { k.file = ''; }, 'stop s3 code block 1 has no file name'],
+  ['a sketch file above the repo', (s, k) => { k.file = '../x.js'; }, 'stop s3 code block 1 is a sketch, so its file must be a path from the repo top'],
+  ['a sketch file as an absolute path', (s, k) => { k.file = '/x.js'; }, 'stop s3 code block 1 is a sketch, so its file must be a path from the repo top'],
+  ['a sketch file starting ./', (s, k) => { k.file = './x.js'; }, 'stop s3 code block 1 is a sketch, so its file must be a path from the repo top'],
   ['a sketch needs text', (s, k) => { delete k.text; }, 'stop s3 code block 1 has no text'],
 ]) {
   test(title, t => {

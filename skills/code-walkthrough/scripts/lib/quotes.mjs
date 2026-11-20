@@ -163,6 +163,18 @@ const savedText = (data, kind, ref) => {
   return typeof hit?.text === 'string' ? hit.text : undefined;
 };
 
+// Real path of a file, or of its nearest folder that exists with the rest put back on.
+function realOf(p) {
+  try { return fs.realpathSync.native(p); }
+  catch { const up = path.dirname(p); return up === p ? p : path.join(realOf(up), path.basename(p)); }
+}
+// The system's real paths keep the disk's own letter case, so a plain compare is enough.
+const inVault = (ref, vault) => {
+  if (!vault) return false;
+  const file = realOf(ref), root = realOf(path.resolve(vault));
+  return file === root || file.startsWith(root + path.sep);
+};
+
 // A plan entry's source: chat and plan-file here, today's kinds as reasons read them.
 // A plan file that exists is read once per build into `live`; `copy` is its saved copy from an earlier build.
 function fromText(data, source, live, opts) {
@@ -175,6 +187,7 @@ function fromText(data, source, live, opts) {
   if (kind !== 'plan-file') return sourceText(data, source, opts);
   needString(ref, 'file path');
   if (!path.isAbsolute(ref)) throw new Error(`${ref} must be an absolute path`);
+  if (inVault(ref, opts.vault)) throw new Error(`${ref} is in the vault; cite it as vault-note`);
   const copy = savedText(data, 'plan-file', ref);
   if (!fs.existsSync(ref)) {
     if (copy === undefined) throw new Error(`cannot read ${ref}: no such file, and there is no saved copy`);

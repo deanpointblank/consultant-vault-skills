@@ -177,6 +177,14 @@ test('the plan note links an earlier plan and a walkthrough', () => {
   assert.deepEqual(lines.slice(i + 1, i + 7), ['', 'Earlier plan of this journey: [[Plan - invoice attachments 2026-11-19]].', '', 'Walkthrough of the same code: [[Walkthrough - saving an invoice]].', '', '## Stops']);
 });
 
+test('the plan note says another ticket, with its ticket when given', () => {
+  const elsewhere = ticket => planNoteText(plan(d => {
+    Object.assign(d.stops[0], { status: 'elsewhere', from: { kind: 'proposal' } }, ticket ? { ticket } : {});
+  }), PLAN_NAMES);
+  assert.ok(elsewhere('PROJ-123').includes('\n1. **The API takes the invoice** · another ticket · PROJ-123 · proposal · Refuses an invoice with too many lines, then hands it on.\n'));
+  assert.ok(elsewhere().includes('\n1. **The API takes the invoice** · another ticket · proposal · Refuses an invoice with too many lines, then hands it on.\n'));
+});
+
 test('the plan note names origins other than proposal', () => {
   const text = planNoteText(plan(d => {
     d.stops[1].from.kind = 'review';

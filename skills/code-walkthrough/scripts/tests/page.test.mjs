@@ -942,6 +942,23 @@ test('map and stop stay together', needsMap, async t => {
 
 // ---- a plan page with its map ----
 
+// A tap on the change chip, where a reader's finger lands; true when the point is on the chip.
+// It runs in the page, so a test hands it over with { head: TAP_CHIP }.
+async function tapChip(win, doc, k) {
+  const c = doc.getElementById('hud-diff').getBoundingClientRect();
+  const x = Math.round(c.left + c.width / 2), y = Math.round(c.top + c.height / 2);
+  const at = doc.elementFromPoint(x, y);
+  for (const type of ['pointerdown', 'pointerup']) {
+    at.dispatchEvent(new win.PointerEvent(type, {
+      bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y,
+      pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: type === 'pointerdown' ? 1 : 0,
+    }));
+  }
+  await k.wait(50);
+  return !!(at && at.closest('#hud-diff'));
+}
+const TAP_CHIP = `<script>${tapChip}</script>`;
+
 test('the Today / Plan button flips the map', needsMap, async t => {
   assert.equal(chalkTalkAt(chalkDir()).commit, '4f88ead');
   const root = tempRoot(t);
@@ -962,27 +979,31 @@ test('the Today / Plan button flips the map', needsMap, async t => {
       await k.wait(50);
       r.twice = pressed();
     }
-    // a tap on the change chip, where a reader's finger lands
-    const c = doc.getElementById('hud-diff').getBoundingClientRect();
-    const x = Math.round(c.left + c.width / 2), y = Math.round(c.top + c.height / 2);
-    const at = doc.elementFromPoint(x, y);
-    r.onChip = !!(at && at.closest('#hud-diff'));
-    for (const type of ['pointerdown', 'pointerup']) {
-      at.dispatchEvent(new win.PointerEvent(type, {
-        bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y,
-        pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: type === 'pointerdown' ? 1 : 0,
-      }));
-    }
-    await k.wait(50);
+    r.onChip = await tapChip(win, doc, k);
     r.tapped = pressed();
     r.stop = [k.html.dataset.stop, doc.getElementById('n').textContent];
-  });
+  }, { head: TAP_CHIP });
   assert.deepEqual(r.button, [true, 'Today / Plan', 'hide-map']);
   assert.deepEqual(r.once, ['true', 'true']);
   assert.deepEqual(r.twice, ['false', 'false']);
   assert.equal(r.onChip, true);
   assert.deepEqual(r.tapped, ['true', 'true']);
   assert.deepEqual(r.stop, ['1', '01']);
+});
+
+test('a walkthrough page stops a tap on the change chip', needsMap, async t => {
+  const root = tempRoot(t);
+  const repo = ledgerRepo(root, { ahead: true });
+  const built = buildMap(samplePlan(repo), { chalk: chalkDir(), out: path.join(root, 'out'), slug: 'w', bases: { 'ledger-api': resolveBase(repo.path, 'origin/main') } });
+  assert.deepEqual(built.failures, []);
+  // A map with change marks under a walkthrough page, which no walkthrough documents.
+  const r = await run(t, assemblePage(pageModel(sample()), built.html), async (r, k) => {
+    const { win, doc } = await k.map();
+    r.onChip = await tapChip(win, doc, k);
+    r.pressed = doc.getElementById('diff').getAttribute('aria-pressed');
+  }, { head: TAP_CHIP });
+  assert.equal(r.onChip, true);
+  assert.equal(r.pressed, 'false');
 });
 
 test('no Today / Plan button when the map has no diff control', needsMap, async t => {

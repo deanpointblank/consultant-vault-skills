@@ -773,6 +773,19 @@ test('a plan file that is gone', t => {
   assert.deepEqual(readJson(ctx.dataFile).checks.quotes.savedOf['plan-file'], [file]);
 });
 
+test('a plan file in the vault is refused', t => {
+  let file;
+  const ctx = planSetup(t, (d, repo) => {
+    file = path.join(path.dirname(repo.path), 'vault', 'plan.md');
+    fs.writeFileSync(file, 'Attachments are saved in their own table.\n');
+    d.stops[2].from.source = { kind: 'plan-file', ref: file };
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), [`FAIL s3 from (plan-file): ${file} is in the vault; cite it as vault-note`]);
+  assert.deepEqual(planFileCopies(ctx), []);
+});
+
 test('one edit: a sketch with an empty file name', t => {
   const ctx = planSetup(t, d => {
     const k = d.stops[2].code[0];

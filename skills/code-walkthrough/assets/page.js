@@ -420,7 +420,7 @@
   // The map's own keys, taps and swipes would move it without the stop, so its input is
   // stopped before chalk-talk sees it. ← and → move both; a tap on a block with code still
   // opens chalk-talk's code panel, which closes by its button or a second tap on the block.
-  // A tap on the change chip still flips before and after.
+  // On a plan page, a tap on the change chip still flips before and after.
   function blockInput(win, doc) {
     const board = doc.getElementById('board');
     const onBoard = t => !!(board && t && board.contains(t));
@@ -429,7 +429,7 @@
       const hit = t && t.closest ? t.closest('.has-code[data-id]') : null;
       return hit && !hit.closest('.off') ? hit : null;
     };
-    const tapHit = t => codeHit(t) || (t && t.closest ? t.closest('#hud-diff') : null);
+    const tapHit = t => codeHit(t) || (M.plan && t && t.closest ? t.closest('#hud-diff') : null);
     const halt = ev => ev.stopImmediatePropagation();
     const NO_DEFAULT = new Set(['ArrowRight', 'ArrowLeft', ' ', 'PageUp', 'PageDown', 'Home', 'End']);
     win.addEventListener('keydown', ev => {

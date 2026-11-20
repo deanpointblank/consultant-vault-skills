@@ -79,7 +79,7 @@ export function planNoteText(data, names, { embedHeight = EMBED_HEIGHT } = {}) {
   if (data.walkthrough) body.push(`Walkthrough of the same code: [[${data.walkthrough}]].`, '');
   body.push('## Stops', '');
   stops.forEach((s, i) => {
-    const parts = [s.status, originTag(s.from).toLowerCase(), numbered('task', tasksOf(s.id, data)), s.summary].filter(Boolean);
+    const parts = [s.status === 'elsewhere' ? 'another ticket' : s.status, s.status === 'elsewhere' && s.ticket, originTag(s.from).toLowerCase(), numbered('task', tasksOf(s.id, data)), s.summary].filter(Boolean);
     body.push(`${i + 1}. **${s.name}** · ${parts.join(' · ')}`);
   });
   const stopNo = new Map(stops.map((s, i) => [s.id, i + 1]));

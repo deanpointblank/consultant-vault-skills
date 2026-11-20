@@ -270,6 +270,9 @@ test('a planned arrow becomes an inferred, added arrow', t => {
   const kept = structuredClone(d);
   kept.map.edges.find(x => x.id === 'to-attach').change = 'changed';
   assert.equal(sceneFor(kept).edges.find(x => x.id === 'to-attach').change, 'changed');
+  const removed = structuredClone(d);
+  removed.map.edges.find(x => x.id === 'to-attach').change = 'removed';
+  assert.equal(sceneFor(removed).edges.find(x => x.id === 'to-attach').change, 'added');
 });
 
 test('the plan scene has its eyebrow and diff', t => {

@@ -69,7 +69,7 @@ function makeScene(data, mirror) {
   const nodes = list('nodes', 'blocks').map((n, i) => withCode(n, `map block ${n.id || `n${i + 1}`}`));
   const plan = isPlan(data);
   // A planned arrow can only be one of chalk-talk's guesses, marked as new.
-  const planned = e => { if (!plan || e.planned === undefined) return e; const { planned: p, ...rest } = e; return { ...rest, inferred: `Planned: ${p}`, change: e.change ?? 'added' }; };
+  const planned = e => { if (!plan || e.planned === undefined) return e; const { planned: p, ...rest } = e; return { ...rest, inferred: `Planned: ${p}`, change: e.change === 'changed' ? 'changed' : 'added' }; };
   const edges = list('edges', 'arrows').map((e, i) => planned(withCode(e, `map arrow ${e.id || `e${i + 1}`}`)));
   const groups = list('groups', 'groups');
 
