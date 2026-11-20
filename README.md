@@ -65,6 +65,19 @@ The plugin ships two hooks for work-chart. `hooks/work-chart-log.sh` runs after 
 
 `code-walkthrough` draws its map with the third-party `chalk-talk` skill (github.com/oztrkemree/chalk-talk, MIT), which this plugin does not ship or edit. It looks for `chalk-talk/scripts/build.mjs` in `~/.claude/skills/`, then in the current project's `.claude/skills/`. Without it, the walkthrough page is built without the map, and the page and the reply say so. The map loads its fonts from Google Fonts; no project data goes with that request, and offline the map uses fallback fonts. The page itself makes no requests. Tests: `node --test 'skills/code-walkthrough/scripts/tests/*.test.mjs'`.
 
+## The team copy
+
+Teammates install `code-walkthrough` from a copy in the marketplace repo `stride-nyc/stride-plugins-official`. To check the copy matches this one (no output means in step), then update it:
+
+```
+diff -r <source repo>/skills/code-walkthrough/scripts <marketplace repo>/plugins/code-walkthrough/skills/code-walkthrough/scripts
+diff -r <source repo>/skills/code-walkthrough/assets <marketplace repo>/plugins/code-walkthrough/skills/code-walkthrough/assets
+cp -R <source repo>/skills/code-walkthrough/scripts <marketplace repo>/plugins/code-walkthrough/skills/code-walkthrough/
+cp -R <source repo>/skills/code-walkthrough/assets <marketplace repo>/plugins/code-walkthrough/skills/code-walkthrough/
+```
+
+`SKILL.md`, `references/data-file.md` and the plugin README differ on purpose, so do not copy them over.
+
 ## Output style
 
 The plugin ships one output style, `output-styles/plain-english.md`: action-first replies in plain English, sentences that average 15 words, everyday words, terms defined where they first appear, state restated every turn. It keeps Claude Code's coding instructions and changes only how replies read. Turn it on with `/config` → Output style → Plain English, or `"outputStyle": "Plain English"` in your settings. It covers everything the `i-have-adhd` plugin did, so disable that one if you use both. Wording test: `docs/superpowers/baselines/results/plain-english-2026-09-10.md`.
