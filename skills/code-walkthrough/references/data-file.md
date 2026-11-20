@@ -2,6 +2,8 @@
 
 One JSON file holds the whole walkthrough: `<working folder>/<slug>.walkthrough.json`, where `<working folder>` is the path `echo "${TMPDIR:-/tmp}/code-walkthrough/<slug>"` prints in the shell, used as printed. The build checks it, adds what it learns, and copies it into the vault beside the page and the note.
 
+In plan mode the file also holds the plan fields. They are listed in `../wayfinder/references/plan-file.md`.
+
 A complete example: one repo, two stops, a ticket read from a saved copy. In stop 2, lines 6–15 of `src/store.js` (a helper and the blank lines around it) are left out of `text` and declared in `left_out`.
 
 ```json

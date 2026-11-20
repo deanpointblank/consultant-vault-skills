@@ -6,7 +6,7 @@ Canonical frontmatter properties for every note type. Use these exact names and 
 
 | Property | Format | Example |
 |----------|--------|---------|
-| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference`, `work`, `proposal`, `code-walkthrough` | `meeting` |
+| `type` | one of: `daily`, `meeting`, `repo`, `person`, `question`, `decision`, `glossary`, `clipping`, `status-report`, `conflict`, `ticket`, `handoff`, `time-log`, `runbook`, `reference`, `work`, `proposal`, `code-walkthrough`, `code-plan` | `meeting` |
 | `client` | slug from config `clients` | `uscold` |
 | `created` | `YYYY-MM-DD` | `2026-07-17` |
 | `jira` | optional list of ticket keys | `- PFD-65810` |
@@ -151,6 +151,22 @@ One note per journey through real code, `Walkthrough - <short journey name>.md` 
 | `reasons_recorded` | integer | Why entries with a source and a quote |
 | `reasons_not_recorded` | integer | Why entries with only a question |
 | `jira` | optional list of ticket keys | the ticket the walkthrough serves |
+
+## type: code-plan
+
+One note per plan made concrete, `Plan - <short name>.md` in the plans folder, beside its page `<slug>.plan.html` and data file `<slug>.plan.json`. Written once by wayfinder, through code-walkthrough's build in plan mode, after every check passes; a rebuild gets dated names and links the earlier note.
+
+| Property | Format | Notes |
+|----------|--------|-------|
+| `repos` | list of quoted wikilinks | same names as on `work` and `runbook` notes |
+| `commits` | list of quoted `repo@hash` | quoted, so a hash is never read as a number |
+| `base` | optional list of quoted `repo@ref` | the git ref a repo's existing code was read at, such as `"ledger-api@origin/main"`; left out when no repo has a base |
+| `journey` | quoted string | the plain title |
+| `stops` | integer | |
+| `stops_new`, `stops_changed`, `stops_unchanged`, `stops_elsewhere` | integer | stops of each status, always all four in this order, 0 when none |
+| `open` | integer | open questions in the plan |
+| `proposals` | integer | parts wayfinder proposed rather than quoted |
+| `jira` | optional list of ticket keys | the ticket the plan serves |
 
 ## type: proposal
 

@@ -14,6 +14,7 @@ Agent skills for running a consulting engagement out of an Obsidian vault with C
 | `reference-clipper` | Saves external docs and specs into the vault as clean markdown. |
 | `repo-dossier` | One standardized note per client repository, populated from the local clone. |
 | `code-walkthrough` | Walks through one journey in real code, stop by stop: the actual lines, data in and out, and why, with every reason quoted from its source or marked not recorded. One page in the vault with a live map, plus a short note. Offers one when you start planning a change. |
+| `wayfinder` | Makes a plan for code not yet written concrete on one page: the files, functions and classes it touches or creates, along one path of how the data moves, each part marked as in the plan, proposed, or open. Writes nothing to a code repo. |
 | `glossary` | Client and domain jargon, with acronym aliases and provenance. |
 | `people` | Stakeholders, roles, and ownership. Professional context only. |
 | `decisions` | Lightweight ADRs with context, rejected options, and supersession chains. |
