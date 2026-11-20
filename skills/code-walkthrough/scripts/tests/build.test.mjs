@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
+import { pageModel } from '../lib/page.mjs';
+import { planBuiltLine } from '../lib/words.mjs';
 import { tempRoot, ledgerRepo, samplePlan, bookingRepo, sampleData, makeVault, makeRepo, commitAll, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
 
 const SCRIPT = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
@@ -780,4 +782,103 @@ test('one edit: a sketch with an empty file name', t => {
   assert.equal(r.status, 1, r.out + r.err);
   assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL the plan: stop s3 code block 1 has no file name']);
   assert.deepEqual(vaultFiles(ctx), []);
+});
+
+const gitOut = (p, args) => execFileSync('git', args, { cwd: p, encoding: 'utf8' });
+const refState = p => ({ refs: gitOut(p, ['for-each-ref']), heads: gitOut(p, ['rev-parse', 'HEAD', 'origin/main']) });
+const fetchHead = ctx => path.join(ctx.repo.path, '.git', 'FETCH_HEAD');
+
+test('a plan reads origin/main, fetches nothing and changes nothing', t => {
+  const ctx = planSetup(t, d => d, { ahead: true, remote: true });
+  const before = refState(ctx.repo.path);
+  assert.equal(fs.existsSync(fetchHead(ctx)), false);
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  finish(ctx);
+  assert.deepEqual(refState(ctx.repo.path), before);
+  assert.equal(fs.existsSync(fetchHead(ctx)), false);
+  const d = readJson(ctx.dataFile);
+  assert.equal(d.repos[0].commit, ctx.repo.base);
+  assert.deepEqual(d.repos[0].uncommitted, []);
+  const rows = pageModel(d).stops[1].blocks[0].rows;
+  const atBase = gitOut(ctx.repo.path, ['show', `${ctx.repo.base}:src/store.js`]).split('\n');
+  assert.deepEqual(rows.map(x => x.n), [16, 17, 18, 19, 20]);
+  assert.deepEqual(rows.map(x => x.text), atBase.slice(15, 20));
+  assert.ok(planBuiltLine(d).startsWith('Code as at `origin/main` (commit '), planBuiltLine(d));
+});
+
+test('a base the repo does not know is refused', t => {
+  const ctx = planSetup(t, d => { d.repos[0].base = 'origin/nope'; });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.ok(r.err.includes('walkthrough-build: ledger-api: git cannot find origin/nope here; the build never fetches, so fetch it yourself or change base'), r.err);
+  assert.ok(r.err.includes('usage: walkthrough-build.mjs'), r.err);
+  assert.equal(fs.readFileSync(ctx.dataFile, 'utf8'), JSON.stringify(ctx.data, null, 2));
+  assert.equal(fs.existsSync(ctx.out), false);
+  assert.equal(fs.existsSync(ctx.folder), false);
+  finish(ctx);
+});
+
+test('a bad base value is refused', t => {
+  const ctx = planSetup(t, d => { d.repos[0].base = '-x'; });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.ok(r.err.includes('has a bad base for ledger-api, "-x"; give a git ref such as origin/main'), r.err);
+  assert.equal(fs.readFileSync(ctx.dataFile, 'utf8'), JSON.stringify(ctx.data, null, 2));
+  assert.equal(fs.existsSync(ctx.out), false);
+});
+
+test('today\'s code that differs from the base', t => {
+  const ctx = planSetup(t, d => {
+    const b = d.stops[1].code[0];
+    const ls = b.text.split('\n');
+    ls[1] = '  const total = 0;';
+    b.text = ls.join('\n');
+  }, { ahead: true });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), [`FAIL s2 src/store.js:16-20: the text differs from origin/main (commit ${ctx.repo.base}), first at line 2 of the shown text`]);
+});
+
+test('a cited file that is only on disk', t => {
+  const ctx = planSetup(t, (d, repo) => {
+    fs.writeFileSync(path.join(repo.path, 'src/new.js'), 'one\ntwo\n');
+    d.stops[0].code.push({ file: 'src/new.js', lines: [1, 2], text: 'one\ntwo' });
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s1 src/new.js:1-2: the file is not at origin/main']);
+});
+
+test('a design-doc quote is read at the base', t => {
+  const ctx = planSetup(t, d => { d.stops[2].from.source = { kind: 'design-doc', ref: { path: 'docs/plan.md' } }; }, { ahead: true });
+  assert.equal(fs.readFileSync(path.join(ctx.repo.path, 'docs/plan.md'), 'utf8'), 'Attachments moved.\n');
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+});
+
+test('two repos, one with a base', t => {
+  let web;
+  const upload = 'export function upload(file) {\n  return send(file);\n}\n';
+  const ctx = planSetup(t, (d, repo) => {
+    web = makeRepo(path.join(path.dirname(repo.path), 'web'), { files: { 'src/upload.js': upload }, message: 'Add the upload', dirty: { 'src/upload.js': upload + '// a later line\n' } });
+    d.repos.push({ name: 'web', path: web.path });
+    for (const s of d.stops) for (const b of s.code || []) b.repo = 'ledger-api';
+    d.stops[0].code.push({ repo: 'web', file: 'src/upload.js', lines: [1, 3], function: 'upload', text: upload.trimEnd() });
+  }, { ahead: true });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  const d = readJson(ctx.dataFile);
+  assert.equal(d.repos[0].commit, ctx.repo.base);
+  assert.deepEqual(d.repos[0].uncommitted, []);
+  assert.equal(d.repos[1].commit, web.head);
+  assert.deepEqual(d.repos[1].uncommitted, ['src/upload.js']);
+  assert.equal(planBuiltLine(d), `Code as at \`origin/main\` in ledger-api (commit ${ctx.repo.base}) and on disk in web (commit ${web.head}) plus uncommitted changes in 1 file, ${DAY1}. Nothing in this plan is built yet.`);
+  finish(ctx);
+});
+
+test('a walkthrough ignores base', t => {
+  const ctx = setup(t, d => { d.repos[0].base = 'origin/nope'; });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
 });

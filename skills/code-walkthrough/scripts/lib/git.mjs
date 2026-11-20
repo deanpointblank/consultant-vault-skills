@@ -75,3 +75,22 @@ export function repoFacts(repoPath, files) {
 }
 
 export const isCommitHash = s => typeof s === 'string' && /^[0-9a-f]{4,40}$/i.test(s);
+
+// A plan's base: the commit a ref names here. Nothing is fetched, so a ref this repo does not hold is refused.
+export function resolveBase(repoPath, ref) {
+  try {
+    const hash = gitRead(repoPath, ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`]).trim();
+    return { ref, hash, short: gitRead(repoPath, ['rev-parse', '--short=7', hash]).trim() };
+  } catch { throw new Error(`git cannot find ${ref} here; the build never fetches, so fetch it yourself or change base`); }
+}
+
+// Whether the commit holds the file under exactly that name. A leading `./` would be read from the top folder, so it is not that name.
+export function existsAt(repoPath, hash, file) {
+  if (!plainRelative(file) || file.startsWith('./')) return false;
+  try { gitRead(repoPath, ['cat-file', '-e', `${hash}:${file}`]); return true; } catch { return false; }
+}
+
+// The file's text at the commit, or null when the commit does not hold it.
+export function fileAt(repoPath, hash, file) {
+  return existsAt(repoPath, hash, file) ? gitRead(repoPath, ['show', `${hash}:${file}`]) : null;
+}

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { repoByName } from './data.mjs';
-import { gitRead, gitEnv, isCommitHash } from './git.mjs';
+import { gitRead, gitEnv, isCommitHash, fileAt } from './git.mjs';
 import { splitLines } from './code.mjs';
 import { isPlan, fromItems } from './plan.mjs';
 
@@ -64,6 +64,15 @@ const readText = file => {
 
 const needString = (v, what) => { if (typeof v !== 'string' || !v) throw new Error(`the source has no ${what}`); return v; };
 
+// A repo file: at the repo's base when a plan gives it one, otherwise on disk.
+function repoText(repo, file, bases) {
+  const base = bases[repo.name];
+  if (!base) return readText(path.join(repo.path, file));
+  const text = fileAt(repo.path, base.hash, file);
+  if (text == null) throw new Error(`cannot read ${file} at ${base.ref}`);
+  return text;
+}
+
 function vaultNoteText(vault, rel, named) {
   needString(rel, 'note path');
   const root = path.resolve(vault);
@@ -91,14 +100,14 @@ function savedCopy(data, kind, ref) {
 }
 
 // Returns { text, saved? } for one reason's source, or throws a plain Error.
-function sourceText(data, source, { vault, gh }) {
+function sourceText(data, source, { vault, gh, bases = {} }) {
   const { kind, ref } = source;
   const repoOf = () => repoByName(data, ref?.repo);
   switch (kind) {
     case 'vault-note': return { text: vaultNoteText(vault, ref, source.named_by_user === true) };
     case 'design-doc': {
       const repo = repoOf();
-      return { text: readText(path.join(repo.path, needString(ref?.path, 'file path'))) };
+      return { text: repoText(repo, needString(ref?.path, 'file path'), bases) };
     }
     case 'commit': {
       const repo = repoOf();
@@ -108,7 +117,7 @@ function sourceText(data, source, { vault, gh }) {
     }
     case 'code-comment': {
       const repo = repoOf();
-      const lines = splitLines(readText(path.join(repo.path, needString(ref?.file, 'file name'))));
+      const lines = splitLines(repoText(repo, needString(ref?.file, 'file name'), bases));
       if (!Number.isInteger(ref.line) || ref.line < 1 || ref.line > lines.length) throw new Error(`line ${ref.line} is not in ${ref.file}: the file has ${lines.length} lines`);
       return { text: lines[ref.line - 1] };
     }
@@ -175,7 +184,7 @@ function fromText(data, source, live, opts) {
   return { text: live.get(ref).text, live: live.get(ref), copy };
 }
 
-export function checkQuotes(data, { vault, gh = false, date } = {}) {
+export function checkQuotes(data, { vault, gh = false, date, bases = {} } = {}) {
   const plan = isPlan(data);
   const out = { quotes: 0, saved: 0, savedOf: { ticket: [], 'pull-request': [], ...(plan ? { chat: [], 'plan-file': [] } : {}) }, failures: [] };
   const check = (where, source, quote, read) => {
@@ -198,7 +207,7 @@ export function checkQuotes(data, { vault, gh = false, date } = {}) {
     (stop.reasons || []).forEach((r, i) => {
       const source = r.source || {};
       if (!source.kind || source.kind === 'not-recorded') return;
-      check(`${stop.id} reason ${i + 1} (${labelOf(source)})`, source, r.quote, () => sourceText(data, source, { vault, gh }));
+      check(`${stop.id} reason ${i + 1} (${labelOf(source)})`, source, r.quote, () => sourceText(data, source, { vault, gh, bases }));
     });
   }
   if (!plan) return out;
@@ -206,7 +215,7 @@ export function checkQuotes(data, { vault, gh = false, date } = {}) {
   for (const { at, from } of fromItems(data)) {
     if (from?.kind !== 'plan' && from?.kind !== 'review') continue;
     const source = from.source || {};
-    check(`${at.replace(/^stop /, '')} from (${labelOf(source)})`, source, from.quote, () => fromText(data, source, live, { vault, gh }));
+    check(`${at.replace(/^stop /, '')} from (${labelOf(source)})`, source, from.quote, () => fromText(data, source, live, { vault, gh, bases }));
   }
   // A plan file's copy is saved only when every quote from it is found, so a changed file keeps the last good copy.
   for (const [ref, f] of live) {

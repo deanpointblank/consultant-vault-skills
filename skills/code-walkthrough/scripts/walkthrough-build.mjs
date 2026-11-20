@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { loadData, shapeErrors, repoByName } from './lib/data.mjs';
 import { isPlan, isSketch } from './lib/plan.mjs';
-import { repoFacts, topFolderAbove } from './lib/git.mjs';
+import { repoFacts, topFolderAbove, resolveBase } from './lib/git.mjs';
 import { checkCode } from './lib/code.mjs';
 import { checkQuotes } from './lib/quotes.mjs';
 import { chalkTalkAt, buildMap } from './lib/map.mjs';
@@ -88,6 +88,9 @@ function dataProblem(data) {
   for (const k of ['journey', 'short_name', 'summary', 'client']) if (typeof data[k] !== 'string' || !data[k].trim()) return `has no ${k}`;
   if (!Array.isArray(data.repos) || !data.repos.length) return 'has no repos';
   if (!data.repos.every(r => r && typeof r.name === 'string' && r.name && typeof r.path === 'string' && r.path)) return 'needs every repo to have a name and a path';
+  // A base reaches git as a ref, so it must not read as an option.
+  const badBase = isPlan(data) && data.repos.find(r => r.base !== undefined && (typeof r.base !== 'string' || !r.base || r.base.startsWith('-')));
+  if (badBase) return `has a bad base for ${badBase.name}, ${JSON.stringify(badBase.base)}; give a git ref such as origin/main`;
   if (!Array.isArray(data.stops) || !data.stops.every(s => s && typeof s === 'object' && typeof s.id === 'string' && typeof s.name === 'string')) return 'needs stops, each with an id and a name';
   return null;
 }
@@ -136,6 +139,13 @@ function main() {
     if (top !== null) refuse(`the repo ${r.name} is given as ${repoPath}, which is inside a repo, not its top folder; set its path to the top folder${top ? `, ${top}` : ''}`);
   }
 
+  // A plan reads a repo with a base at that commit, resolved once here; nothing is fetched. Without mode, base is ignored.
+  const bases = {};
+  if (isPlan(data)) for (const r of data.repos) {
+    if (r.base === undefined) continue;
+    try { bases[r.name] = resolveBase(repoByName(data, r.name).path, r.base); } catch (e) { refuse(`${r.name}: ${e.message}`); }
+  }
+
   const shape = shapeErrors(data);
   if (shape.length) { console.log(shape.map(e => `FAIL the ${isPlan(data) ? 'plan' : 'walkthrough'}: ${e}`).join('\n')); return 1; }
 
@@ -152,6 +162,8 @@ function main() {
   for (const r of data.repos) {
     const files = [...cited[r.name]].sort();
     data.cited_files[r.name] = files;
+    // Read at the base: nothing on disk counts, so there is nothing uncommitted to list.
+    if (bases[r.name]) { Object.assign(r, { commit: bases[r.name].short, uncommitted: [] }); continue; }
     try {
       const { misnamed, ...facts } = repoFacts(repoByName(data, r.name).path, files);
       Object.assign(r, facts);
@@ -159,9 +171,9 @@ function main() {
     } catch (e) { failures.push({ where: r.name, why: e.message.split('\n')[0] }); }
   }
 
-  const code = checkCode(data, { misnamed: (repo, file) => misnamedIn[repo]?.has(file) === true });
+  const code = checkCode(data, { misnamed: (repo, file) => misnamedIn[repo]?.has(file) === true, bases });
   failures.push(...code.failures);
-  const { failures: quoteFailures, ...quotes } = checkQuotes(data, { vault, gh: process.env.CW_GH !== '0', date: args.date });
+  const { failures: quoteFailures, ...quotes } = checkQuotes(data, { vault, gh: process.env.CW_GH !== '0', date: args.date, bases });
   failures.push(...quoteFailures);
 
   let map = { built: false };
