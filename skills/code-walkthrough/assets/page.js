@@ -18,7 +18,7 @@
   const WORDS = {
     prev: '← Prev', next: 'Next →', hideMap: 'Hide map', showMap: 'Show map', toDark: 'Dark', toLight: 'Light',
     what: 'What it does', data: 'Data in → out', in: 'In', out: 'Out', guess: 'Guess', readHere: 'Read from here', map: 'Map',
-    today: 'Today', plan: 'Plan',
+    today: 'Today', plan: 'Plan', flip: 'Today / Plan',
   };
 
   // Browser storage can be missing or throw (private windows, blocked site data, some frames).
@@ -420,6 +420,7 @@
   // The map's own keys, taps and swipes would move it without the stop, so its input is
   // stopped before chalk-talk sees it. ← and → move both; a tap on a block with code still
   // opens chalk-talk's code panel, which closes by its button or a second tap on the block.
+  // A tap on the change chip still flips before and after.
   function blockInput(win, doc) {
     const board = doc.getElementById('board');
     const onBoard = t => !!(board && t && board.contains(t));
@@ -428,6 +429,7 @@
       const hit = t && t.closest ? t.closest('.has-code[data-id]') : null;
       return hit && !hit.closest('.off') ? hit : null;
     };
+    const tapHit = t => codeHit(t) || (t && t.closest ? t.closest('#hud-diff') : null);
     const halt = ev => ev.stopImmediatePropagation();
     const NO_DEFAULT = new Set(['ArrowRight', 'ArrowLeft', ' ', 'PageUp', 'PageDown', 'Home', 'End']);
     win.addEventListener('keydown', ev => {
@@ -437,10 +439,10 @@
       if (ev.key === 'ArrowRight') go(state.stop + 1);
       else if (ev.key === 'ArrowLeft') go(state.stop - 1);
     }, true);
-    let down = null;   // where a press on a block with code was let through
+    let down = null;   // where a press on a block with code, or on the chip, was let through
     win.addEventListener('pointerdown', ev => {
       if (!onBoard(ev.target)) return;
-      if (codeHit(ev.target)) { down = [ev.clientX, ev.clientY]; return; }
+      if (tapHit(ev.target)) { down = [ev.clientX, ev.clientY]; return; }
       down = null;
       halt(ev);
     }, true);
@@ -448,7 +450,7 @@
       if (!onBoard(ev.target)) { down = null; return; }
       const d = down;
       down = null;
-      if (d && Math.abs(ev.clientX - d[0]) < 6 && Math.abs(ev.clientY - d[1]) < 6 && codeHit(ev.target)) return;
+      if (d && Math.abs(ev.clientX - d[0]) < 6 && Math.abs(ev.clientY - d[1]) < 6 && tapHit(ev.target)) return;
       halt(ev);
     }, true);
     win.addEventListener('hashchange', halt, true);
@@ -461,6 +463,19 @@
     const keep = () => { if (root.dataset.theme !== state.theme) root.dataset.theme = state.theme; };
     new MutationObserver(keep).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
     keep();
+  }
+
+  // A plan map's before / after button sits in chalk-talk's hidden caption bar, so the page's
+  // bar gets its own. chalk-talk hides #diff when the map has no change marks; then there is none.
+  function addFlip(doc) {
+    const diff = doc.getElementById('diff');
+    if (!diff || diff.hidden) return;
+    const flip = h('button', { type: 'button', id: 'flip', class: 'linkbtn', 'aria-pressed': 'false', onclick: () => doc.getElementById('diff').click() }, WORDS.flip);
+    // The chip flips it too, so the button follows #diff rather than its own clicks.
+    const follow = () => flip.setAttribute('aria-pressed', diff.getAttribute('aria-pressed'));
+    new MutationObserver(follow).observe(diff, { attributes: true, attributeFilter: ['aria-pressed'] });
+    follow();
+    $('hide-map').before(flip);
   }
 
   function startMap() {
@@ -476,6 +491,7 @@
         map = { win, doc };
         doc.documentElement.dataset.theme = state.theme;
         win.chalk.go(state.stop);
+        if (M.plan) addFlip(doc);
       });
     };
     frame.addEventListener('load', onLoad);

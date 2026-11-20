@@ -84,6 +84,7 @@ html:not([data-view="read"]) #read { position: fixed; top: 0; left: -200vw; widt
 #map-frame { display: block; width: 100%; height: 100%; border: 0; background: var(--surface); }
 #bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 8px 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--surface-2); }
 html[data-map="none"] #bar { border-top: 0; }
+#flip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 #map-label { flex: 1 1 260px; min-width: 0; font-size: 14px; }
 #map-label .cnt { font: 700 12px var(--mono); color: var(--accent); }
 #map-label .sep { color: var(--faint); }
