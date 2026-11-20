@@ -26,11 +26,11 @@ Follow the obsidian-vault skill's conventions. Wayfinder takes a plan for code n
 
    It prints `none` or one line per walkthrough. If one covers the code, use its stops for the unchanged and changed stops, and set `walkthrough` to its note name, taken only from a look-up line you just read. Make no offer to build a walkthrough.
 4. **Pin the journey and the base.** One clean path of the data: one start, one end, about 4 to 12 stops. A larger plan: pick the first journey for this run and list the rest as next. The base is where today's code is read from:
-   - the ref the plan names, such as `origin/release`;
+   - the ref the plan names, such as `origin/release`. A name that starts with `-` is not a ref, so use the next rule;
    - otherwise the default branch, when the repo already has it locally: what `GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --verify --quiet --abbrev-ref origin/HEAD` prints (such as `origin/main`); when that prints nothing, the first of `origin/main` and `origin/master` that `GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --verify --quiet <ref>` finds;
    - otherwise the disk: no `base` in the data file, and today's code is read as it is on disk.
 
-   Note the commit: `GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --short=7 <base, or HEAD for the disk>`. Never fetch, and never ask the user to fetch, commit or revert first.
+   Note the commit: `GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --short=7 --end-of-options <base, or HEAD for the disk>`. Never fetch, and never ask the user to fetch, commit or revert first.
 5. **State the cost and ask once**, in one message. Leave out the lines that do not apply:
 
    ```
@@ -45,14 +45,14 @@ Follow the obsidian-vault skill's conventions. Wayfinder takes a plan for code n
    ```
 
    Give the code line once per repo, in the base form or the disk form. Use the plain vault line, or the second one when the user asked for another place. Nothing is written or built before the yes: no working folder, no data file, no build.
-6. **Trace.** Read today's code at the base: `GIT_OPTIONAL_LOCKS=0 git -C <repo> show <base>:<file> | sed -n '<a>,<b>p'`, or from disk when there is no base. Copy today blocks with a command, never retyped. For anything new or changed, write a sketch: the real signature in the repo's language, then about 5 to 15 lines of body.
+6. **Trace.** Read today's code at the base: `GIT_OPTIONAL_LOCKS=0 git -C <repo> show --end-of-options <base>:<file> | sed -n '<a>,<b>p'`, or from disk when there is no base. Copy today blocks with a command, never retyped. For anything new or changed, write a sketch: the real signature in the repo's language, then about 5 to 15 lines of body.
 7. **Mark the origin of every part.** Every stop that is new, changed or built by another ticket, every sketch, choice, task, test, risk and out-of-scope line gets a `from`, whose `kind` is one of these:
    - In the source: `plan`, with the source's words quoted word for word and the source named.
    - When the source's own words say proposed, pending, draft or awaiting sign-off, the entry is `review`, never `plan`. Never drop such a line: give it its own entry where it belongs (a choice at the stop it touches, or a test, risk or task), quote the pending statement itself, such as "files over 10 MB are refused", and set its `from.kind` to `review`.
    - A gap the plan leaves (a name, an order, a limit, a table, a step) becomes a `proposal`, with no quote. Never write a gap as a plan step.
    - A choice only the team can make becomes an `open` choice whose text is the question. A short goal nearly always leaves at least one.
 
-   A plan file outside the repo is a `plan-file` source with its absolute path (no `~`). The full rules are in `references/plan-file.md`.
+   A plan file outside the repo is a `plan-file` source with its absolute path (no `~`). A plan file in the vault is a `vault-note` source, never `plan-file`. The full rules are in `references/plan-file.md`.
 8. **Write the data file.** Read `references/plan-file.md` first. Find the working folder once, in the shell: `echo "${TMPDIR:-/tmp}/wayfinder/<slug>"` (`<slug>`: the short name in lower case, words joined by `-`). Use the printed path as it is for the data file (`<working folder>/<slug>.plan.json`), for `--out`, and for any helper script; outside the vault, a run makes nothing anywhere else. Then build, by Build and check.
 9. **Reply**, by Reply.
 
@@ -103,7 +103,7 @@ The wikilink is the note's `WROTE` file name without `.md`. With one proposal, t
 
 When the user asks to change the plan ("change stop 3 to …"), make the change with no question first:
 1. Copy the newest `.plan.json` of this journey from the vault folder into the working folder as `<slug>.plan.json`; the build refuses a data file inside the vault. Keep its `short_name` and `journey`.
-2. Edit it. The user's words are part of the plan now: save them as a new `chat` source (`ref` `change 1`, then `change 2`) and quote them in the entries the change makes. An entry whose quote says the opposite of the change gets the new quote, or becomes a proposal.
+2. Edit it. Save the user's words as a new `chat` source (`ref` `change 1`, then `change 2`). Only a change the user states as decided is quoted as `plan`, in the entries the change makes. A tentative one, such as "what if …" or "maybe …", becomes a proposal or an open choice, with no quote. An entry whose quote says the opposite of the change gets the new quote, or becomes a proposal.
 3. Rebuild with the Build and check command plus `--same-day replace`. On a later day the build makes a new dated plan, linked as earlier.
 4. Reply as above. The reply ends with "Your plan file would need to say:" and a short list of the lines the user would add or change in their own plan file. Wayfinder never writes to the user's plan file.
 

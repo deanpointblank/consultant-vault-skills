@@ -118,7 +118,7 @@ A stop keeps a walkthrough's `id`, `name`, `summary`, `code`, `data`, `notes`, `
 
 ## Code blocks
 
-**A today block** is a walkthrough's code block, copied from the base: `GIT_OPTIONAL_LOCKS=0 git -C <repo> show <base>:<file> | sed -n '<a>,<b>p'`. Its line numbers are the base file's. With no base, copy it from disk.
+**A today block** is a walkthrough's code block, copied from the base: `GIT_OPTIONAL_LOCKS=0 git -C <repo> show --end-of-options <base>:<file> | sed -n '<a>,<b>p'`. Its line numbers are the base file's. With no base, copy it from disk.
 
 **A sketch** is `{ planned: true, file, new_file, function, text, from }`, with an optional `after`:
 - `new_file`: `true` when the file is not at the base (or not on disk, with no base), and `false` when it is. At the base, only a regular file counts as a file: a folder, a link or a submodule is "not at" the base.
@@ -153,7 +153,7 @@ Quotes follow the walkthrough rules: word for word, starting and ending on whole
 | `source.kind` | `ref` | The build reads |
 |---|---|---|
 | `chat` | `"goal"`, `"change 1"` | the saved copy in `sources` with the same `ref`. It proves only that the quote matches the copy Wayfinder saved |
-| `plan-file` | an absolute path, with no `~` | the file, at every build, and it saves a copy in `sources`. If the file is gone, it uses the saved copy and the reply says so |
+| `plan-file` | an absolute path, with no `~` | the file, at every build, and it saves a copy in `sources`. If the file is gone, it uses the saved copy and the reply says so. A file in the vault is refused: cite it as `vault-note` |
 | `design-doc` | `{ "repo"?, "path" }`, from the repo root | the file at the base, or on disk with no base. A plan or spec in the repo that is not committed at the base cannot be read there: cite it as `plan-file`, with its absolute path |
 | `vault-note`, `ticket`, `pull-request`, `commit` | as for a reason | as for a reason |
 
@@ -211,6 +211,7 @@ These print alone, before any other check. Fix them all, and count that as one r
 | `… is a sketch of 1 line; give it 2 or more` (or `of 0 lines`) | Give it a signature and a body |
 | `… is a sketch, so it cannot have lines, key_lines or left_out` | Remove them |
 | `… has after and new_file together; use one` | A new file has no `after` |
+| `… is a sketch, so its file must be a path from the repo top` | Use a path from the repo top, with no `..` and no leading `/` or `./` |
 
 **Origins**
 
@@ -323,6 +324,7 @@ These print alone, before any other check. Fix them all, and count that as one r
 | `the plan file no longer says this; re-quote it or make this a proposal` | The plan file changed since the last build. Re-quote it, or make the entry a proposal. Never edit the plan file |
 | `no saved copy of chat <ref>` | Add the `chat` source with that exact `ref`, or fix the `ref` |
 | `<ref> must be an absolute path` | Give the plan file's absolute path, with no `~` |
+| `<ref> is in the vault; cite it as vault-note` | Make the source `vault-note`, with the note's path from the vault top |
 | `the source has no file path` (or `no note path`, `no file name`, `no ticket key`, `no pull request number`) | Fill in the source's `ref` |
 | `cannot read <path>: no such file, and there is no saved copy` | Fix the plan file's path |
 | `cannot read <path>: <reason>` | Fix the path |
