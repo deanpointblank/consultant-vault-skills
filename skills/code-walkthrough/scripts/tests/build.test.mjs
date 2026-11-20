@@ -735,3 +735,15 @@ test('a plan file that is gone', t => {
   assert.equal(r.status, 0, r.out + r.err);
   assert.deepEqual(readJson(ctx.dataFile).checks.quotes.savedOf['plan-file'], [file]);
 });
+
+test('one edit: a sketch with an empty file name', t => {
+  const ctx = planSetup(t, d => {
+    const k = d.stops[2].code[0];
+    Object.assign(k, { file: '', new_file: true });
+    delete k.after;
+  });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL the plan: stop s3 code block 1 has no file name']);
+  assert.deepEqual(vaultFiles(ctx), []);
+});

@@ -32,6 +32,8 @@ for (const [title, edit, line] of [
   ['a sketch of 1 line', (s, k) => { k.text = 'x'; }, 'stop s3 code block 1 is a sketch of 1 line; give it 2 or more'],
   ['a sketch has no lines', (s, k) => { k.lines = [1, 2]; }, 'stop s3 code block 1 is a sketch, so it cannot have lines, key_lines or left_out'],
   ['after with new_file', (s, k) => { k.new_file = true; }, 'stop s3 code block 1 has after and new_file together; use one'],
+  ['a sketch needs a file name', (s, k) => { k.file = ''; }, 'stop s3 code block 1 has no file name'],
+  ['a sketch needs text', (s, k) => { delete k.text; }, 'stop s3 code block 1 has no text'],
 ]) {
   test(title, t => {
     assert.deepEqual(sketchAfter(t, edit), [line]);

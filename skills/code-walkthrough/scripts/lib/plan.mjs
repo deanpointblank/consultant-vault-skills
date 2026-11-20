@@ -23,8 +23,11 @@ export function sketchErrors(data) {
     code.forEach((b, i) => {
       if (!isSketch(b)) return;
       const at = `stop ${id} code block ${i + 1}`;
+      // fieldProblem's words, since a sketch skips fieldProblem.
+      if (typeof b.file !== 'string' || !b.file) errors.push(`${at} has no file name`);
       if (typeof b.new_file !== 'boolean') errors.push(`${at} is a sketch, so it needs new_file as true or false`);
-      if (typeof b.text === 'string') {
+      if (typeof b.text !== 'string') errors.push(`${at} has no text`);
+      else {
         const n = lineCount(b.text);
         if (n > 30) errors.push(`${at} is a sketch of ${n} lines; keep it to 30 or fewer`);
         if (n < 2) errors.push(`${at} is a sketch of ${n} ${n === 1 ? 'line' : 'lines'}; give it 2 or more`);
