@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadData, shapeErrors, repoByName } from './lib/data.mjs';
+import { isPlan } from './lib/plan.mjs';
 import { repoFacts, topFolderAbove } from './lib/git.mjs';
 import { checkCode } from './lib/code.mjs';
 import { checkQuotes } from './lib/quotes.mjs';
@@ -83,6 +84,7 @@ const inside = (child, parent) => {
 // The data file's own rules, before any check can rely on it.
 function dataProblem(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return 'is not a walkthrough';
+  if (data.mode !== undefined && data.mode !== 'plan') return `has mode ${data.mode}; only plan is known`;
   for (const k of ['journey', 'short_name', 'summary', 'client']) if (typeof data[k] !== 'string' || !data[k].trim()) return `has no ${k}`;
   if (!Array.isArray(data.repos) || !data.repos.length) return 'has no repos';
   if (!data.repos.every(r => r && typeof r.name === 'string' && r.name && typeof r.path === 'string' && r.path)) return 'needs every repo to have a name and a path';
@@ -135,7 +137,7 @@ function main() {
   }
 
   const shape = shapeErrors(data);
-  if (shape.length) { console.log(shape.map(e => `FAIL the walkthrough: ${e}`).join('\n')); return 1; }
+  if (shape.length) { console.log(shape.map(e => `FAIL the ${isPlan(data) ? 'plan' : 'walkthrough'}: ${e}`).join('\n')); return 1; }
 
   const slug = slugOf(data.short_name);
   const failures = [];
@@ -181,7 +183,7 @@ function main() {
   writeData();
   if (failures.length) { console.log(failures.map(failLine).join('\n')); return 1; }
 
-  const names = chooseNames({ folderPath, slug, noteBase: noteBaseOf(data.short_name), date: args.date, sameDay: args.sameDay });
+  const names = chooseNames({ folderPath, slug, noteBase: noteBaseOf(data.short_name, data.mode), date: args.date, sameDay: args.sameDay, mode: data.mode });
   console.log([...replyLines(data), ...questionLines(data)].join('\n'));
   if (names.clash) { console.log(`SAME DAY ${names.clash.join(', ')}`); return 3; }
   if (names.earlier) data.earlier = names.earlier; else delete data.earlier;

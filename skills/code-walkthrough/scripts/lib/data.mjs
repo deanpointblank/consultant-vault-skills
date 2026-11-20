@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 
+import { isPlan, planShapeErrors } from './plan.mjs';
+
 export const SOURCE_KINDS = ['vault-note', 'design-doc', 'commit', 'pull-request', 'ticket', 'code-comment', 'build-note', 'not-recorded'];
 
 const NEEDS_REPO = ['design-doc', 'commit', 'pull-request', 'code-comment'];
@@ -75,5 +77,6 @@ export function shapeErrors(data) {
     const f = fieldProblem(e, false);
     if (f) errors.push(`extend point ${i + 1} (stop ${e.stop}) ${f}`);
   });
+  if (isPlan(data)) errors.push(...planShapeErrors(data));
   return errors;
 }

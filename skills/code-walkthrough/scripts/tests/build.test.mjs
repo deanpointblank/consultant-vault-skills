@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
-import { tempRoot, bookingRepo, sampleData, makeVault, makeRepo, commitAll, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
+import { tempRoot, ledgerRepo, samplePlan, bookingRepo, sampleData, makeVault, makeRepo, commitAll, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
 
 const SCRIPT = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
 const DAY1 = '2026-11-11';
@@ -29,10 +29,27 @@ function setup(t, change = d => d, { dirty = false } = {}) {
 }
 
 function run(ctx, extra = [], { chalk = 'none', file = ctx.dataFile, out = ctx.out, date = DAY1, env = {} } = {}) {
-  const args = [SCRIPT, file, '--out', out, '--vault', ctx.vault, '--folder', 'Walkthroughs', '--chalk', chalk, '--date', date, ...extra];
+  const args = [SCRIPT, file, '--out', out, '--vault', ctx.vault, '--folder', ctx.folderName ?? 'Walkthroughs', '--chalk', chalk, '--date', date, ...extra];
   const home = chalk === 'none' ? { HOME: ctx.noChalkHome } : {};
   const r = spawnSync(process.execPath, args, { encoding: 'utf8', env: { ...process.env, CW_GH: '0', ...home, ...env }, cwd: ctx.root });
   return { status: r.status, out: r.stdout, err: r.stderr, lines: r.stdout.split('\n') };
+}
+
+// The plan-mode twin of setup: the ledger repo and the example plan, folder Plans.
+function planSetup(t, change = d => d, { ahead = false, remote = false } = {}) {
+  const root = tempRoot(t);
+  const repo = ledgerRepo(root, { ahead, remote });
+  const vault = makeVault(root, { 'README.md': 'a vault\n' });
+  const data = samplePlan(repo);
+  change(data, repo);
+  const dataFile = path.join(root, 'in', 'invoice.json');
+  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
+  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  const noChalkHome = path.join(root, 'no-chalk-home');
+  fs.mkdirSync(noChalkHome);
+  const ctx = { root, repo, vault, data, dataFile, noChalkHome, out: path.join(root, 'work'), folder: path.join(vault, 'Plans'), folderName: 'Plans' };
+  ctx.snapshot = repoSnapshot(repo.path);
+  return ctx;
 }
 
 // D11: the walked repo is untouched and chalk-talk made no folder of its own.
@@ -627,4 +644,22 @@ test('with chalk-talk the page carries the map', { skip: !chalk || !findChrome()
   assert.equal(d.checks.map.built, true);
   assert.ok(fs.existsSync(path.join(ctx.out, 'booking-flow-snaps')));
   finish(ctx);
+});
+
+test('an unknown mode is refused', t => {
+  const ctx = planSetup(t, d => { d.mode = 'draft'; });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.ok(r.err.includes('has mode draft; only plan is known'), r.err);
+  assert.equal(fs.existsSync(ctx.out), false);
+  assert.equal(fs.existsSync(ctx.folder), false);
+});
+
+test('plan shape failures print as the plan\'s', t => {
+  const ctx = planSetup(t, d => { d.extend = [{ stop: 's2', file: 'src/store.js', lines: [16, 20], text: 'x' }]; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.ok(r.out.includes('FAIL the plan: a plan has no extend points; put the work in plan.tasks'), r.out);
+  const fails = r.lines.filter(l => l.startsWith('FAIL'));
+  assert.ok(fails.length && fails.every(l => l.startsWith('FAIL the plan: ')), r.out);
 });

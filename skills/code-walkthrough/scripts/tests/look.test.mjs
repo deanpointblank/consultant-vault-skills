@@ -469,3 +469,12 @@ test('read only', t => {
   look(ctx);
   finish(ctx);
 });
+
+test('a plan note is never listed', t => {
+  const ctx = setup(t);
+  fs.rmSync(ctx.folder, { recursive: true });
+  fs.mkdirSync(ctx.folder);
+  fs.writeFileSync(path.join(ctx.folder, 'Plan - x.md'), `---\ntype: code-plan\nrepos:\n  - "[[booking-mini]]"\n---\n\n![[x.plan.html]]\n`);
+  fs.writeFileSync(path.join(ctx.folder, 'x.plan.json'), '{}');
+  assert.equal(look(ctx, ['--file', 'api/Dock.java']).out, 'none\n');
+});

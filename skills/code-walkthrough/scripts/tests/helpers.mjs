@@ -287,3 +287,422 @@ export function captureBuild(root) {
     scene: sceneFor(sampleData(repo)),
   }, repo);
 }
+
+// A repo like the one in references/data-file.md: one commit, `origin/main` at it, so `base` is `head`.
+// ahead: one later commit on disk. remote: a clone with one commit more than the local origin/main.
+export function ledgerRepo(root, { ahead = false, remote = false } = {}) {
+  const dir = path.join(root, 'ledger-api');
+  const { head } = makeRepo(dir, {
+    files: {
+      'src/routes/invoices.js': 'import { saveInvoice } from "../store.js";\n\n' + "// Amounts arrive in cents, so rounding happens once, at the till.\nconst MAX_LINES = 500;\n\nexport async function postInvoice(req, res) {\n  const invoice = req.body;\n  if (invoice.lines.length > MAX_LINES) {\n    return res.status(400).send('Too many lines');\n  }\n  const saved = await saveInvoice(invoice);\n  res.status(201).json(saved);\n}",
+      'src/store.js': "// the invoice store\n\nfunction totalOf(lines) {\n  return lines.reduce((sum, l) => sum + l.cents * l.qty, 0);\n}\n// helper 1\n// helper 2\n// helper 3\n// helper 4\n// helper 5\n// helper 6\n// helper 7\n// helper 8\n// helper 9\n// helper 10\nexport async function saveInvoice(invoice) {\n  const total = totalOf(invoice.lines);\n  audit(invoice);\n  return db.insert('invoices', { ...invoice, total });\n}\n",
+      'docs/plan.md': 'Attachments are saved in their own table.\n',
+    },
+    message: 'Add the invoice store',
+  });
+  git(dir, ['update-ref', 'refs/remotes/origin/main', head]);
+  if (remote) {
+    const up = path.join(root, 'ledger-upstream');
+    git(root, ['clone', '-q', dir, up]);
+    fs.appendFileSync(path.join(up, 'docs/plan.md'), 'Upstream line.\n');
+    commitAll(up, 'Upstream change');
+    git(dir, ['remote', 'add', 'origin', up]);
+  }
+  if (ahead) {
+    put(dir, { 'src/store.js': '// a later change\n' + fs.readFileSync(path.join(dir, 'src/store.js'), 'utf8'), 'docs/plan.md': 'Attachments moved.\n' });
+    commitAll(dir, 'A later change');
+  }
+  return { path: dir, head, base: head };
+}
+
+// The spec's complete example, word for word.
+export function samplePlan(repo) {
+  const plan = {
+  "format": 1,
+  "mode": "plan",
+  "journey": "Saving an invoice with its attachments",
+  "short_name": "invoice attachments",
+  "summary": "An invoice and its attached files are saved together.",
+  "client": "acme",
+  "repos": [
+    {
+      "name": "ledger-api",
+      "path": "~/Code/acme/ledger-api",
+      "base": "origin/main"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "chat",
+      "ref": "goal",
+      "fetched": "2026-11-20",
+      "text": "Let users attach files to an invoice. Attachments are saved in their own table, one row per file. The upload screen is out of scope."
+    }
+  ],
+  "plan": {
+    "inputs": [
+      "invoice request"
+    ],
+    "tasks": [
+      {
+        "id": "t1",
+        "name": "Add the attachments table and its save",
+        "stops": [
+          "s3"
+        ],
+        "from": {
+          "kind": "proposal"
+        }
+      },
+      {
+        "id": "t2",
+        "name": "Save attachments with the invoice",
+        "stops": [
+          "s2"
+        ],
+        "from": {
+          "kind": "proposal"
+        }
+      }
+    ],
+    "tests": [
+      {
+        "text": "An invoice with two files gets two attachment rows.",
+        "task": "t2",
+        "from": {
+          "kind": "proposal"
+        }
+      }
+    ],
+    "risks": [
+      {
+        "text": "Many large files could slow the save.",
+        "from": {
+          "kind": "proposal"
+        }
+      }
+    ],
+    "out_of_scope": [
+      {
+        "text": "The upload screen.",
+        "from": {
+          "kind": "plan",
+          "quote": "The upload screen is out of scope",
+          "source": {
+            "kind": "chat",
+            "ref": "goal"
+          }
+        }
+      }
+    ]
+  },
+  "stops": [
+    {
+      "id": "s1",
+      "name": "The API takes the invoice",
+      "status": "unchanged",
+      "summary": "Refuses an invoice with too many lines, then hands it on.",
+      "code": [
+        {
+          "file": "src/routes/invoices.js",
+          "lines": [
+            6,
+            13
+          ],
+          "function": "postInvoice",
+          "text": "export async function postInvoice(req, res) {\n  const invoice = req.body;\n  if (invoice.lines.length > MAX_LINES) {\n    return res.status(400).send('Too many lines');\n  }\n  const saved = await saveInvoice(invoice);\n  res.status(201).json(saved);\n}",
+          "key_lines": [
+            8
+          ]
+        }
+      ],
+      "what": "The route checks the invoice and passes it to the store.",
+      "points": [
+        "Refuses more than 500 lines."
+      ],
+      "data": {
+        "in": "The request body.",
+        "out": "The invoice."
+      },
+      "takes": [
+        "invoice request"
+      ],
+      "gives": [
+        "invoice"
+      ],
+      "reasons": [
+        {
+          "text": "Why is an invoice limited to 500 lines?",
+          "source": {
+            "kind": "not-recorded"
+          }
+        }
+      ],
+      "guesses": [],
+      "choices": [],
+      "map_step": {
+        "flow": [
+          "send"
+        ],
+        "focus": [
+          "api"
+        ]
+      }
+    },
+    {
+      "id": "s2",
+      "name": "The store saves the invoice, then its files",
+      "status": "changed",
+      "from": {
+        "kind": "plan",
+        "quote": "Let users attach files to an invoice",
+        "source": {
+          "kind": "chat",
+          "ref": "goal"
+        }
+      },
+      "summary": "After the invoice row is in, its files are saved too.",
+      "code": [
+        {
+          "file": "src/store.js",
+          "lines": [
+            16,
+            20
+          ],
+          "function": "saveInvoice",
+          "text": "export async function saveInvoice(invoice) {\n  const total = totalOf(invoice.lines);\n  audit(invoice);\n  return db.insert('invoices', { ...invoice, total });\n}",
+          "key_lines": [
+            19
+          ]
+        },
+        {
+          "planned": true,
+          "file": "src/store.js",
+          "new_file": false,
+          "function": "saveInvoice",
+          "from": {
+            "kind": "proposal"
+          },
+          "text": "export async function saveInvoice(invoice) {\n  const total = totalOf(invoice.lines);\n  audit(invoice);\n  const row = await db.insert('invoices', { ...invoice, total });\n  await saveAttachments(row.id, invoice.attachments ?? []);\n  return row;\n}"
+        }
+      ],
+      "today": {
+        "what": "The store totals the invoice and inserts one row.",
+        "points": [
+          "Writes an audit entry first."
+        ]
+      },
+      "what": "The store inserts the invoice row, then saves its files against it.",
+      "points": [
+        "No files means no extra work."
+      ],
+      "data": {
+        "in": "The invoice.",
+        "out": "The invoice row and its files."
+      },
+      "takes": [
+        "invoice"
+      ],
+      "gives": [
+        "invoice row",
+        "attachments"
+      ],
+      "reasons": [
+        {
+          "text": "Why is the audit entry written before the insert?",
+          "source": {
+            "kind": "not-recorded"
+          }
+        }
+      ],
+      "guesses": [],
+      "choices": [
+        {
+          "text": "Files are saved after the invoice row, in the same call.",
+          "from": {
+            "kind": "proposal"
+          }
+        }
+      ],
+      "map_step": {
+        "flow": [
+          "save",
+          "insert"
+        ],
+        "focus": [
+          "store"
+        ]
+      }
+    },
+    {
+      "id": "s3",
+      "name": "Each file becomes an attachment row",
+      "status": "new",
+      "from": {
+        "kind": "plan",
+        "quote": "Attachments are saved in their own table",
+        "source": {
+          "kind": "chat",
+          "ref": "goal"
+        }
+      },
+      "summary": "A new store function writes one row per file.",
+      "code": [
+        {
+          "planned": true,
+          "file": "src/store.js",
+          "new_file": false,
+          "after": 20,
+          "function": "saveAttachments",
+          "from": {
+            "kind": "proposal"
+          },
+          "text": "export async function saveAttachments(invoiceId, files) {\n  for (const f of files) {\n    await db.insert('invoice_attachments', { invoiceId, name: f.name, url: f.url });\n  }\n}"
+        }
+      ],
+      "what": "Each attached file is saved as its own row, tied to the invoice.",
+      "points": [
+        "Runs only after the invoice row exists."
+      ],
+      "data": {
+        "in": "The invoice row and its files.",
+        "out": "One row per file."
+      },
+      "takes": [
+        "invoice row",
+        "attachments"
+      ],
+      "gives": [
+        "attachment rows"
+      ],
+      "reasons": [],
+      "guesses": [],
+      "choices": [
+        {
+          "text": "One row per file.",
+          "from": {
+            "kind": "plan",
+            "quote": "one row per file",
+            "source": {
+              "kind": "chat",
+              "ref": "goal"
+            }
+          }
+        },
+        {
+          "text": "Is there a size limit per file?",
+          "from": {
+            "kind": "open"
+          }
+        }
+      ],
+      "map_step": {
+        "flow": [
+          "to-attach",
+          "attach-db"
+        ],
+        "focus": [
+          "attach"
+        ],
+        "recap": true
+      }
+    }
+  ],
+  "map": {
+    "style": "studio",
+    "nodes": [
+      {
+        "id": "client",
+        "kind": "actor",
+        "label": "Billing app",
+        "at": [
+          0,
+          0
+        ]
+      },
+      {
+        "id": "api",
+        "kind": "box",
+        "label": "Invoice API",
+        "at": [
+          1,
+          0
+        ],
+        "code": "src/routes/invoices.js:6-13"
+      },
+      {
+        "id": "store",
+        "kind": "box",
+        "label": "Invoice store",
+        "at": [
+          2,
+          0
+        ],
+        "code": "src/store.js:16-20",
+        "change": "changed"
+      },
+      {
+        "id": "attach",
+        "kind": "pill",
+        "label": "Save attachments",
+        "at": [
+          2,
+          1
+        ],
+        "change": "added"
+      },
+      {
+        "id": "db",
+        "kind": "db",
+        "label": "Invoices database",
+        "at": [
+          3,
+          0
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "send",
+        "from": "client",
+        "to": "api",
+        "label": "POST /invoices",
+        "inferred": "an HTTP call from outside this repo"
+      },
+      {
+        "id": "save",
+        "from": "api",
+        "to": "store",
+        "label": "save",
+        "code": "src/routes/invoices.js:6-13",
+        "calls": "saveInvoice("
+      },
+      {
+        "id": "insert",
+        "from": "store",
+        "to": "db",
+        "label": "insert invoice",
+        "code": "src/store.js:16-20",
+        "calls": "db.insert(",
+        "change": "changed"
+      },
+      {
+        "id": "to-attach",
+        "from": "store",
+        "to": "attach",
+        "label": "files",
+        "planned": "saveInvoice will call saveAttachments"
+      },
+      {
+        "id": "attach-db",
+        "from": "attach",
+        "to": "db",
+        "label": "insert rows",
+        "planned": "saveAttachments will insert one row per file"
+      }
+    ]
+  }
+};
+  plan.repos[0].path = repo.path;
+  return plan;
+}
