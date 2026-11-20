@@ -63,7 +63,8 @@ const TONE = {
 const stopWord = n => (n === 1 ? 'stop' : 'stops');
 const linkTo = s => `${s.n}. ${s.name}`;
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const taskPart = ns => (!ns.length ? '' : ` · ${ns.length === 1 ? 'Task' : 'Tasks'} ${ns.join(', ')}`);
+const taskWord = ns => (!ns.length ? '' : `${ns.length === 1 ? 'Task' : 'Tasks'} ${ns.join(', ')}`);
+const taskPart = ns => (ns.length ? ` · ${taskWord(ns)}` : '');
 const STATUS_TAGS = { new: 'NEW', changed: 'CHANGED', unchanged: 'UNCHANGED', elsewhere: 'ANOTHER TICKET' };
 const isGap = r => r.source?.kind === 'not-recorded';
 
@@ -83,6 +84,7 @@ function planStop(s, data) {
     statusTag: inExisting ? 'NEW · in an existing file' : STATUS_TAGS[s.status] || '',
     originTag: originTag(s.from),
     ticket: s.ticket ?? '',
+    task: taskWord(tasksOf(s.id, data)),
     sketches: sketches.map(sketchModel),
     points: s.points || [],
     today: s.today ? { what: s.today.what, points: s.today.points || [] } : null,
@@ -112,7 +114,7 @@ function buildOrder(data, names) {
     tasks: (p.tasks || []).map((t, i) => ({
       n: i + 1, name: t.name, tag: originTag(t.from),
       stops: (t.stops || []).filter(id => names.has(id)).map(id => stopLink(names.get(id).n)),
-      tests: items(tests.filter(x => x.task === t.id && when(x) === 'build')),
+      tests: items(tests.filter(x => x.task === t.id && when(x) === 'build')).map(x => ({ label: 'Test:', ...x })),
     })),
     groups,
     elsewhere: (data.stops || []).flatMap((s, i) => (s.status === 'elsewhere' ? [{ n: i + 1, name: s.name, ticket: s.ticket ?? '', ...stopLink(i + 1) }] : [])),

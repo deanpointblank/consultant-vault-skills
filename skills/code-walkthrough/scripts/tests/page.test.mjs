@@ -9,7 +9,7 @@ import { builtLine, chipLabel, chipDetail } from '../lib/words.mjs';
 import { expectedText } from '../lib/code.mjs';
 import { chalkTalkAt, buildMap } from '../lib/map.mjs';
 import { CODE_PANEL } from '../lib/settings.mjs';
-import { tempRoot, bookingRepo, sampleData, chalkDir, findChrome, dumpDom } from './helpers.mjs';
+import { tempRoot, bookingRepo, sampleData, chalkDir, findChrome, dumpDom, ledgerRepo, samplePlan, withPlanChecks } from './helpers.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATE = path.join(HERE, '..', '..', 'assets', 'page.html');
@@ -204,7 +204,7 @@ test('read view shows the stop', needsChrome, async t => {
     r.builtCode = k.$$('#head .built code').map(c => c.textContent);
     r.files = k.$$('#head .files li').map(li => li.textContent);
     r.checks = k.text(k.$('#head .checks'));
-    r.reasons = k.text(k.$('#head .reasons'));
+    r.reasons = k.text(k.$('#head .facts .k')) + ' ' + k.text(k.$('#head .reasons'));
     r.views = k.$$('[data-view-btn]').map(b => [b.dataset.viewBtn, b.textContent]);
     r.label = k.text(k.$('#map-label'));
     r.where = k.text(k.$('#stop .where'));
@@ -221,7 +221,7 @@ test('read view shows the stop', needsChrome, async t => {
   assert.deepEqual(r.builtCode, ['booking-mini', d.repos[0].commit]);
   assert.deepEqual(r.files, ['api/Dock.java']);
   assert.equal(r.checks, m.checks);
-  assert.equal(r.reasons, '3 recorded, 1 not recorded');
+  assert.equal(r.reasons, 'Reasons: 3 recorded, 1 not recorded');
   assert.deepEqual(r.views, [['read', 'Read'], ['lookup', 'Look up'], ['extend', 'Where to extend']]);
   assert.equal(r.label, 'Stop 1 of 3 — The form sends the booking');
   assert.match(r.where, /web\/form\.ts:1-12.*saveBooking/);
@@ -372,6 +372,7 @@ test('look-up view filters', needsChrome, async t => {
       summary: k.text(x.querySelector('.os')), badge: k.text(x.querySelector('.gapb')),
     }));
     r.all = count();
+    r.onlyLabel = k.$('#only-gaps').parentElement.textContent.trim();
     r.byName = type(k.model.stops[0].name);
     r.byFile = type('Dock.java');
     r.byFunction = type('CHECKDAY');
@@ -399,6 +400,7 @@ test('look-up view filters', needsChrome, async t => {
   assert.deepEqual(r.heads[2], { n: '3', name: d.stops[2].name, file: 'api/Dock.java:25-30 +1 more', summary: d.stops[2].summary, badge: null });
   assert.deepEqual(r.heads[0].badge, m.stops[0].badge);
   assert.equal(r.all, '3 of 3 stops');
+  assert.equal(r.onlyLabel, 'Only stops with a reason not recorded');
   assert.deepEqual(r.byName, ['1 of 3 stops', ['1']]);
   assert.deepEqual(r.byFile, ['2 of 3 stops', ['2', '3']]);
   assert.deepEqual(r.byFunction, ['1 of 3 stops', ['2']]);
@@ -482,6 +484,184 @@ test('thin stops render', needsChrome, async t => {
   assert.equal(r.view, 'read');
 });
 
+// ---- a plan page ----
+
+const planPage = t => assemblePage(pageModel(withPlanChecks(samplePlan(ledgerRepo(tempRoot(t))))), null);
+
+test('a plan stop shows its status, origin and task', needsChrome, async t => {
+  const r = await run(t, planPage(t), (r, k) => {
+    const head = () => ({
+      kicker: k.text(k.$('#stop .kicker')),
+      status: k.$$('#stop .stop-head .stag').map(x => x.textContent),
+      origin: k.$$('#stop .stop-head .otag').map(x => x.textContent),
+    });
+    r.s3 = head();
+    k.$$('#pips button')[0].click();
+    r.s1 = head();
+  }, { hash: 'stop=3' });
+  assert.deepEqual(r.s3, { kicker: 'Stop 3 of 3 · Task 1', status: ['NEW · in an existing file'], origin: ['In plan'] });
+  assert.deepEqual(r.s1, { kicker: 'Stop 1 of 3', status: ['UNCHANGED'], origin: [] });
+});
+
+test('a sketch has no line numbers and reads not checked', needsChrome, async t => {
+  const r = await run(t, planPage(t), (r, k) => {
+    const b = k.$('#stop .block.sketch');
+    const cs = getComputedStyle(b);
+    r.blocks = k.$$('#stop .block').length;
+    r.border = [cs.borderTopStyle, cs.borderRightStyle, cs.borderBottomStyle, cs.borderLeftStyle];
+    r.stripe = getComputedStyle(k.$('.code', b)).boxShadow;
+    r.numbers = [k.$$('.no', b).map(x => x.textContent).join(''), k.$$('[data-n]', b).length];
+    r.head = [k.text(k.$('.code-head .sketch-k', b)), k.text(k.$('.code-head .path', b)), k.text(k.$('.code-head .otag', b))];
+    r.proposal = getComputedStyle(k.$('.code-head .otag', b)).borderTopStyle;
+    r.rows = k.$$('.row .tx', b).map(x => x.textContent);
+  }, { hash: 'stop=3' });
+  assert.equal(r.blocks, 1);
+  assert.deepEqual(r.border, ['dashed', 'dashed', 'dashed', 'dashed']);
+  assert.match(r.stripe, /inset/);
+  assert.deepEqual(r.numbers, ['', 0]);
+  assert.deepEqual(r.head, ['Sketch · not checked', 'src/store.js · new, after line 20', 'Proposal']);
+  assert.equal(r.proposal, 'dashed');
+  assert.equal(r.rows.length, 5);
+  assert.equal(r.rows[0], 'export async function saveAttachments(invoiceId, files) {');
+});
+
+test('a changed stop shows Today and Plan', needsChrome, async t => {
+  const r = await run(t, planPage(t), (r, k) => {
+    r.groups = k.$$('#stop .code-col .code-group').map(g => ({
+      label: k.text(k.$('.group-label', g)),
+      numbers: k.$$('.row[data-n]', g).map(x => x.dataset.n),
+      sketches: k.$$('.block.sketch', g).length,
+      blocks: k.$$('.block', g).length,
+    }));
+    r.parts = k.$$('#stop .tab-panel .part').map(p => ({
+      label: k.text(k.$('.part-k', p)),
+      order: Array.from(p.children).map(x => x.tagName),
+      what: k.text(k.$('p', p)),
+      points: k.$$('li', p).map(x => x.textContent),
+    }));
+    k.$$('#pips button')[2].click();
+    r.newStop = [k.$$('#stop .code-group').length, k.$$('#stop .tab-panel .part').length,
+      Array.from(k.$('#stop .tab-panel').children).map(x => x.tagName), k.$$('#stop .tab-panel li').map(x => x.textContent)];
+  }, { hash: 'stop=2' });
+  assert.deepEqual(r.groups, [
+    { label: 'Today', numbers: ['16', '17', '18', '19', '20'], sketches: 0, blocks: 1 },
+    { label: 'Plan', numbers: [], sketches: 1, blocks: 1 },
+  ]);
+  assert.deepEqual(r.parts, [
+    { label: 'Today', order: ['DIV', 'P', 'UL'], what: 'The store totals the invoice and inserts one row.', points: ['Writes an audit entry first.'] },
+    { label: 'Plan', order: ['DIV', 'P', 'UL'], what: 'The store inserts the invoice row, then saves its files against it.', points: ['No files means no extra work.'] },
+  ]);
+  assert.deepEqual(r.newStop, [0, 0, ['P', 'UL'], ['Runs only after the invoice row exists.']]);
+});
+
+test('takes, gives and choices', needsChrome, async t => {
+  const r = await run(t, planPage(t), (r, k) => {
+    const tab = name => k.$(`#stop [data-tab="${name}"]`);
+    r.chips = k.$$('#stop .tab-panel .name-chip').map(x => x.textContent);
+    r.io = k.$$('#stop .tab-panel .io-v').map(x => x.textContent);
+    tab('why').click();
+    r.whyTab = k.text(tab('why'));
+    const items = k.$$('#stop .tab-panel .choices li');
+    r.choices = items.map(li => ({ text: li.textContent, tag: k.text(k.$('.otag', li)), open: li.classList.contains('open') }));
+    const chip = k.$('.chip', items[0]);
+    r.chipDashed = getComputedStyle(chip).borderTopStyle === 'dashed';
+    r.inPlan = getComputedStyle(k.$('.otag', items[0])).borderTopStyle;
+    chip.click();
+    r.detail = [k.visible(k.$('.chip-detail', items[0])), k.text(k.$('.chip-detail', items[0]))];
+    r.openColour = [getComputedStyle(k.$('.otag', items[1])).color, getComputedStyle(k.$('.gapn', tab('why'))).color];
+    r.openChip = !!k.$('.chip', items[1]);
+    k.$$('#pips button')[1].click();
+    const p = k.$('#stop .tab-panel .choices li .otag');
+    r.proposal = [p.textContent, getComputedStyle(p).borderTopStyle, getComputedStyle(p).color === getComputedStyle(document.body).color];
+  }, { hash: 'stop=3&tab=data' });
+  assert.deepEqual(r.chips, ['invoice row', 'attachments', 'attachment rows']);
+  assert.deepEqual(r.io, ['The invoice row and its files.', 'One row per file.']);
+  assert.equal(r.whyTab, 'Why & choices 2 · 1 open');
+  assert.equal(r.choices.length, 2);
+  assert.ok(r.choices[0].text.startsWith('One row per file.'), r.choices[0].text);
+  assert.deepEqual([r.choices[0].tag, r.choices[0].open], ['In plan', false]);
+  assert.equal(r.chipDashed, false);
+  assert.equal(r.inPlan, 'solid');
+  assert.deepEqual(r.detail, [true, '“one row per file” — chat']);
+  assert.ok(r.choices[1].text.startsWith('Is there a size limit per file?'), r.choices[1].text);
+  assert.deepEqual([r.choices[1].tag, r.choices[1].open, r.openChip], ['Open', true, false]);
+  assert.equal(r.openColour[0], r.openColour[1]);
+  assert.deepEqual(r.proposal, ['Proposal', 'dashed', false]);
+});
+
+test('the build order view and look up', needsChrome, async t => {
+  const r = await run(t, planPage(t), (r, k) => {
+    const kids = el => Array.from(el.children).map(x => x.textContent);
+    r.facts = k.text(k.$('#head .facts'));
+    const tab = k.$('[data-view-btn="extend"]');
+    r.tab = tab.textContent;
+    tab.click();
+    r.title = k.text(k.$('#extend .order-head h2'));
+    r.summary = k.text(k.$('#extend .order-sum'));
+    r.tasks = k.$$('#extend .order-task').map(li => [kids(k.$('.order-row', li)), k.$$('.order-test', li).map(kids)]);
+    r.groups = k.$$('#extend .order-group').map(g => [k.text(k.$('h3', g)), k.$$('li', g).map(kids)]);
+    r.noExtend = k.visible(k.$('#no-extend'));
+    k.$$('#extend a[data-stop]').find(a => a.textContent === 'Stop 3 →').click();
+    r.after = [k.html.dataset.view, k.html.dataset.stop];
+    k.$('[data-view-btn="lookup"]').click();
+    r.label = k.$('#only-gaps').parentElement.textContent.trim();
+    const rows = k.$$('.outline-row');
+    r.rows = rows.map(x => [k.text(x.querySelector('.stag')), k.text(x.querySelector('.otask'))]);
+    const shown = () => rows.filter(k.visible).map(x => x.dataset.n);
+    k.$('#only-gaps').click();
+    r.open = [shown(), k.text(k.$('#count'))];
+    k.$('#only-gaps').click();
+    const filter = k.$('#filter');
+    filter.value = 'saveAttachments';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+    r.byFunction = shown();
+    rows[2].querySelector('.outline-head').click();
+    r.opened = !!rows[2].querySelector('.block.sketch');
+  });
+  assert.ok(r.facts.endsWith('Stops: 1 new, 1 changed, 1 unchanged · 1 open · 5 proposals'), r.facts);
+  assert.equal(r.tab, 'Build order');
+  assert.deepEqual([r.title, r.summary], ['Build order', '2 tasks · 1 test · 1 risk · 1 out of scope']);
+  assert.deepEqual(r.tasks, [
+    [['1.', 'Add the attachments table and its save', 'Proposal', 'Stop 3 →'], []],
+    [['2.', 'Save attachments with the invoice', 'Proposal', 'Stop 2 →'], [['Test:', 'An invoice with two files gets two attachment rows.', 'Proposal']]],
+  ]);
+  assert.deepEqual(r.groups, [
+    ['Risks', [['Many large files could slow the save.', 'Proposal']]],
+    ['Out of scope', [['The upload screen.', 'In plan']]],
+  ]);
+  assert.equal(r.noExtend, false);
+  assert.deepEqual(r.after, ['read', '3']);
+  assert.equal(r.label, 'Only stops with something open');
+  assert.deepEqual(r.rows, [['UNCHANGED', ''], ['CHANGED', 'Task 2'], ['NEW · in an existing file', 'Task 1']]);
+  assert.deepEqual(r.open, [['3'], '1 of 3 stops']);
+  assert.deepEqual(r.byFunction, ['3']);
+  assert.equal(r.opened, true);
+});
+
+test('a stop another ticket builds, and a stop awaiting review', needsChrome, async t => {
+  const d = withPlanChecks(samplePlan(ledgerRepo(tempRoot(t))));
+  const s = d.stops;
+  s[0].status = 'elsewhere';
+  s[0].ticket = 'PROJ-123';
+  s[1].from.kind = 'review';
+  const r = await run(t, assemblePage(pageModel(d), null), (r, k) => {
+    const kids = el => Array.from(el.children).map(x => x.textContent);
+    r.s1 = k.$$('#stop .stop-head .stag').map(x => x.textContent);
+    k.$$('#pips button')[1].click();
+    const tag = k.$('#stop .stop-head .otag');
+    r.s2 = [tag.textContent, getComputedStyle(tag).borderTopStyle];
+    k.$('[data-view-btn="extend"]').click();
+    const last = k.$$('#extend .order-group').at(-1);
+    r.section = [k.text(k.$('h3', last)), k.$$('li', last).map(kids)];
+    k.$('a[data-stop]', last).click();
+    r.after = [k.html.dataset.view, k.html.dataset.stop];
+  });
+  assert.deepEqual(r.s1, ['ANOTHER TICKET', 'PROJ-123']);
+  assert.deepEqual(r.s2, ['Awaiting review', 'solid']);
+  assert.deepEqual(r.section, ['ANOTHER TICKET', [['The API takes the invoice', 'PROJ-123', 'Stop 1 →']]]);
+  assert.deepEqual(r.after, ['read', '1']);
+});
+
 // ---- with the real map ----
 
 test('narrow and short frames', needsMap, async t => {
@@ -511,6 +691,135 @@ test('narrow and short frames', needsMap, async t => {
   assert.ok(big.hidden[3] < big.frame / 2, `strip ${big.hidden[3]}px, full ${big.frame}px`);
   assert.equal(big.hidden[3], small.frame);
   assert.deepEqual(big.shown, ['full', 'Hide map', 'full']);
+});
+
+test('the divider sits between the map and the bar, with its ARIA values', needsMap, async t => {
+  const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), (r, k) => {
+    const s = k.$('#split');
+    r.order = [s.previousElementSibling.id, s.nextElementSibling.id];
+    r.attrs = ['role', 'aria-orientation', 'aria-label', 'aria-valuemin', 'aria-valuemax', 'aria-valuenow', 'tabindex'].map(a => s.getAttribute(a));
+    r.height = s.getBoundingClientRect().height;
+  });
+  assert.deepEqual(r.order, ['map-wrap', 'bar']);
+  assert.deepEqual(r.attrs, ['separator', 'horizontal', 'Map size', '20', '80', '46', '0']);
+  assert.equal(r.height, 6);
+});
+
+test('the divider moves with keys, within 20 and 80', needsMap, async t => {
+  const keys = (r, k) => {
+    const s = k.$('#split');
+    s.focus();
+    r.seen = [];
+    for (const key of ['ArrowDown', 'PageDown', 'End', 'ArrowDown', 'Home', 'ArrowUp', 'PageUp']) {
+      k.key(s, key);
+      r.seen.push(s.getAttribute('aria-valuenow'));
+      if (key === 'End') {
+        r.frame = k.$('#map-frame').getBoundingClientRect().height;
+        r.read = k.$('#read').getBoundingClientRect().height;
+      }
+    }
+    k.key(s, 'Enter');
+    r.seen.push(s.getAttribute('aria-valuenow'));
+    r.stored = localStorage.getItem('code-walkthrough:split');
+    r.narrow = k.html.dataset.narrow;
+    k.key(s, 'End');
+    r.end = s.getAttribute('aria-valuenow');
+    r.before = k.html.dataset.stop;
+    k.key(s, 'ArrowRight');
+    r.after = k.html.dataset.stop;
+  };
+  const page = assemblePage(pageModel(sample()), sampleMap());
+  const r = await run(t, page, keys);
+  assert.deepEqual(r.seen, ['51', '66', '80', '80', '20', '20', '20', '46']);
+  assert.ok(Math.abs(r.frame - r.read * 0.8) <= 2, `frame ${r.frame}px of ${r.read}px`);
+  assert.equal(r.stored, '46');
+  assert.deepEqual([r.before, r.after], ['1', '2']);
+  const tall = await run(t, page, keys, { size: [800, 1000] });
+  assert.equal(tall.narrow, '1');
+  assert.equal(tall.end, '80');
+});
+
+test('the divider hides with the strip and without a map', needsMap, async t => {
+  const probe = (r, k) => {
+    const s = k.$('#split');
+    const state = () => {
+      document.activeElement.blur();
+      s.focus();
+      return [getComputedStyle(s).visibility, s.getBoundingClientRect().height, document.activeElement === s];
+    };
+    r.full = state();
+    k.$('#hide-map').click();
+    r.strip = state();
+    k.$('#hide-map').click();
+    r.again = state();
+  };
+  const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), probe);
+  assert.deepEqual(r.strip, ['hidden', 0, false]);
+  assert.deepEqual(r.again, ['visible', 6, true]);
+  const none = await run(t, assemblePage(pageModel(sample()), null), (r, k) => {
+    const s = k.$('#split');
+    s.focus();
+    r.none = [getComputedStyle(s).visibility, s.getBoundingClientRect().height, document.activeElement === s];
+  });
+  assert.deepEqual(none.none, ['hidden', 0, false]);
+});
+
+test('the divider drags and resets on double-click', needsMap, async t => {
+  const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), (r, k) => {
+    const s = k.$('#split');
+    const rd = k.$('#read').getBoundingClientRect();
+    const ev = (type, y) => s.dispatchEvent(new PointerEvent(type, { pointerId: 1, clientY: y, bubbles: true, cancelable: true }));
+    const at = f => rd.top + f * rd.height;
+    const now = () => s.getAttribute('aria-valuenow');
+    ev('pointerdown', at(0.46));
+    r.dragging = k.html.hasAttribute('data-dragging');
+    r.seen = [];
+    for (const f of [0.7, 0.95, 0.05]) { ev('pointermove', at(f)); r.seen.push(now()); }
+    const fr = k.$('#map-frame').getBoundingClientRect();
+    ev('pointerup', fr.top + fr.height / 2);
+    r.after = [k.html.hasAttribute('data-dragging'), getComputedStyle(k.$('#map-frame')).pointerEvents];
+    r.stored = localStorage.getItem('code-walkthrough:split');
+    s.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    r.reset = now();
+  });
+  assert.equal(r.dragging, true);
+  assert.deepEqual(r.seen, ['70', '80', '20']);
+  assert.equal(r.after[0], false);
+  assert.notEqual(r.after[1], 'none');
+  assert.equal(r.stored, '20');
+  assert.equal(r.reset, '46');
+});
+
+test('the divider share is remembered, and a bad value means the default', needsMap, async t => {
+  const withSaved = v => `<script>localStorage.setItem('code-walkthrough:split', ${JSON.stringify(v)});</script>`;
+  const probe = (r, k) => {
+    r.now = k.$('#split').getAttribute('aria-valuenow');
+    r.frame = k.$('#map-frame').getBoundingClientRect().height;
+    r.read = k.$('#read').getBoundingClientRect().height;
+  };
+  const page = assemblePage(pageModel(sample()), sampleMap());
+  const ok = await run(t, page, probe, { head: withSaved('30') });
+  assert.equal(ok.now, '30');
+  assert.ok(Math.abs(ok.frame - ok.read * 0.3) <= 2, `frame ${ok.frame}px of ${ok.read}px`);
+  for (const bad of ['95', '5', 'abc', '']) {
+    const r = await run(t, page, probe, { head: withSaved(bad) });
+    assert.equal(r.now, '46', `stored ${JSON.stringify(bad)}`);
+  }
+});
+
+test('the divider with storage that throws', needsMap, async t => {
+  const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), (r, k) => {
+    const s = k.$('#split');
+    r.ready = k.html.dataset.ready;
+    s.focus();
+    k.key(s, 'End');
+    r.end = s.getAttribute('aria-valuenow');
+    s.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    r.reset = s.getAttribute('aria-valuenow');
+  }, { head: BREAK_STORAGE });
+  assert.equal(r.ready, '1');
+  assert.equal(r.end, '80');
+  assert.equal(r.reset, '46');
 });
 
 test('storage that throws', needsMap, async t => {

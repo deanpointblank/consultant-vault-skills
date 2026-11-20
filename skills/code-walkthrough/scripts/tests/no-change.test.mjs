@@ -13,7 +13,7 @@ const needsChrome = { skip: noChrome };
 const needsMap = { skip: noChrome || (!chalkTalkAt(chalkDir() ?? 'none') && 'chalk-talk not installed') };
 
 test('a walkthrough page renders as before, apart from the divider', needsChrome, async t => {
-  const got = (await captureApp(tempRoot(t))).replace(/<div id="split"[^>]*><\/div>/g, '');
+  const got = (await captureApp(tempRoot(t))).replace(/[ \t]*<div id="split"[^>]*><\/div>\n/g, '');
   assert.ok(fs.existsSync(GOLDEN), `missing golden file ${GOLDEN}`);
   assert.equal(got, fs.readFileSync(GOLDEN, 'utf8'));
 });
