@@ -114,7 +114,7 @@ function buildOrder(data, names) {
     tasks: (p.tasks || []).map((t, i) => ({
       n: i + 1, name: t.name, tag: originTag(t.from),
       stops: (t.stops || []).filter(id => names.has(id)).map(id => stopLink(names.get(id).n)),
-      tests: items(tests.filter(x => x.task === t.id && when(x) === 'build')),
+      tests: items(tests.filter(x => x.task === t.id && when(x) === 'build')).map(x => ({ label: 'Test:', ...x })),
     })),
     groups,
     elsewhere: (data.stops || []).flatMap((s, i) => (s.status === 'elsewhere' ? [{ n: i + 1, name: s.name, ticket: s.ticket ?? '', ...stopLink(i + 1) }] : [])),

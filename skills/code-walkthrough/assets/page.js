@@ -309,7 +309,7 @@
       h('div', { class: 'order-head' }, h('h2', null, M.extendTab), h('span', { class: 'order-sum' }, o.summary)),
       h('ol', { class: 'order' }, o.tasks.map(t => h('li', { class: 'order-task' },
         h('div', { class: 'order-row' }, h('span', { class: 'order-n' }, `${t.n}.`), h('span', { class: 'order-name' }, md(t.name)), originTag(t.tag), t.stops.map(x => stopLink(x.n, x.link))),
-        t.tests.map(x => h('div', { class: 'order-test' }, item(x)))))),
+        t.tests.map(x => h('div', { class: 'order-test' }, h('span', { class: 'order-label' }, x.label), item(x)))))),
       o.groups.map(g => h('section', { class: 'order-group' }, h('h3', null, g.title), h('ul', null, g.items.map(x => h('li', null, item(x)))))),
       o.elsewhere.length ? h('section', { class: 'order-group' }, h('h3', null, STOPS[o.elsewhere[0].n - 1].statusTag),
         h('ul', null, o.elsewhere.map(e => h('li', null, h('span', { class: 'order-text' }, e.name), statusTag(e.ticket), stopLink(e.n, e.link))))) : null);

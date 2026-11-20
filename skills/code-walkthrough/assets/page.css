@@ -241,6 +241,7 @@ html[data-map="none"] #bar { border-top: 0; }
 .order-name { font-weight: 600; }
 .order-row .ex-link { margin-left: auto; }
 .order-test { margin: 4px 0 0 1.6em; color: var(--muted); font-size: 13.5px; }
+.order-label { font-weight: 600; margin-right: -6px; }
 .order-group { margin: 0 0 14px; }
 .order-group h3 { margin: 0 0 4px; font: 700 11px/1.3 var(--sans); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
 .order-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }

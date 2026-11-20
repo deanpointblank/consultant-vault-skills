@@ -215,7 +215,7 @@ test('the build order', t => {
   assert.equal(o.summary, '2 tasks · 1 test · 1 risk · 1 out of scope');
   assert.deepEqual(o.tasks[0], { n: 1, name: 'Add the attachments table and its save', tag: 'Proposal', stops: [{ n: 3, link: 'Stop 3 →' }], tests: [] });
   assert.deepEqual(o.tasks[1].stops, [{ n: 2, link: 'Stop 2 →' }]);
-  assert.deepEqual(o.tasks[1].tests, [{ text: 'An invoice with two files gets two attachment rows.', tag: 'Proposal' }]);
+  assert.deepEqual(o.tasks[1].tests, [{ label: 'Test:', text:'An invoice with two files gets two attachment rows.', tag: 'Proposal' }]);
   assert.deepEqual(o.groups.map(g => g.title), ['Risks', 'Out of scope']);
   assert.deepEqual(o.groups[0].items, [{ text: 'Many large files could slow the save.', tag: 'Proposal' }]);
   assert.deepEqual(o.groups.at(-1).items.at(-1), { text: 'The upload screen.', tag: 'In plan' });

@@ -623,7 +623,7 @@ test('the build order view and look up', needsChrome, async t => {
   assert.deepEqual([r.title, r.summary], ['Build order', '2 tasks · 1 test · 1 risk · 1 out of scope']);
   assert.deepEqual(r.tasks, [
     [['1.', 'Add the attachments table and its save', 'Proposal', 'Stop 3 →'], []],
-    [['2.', 'Save attachments with the invoice', 'Proposal', 'Stop 2 →'], [['An invoice with two files gets two attachment rows.', 'Proposal']]],
+    [['2.', 'Save attachments with the invoice', 'Proposal', 'Stop 2 →'], [['Test:', 'An invoice with two files gets two attachment rows.', 'Proposal']]],
   ]);
   assert.deepEqual(r.groups, [
     ['Risks', [['Many large files could slow the save.', 'Proposal']]],
@@ -636,6 +636,30 @@ test('the build order view and look up', needsChrome, async t => {
   assert.deepEqual(r.open, [['3'], '1 of 3 stops']);
   assert.deepEqual(r.byFunction, ['3']);
   assert.equal(r.opened, true);
+});
+
+test('a stop another ticket builds, and a stop awaiting review', needsChrome, async t => {
+  const d = withPlanChecks(samplePlan(ledgerRepo(tempRoot(t))));
+  const s = d.stops;
+  s[0].status = 'elsewhere';
+  s[0].ticket = 'PROJ-123';
+  s[1].from.kind = 'review';
+  const r = await run(t, assemblePage(pageModel(d), null), (r, k) => {
+    const kids = el => Array.from(el.children).map(x => x.textContent);
+    r.s1 = k.$$('#stop .stop-head .stag').map(x => x.textContent);
+    k.$$('#pips button')[1].click();
+    const tag = k.$('#stop .stop-head .otag');
+    r.s2 = [tag.textContent, getComputedStyle(tag).borderTopStyle];
+    k.$('[data-view-btn="extend"]').click();
+    const last = k.$$('#extend .order-group').at(-1);
+    r.section = [k.text(k.$('h3', last)), k.$$('li', last).map(kids)];
+    k.$('a[data-stop]', last).click();
+    r.after = [k.html.dataset.view, k.html.dataset.stop];
+  });
+  assert.deepEqual(r.s1, ['ANOTHER TICKET', 'PROJ-123']);
+  assert.deepEqual(r.s2, ['Awaiting review', 'solid']);
+  assert.deepEqual(r.section, ['ANOTHER TICKET', [['The API takes the invoice', 'PROJ-123', 'Stop 1 →']]]);
+  assert.deepEqual(r.after, ['read', '1']);
 });
 
 // ---- with the real map ----
