@@ -271,6 +271,7 @@ test('sketch labels, task lists and badges', t => {
   });
   const [s1, s2, s3] = m.stops;
   assert.equal(s2.kicker, 'Stop 2 of 3 · Tasks 1, 2');
+  assert.equal(s2.task, 'Tasks 1, 2');
   assert.deepEqual(s2.sketches.map(k => k.label), ['src/attach.js · new file', 'src/store.js · new, after totalOf']);
   assert.equal(s2.badge, '1 open · 1 not recorded');
   assert.equal(s2.whyLabel, 'Why & choices 3 · 1 open · 1 not recorded');

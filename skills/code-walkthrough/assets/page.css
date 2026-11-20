@@ -201,6 +201,53 @@ html[data-map="none"] #bar { border-top: 0; }
 .ex-link { color: var(--accent); font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: none; white-space: nowrap; }
 .ex-link:hover { text-decoration: underline; }
 
+/* ---------- a plan: tags, sketches, Today and Plan, choices, Build order ---------- */
+.kick-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+.stop-tags, .ostat { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.stag, .otag { display: inline-block; font: 600 10.5px/1.2 var(--sans); padding: 1px 7px; border: 1px solid; border-radius: 999px; white-space: nowrap; vertical-align: 1px; }
+.stag { color: var(--text); border-color: var(--border-strong); background: var(--surface-2); letter-spacing: .03em; }
+.otag-plan { color: var(--doc-fg); background: var(--doc-bg); }
+.otag-review { color: var(--commit-fg); background: var(--commit-bg); }
+/* A proposal never reads as decided: dashed and grey. An open choice takes the not-recorded colour. */
+.otag-proposal { color: var(--muted); border: 1px dashed var(--faint); background: transparent; }
+.otag-open { color: var(--none-fg); border-style: dashed; background: transparent; }
+.code-group + .code-group { margin-top: 4px; }
+.group-label, .part-k { font: 700 10.5px/1.3 var(--sans); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 0 0 4px; }
+/* A sketch never looks checked: dashed border, a grey stripe, no line numbers. */
+.block.sketch { border: 1px dashed var(--border-strong); background: var(--surface); }
+.block.sketch .code-head { border-bottom-style: dashed; background: transparent; }
+.block.sketch .code-head .otag { margin-left: auto; }
+.sketch-k { font: 700 11px/1.3 var(--sans); color: var(--muted); }
+.block.sketch .code { box-shadow: inset 4px 0 0 var(--border-strong); }
+.block.sketch .row .tx { padding-left: 16px; }
+.part + .part { margin-top: 12px; }
+.part p { margin: 0; }
+.points { margin: 4px 0 0; padding-left: 18px; }
+.points li { margin: 2px 0; }
+.name-chip { display: inline-block; font: 600 11.5px/1.2 var(--sans); color: var(--data); border: 1px solid currentColor; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.why.choices { margin-top: 8px; }
+.why.choices:first-child { margin-top: 0; }
+.why li.open { color: var(--muted); }
+.why li.open::before { background: none; border: 1.5px solid var(--none-fg); width: 6px; height: 6px; }
+.why .otag { margin-left: 2px; }
+.order-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 10px; }
+.order-head h2 { margin: 0; font-size: 17px; }
+.order-sum { color: var(--muted); font-size: 13px; }
+.order { list-style: none; margin: 0 0 16px; padding: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.order-task { padding: 10px 14px; font-size: 14px; }
+.order-task + .order-task { border-top: 1px solid var(--border); }
+.order-row, .order-test, .order-group li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.order-n { font: 700 12px/1 var(--mono); color: var(--muted); }
+.order-name { font-weight: 600; }
+.order-row .ex-link { margin-left: auto; }
+.order-test { margin: 4px 0 0 1.6em; color: var(--muted); font-size: 13.5px; }
+.order-group { margin: 0 0 14px; }
+.order-group h3 { margin: 0 0 4px; font: 700 11px/1.3 var(--sans); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.order-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+html[data-plan] .outline-head { grid-template-columns: 2em minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, .95fr) minmax(0, 2fr) 8.6em 1em; }
+.ostat .stag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.otask { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
 /* ---------- narrow: below 900px wide the code takes the full width, the tabs go below it ---------- */
 html[data-narrow="1"] .stop-grid, html[data-narrow="1"] .cards { grid-template-columns: minmax(0, 1fr); }
 html[data-narrow="1"] #map-label { order: -1; flex-basis: 100%; }
@@ -213,6 +260,8 @@ html[data-narrow="1"] .outline-head .os { grid-area: s; }
 html[data-narrow="1"] .outline-head .gapcell { grid-area: g; }
 html[data-narrow="1"] .outline-head .chev { grid-area: c; }
 html[data-narrow="1"] .outline-body { padding-left: 14px; }
+html[data-plan][data-narrow="1"] .outline-head { grid-template-areas: "n t f g c" ". p p p ." ". s s s ."; }
+html[data-narrow="1"] .outline-head .ostat { grid-area: p; }
 html[data-narrow="1"] .extend-item { grid-template-columns: minmax(0, 1fr) auto; }
 html[data-narrow="1"] .ex-text { grid-column: 1 / -1; grid-row: 2; }
 html[data-dragging] #map-frame { pointer-events: none; }

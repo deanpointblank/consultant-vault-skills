@@ -18,6 +18,7 @@
   const WORDS = {
     prev: '← Prev', next: 'Next →', hideMap: 'Hide map', showMap: 'Show map', toDark: 'Dark', toLight: 'Light',
     what: 'What it does', data: 'Data in → out', in: 'In', out: 'Out', guess: 'Guess', readHere: 'Read from here', map: 'Map',
+    today: 'Today', plan: 'Plan',
   };
 
   // Browser storage can be missing or throw (private windows, blocked site data, some frames).
@@ -79,7 +80,21 @@
     files.hidden = !M.uncommittedFiles.length;
     document.querySelector('#head .checks').textContent = M.checks;
     document.querySelector('#head .reasons').textContent = M.reasons;
+    if (!M.plan) return;
+    html.dataset.plan = '1';
+    document.querySelector('#head .facts .k').textContent = M.reasonsKey;
+    document.querySelector('[data-view-btn="extend"]').textContent = M.extendTab;
+    $('extend').setAttribute('aria-label', M.extendTab);
+    $('only-gaps').nextSibling.textContent = ' ' + M.lookupOnly;   // the label's text; the checkbox stays
   }
+
+  /* ---------- a plan's tags ---------- */
+
+  // An origin tag's look comes from its words; any other reads as a proposal, never as decided.
+  const ORIGIN_LOOK = { 'In plan': 'plan', 'Awaiting review': 'review', Open: 'open' };
+  const originTag = text => (text ? h('span', { class: `otag otag-${ORIGIN_LOOK[text] || 'proposal'}` }, text) : null);
+  const statusTag = text => (text ? h('span', { class: 'stag' }, text) : null);
+  const stopTags = s => h('div', { class: 'stop-tags' }, statusTag(s.statusTag), statusTag(s.ticket), originTag(s.originTag));
 
   /* ---------- one stop: code, notes, and what, data and why ---------- */
 
@@ -105,31 +120,57 @@
     return block;
   }
 
+  // A sketch is not checked: a dashed block with no line numbers.
+  const sketchBlock = k => h('div', { class: 'block sketch' },
+    h('div', { class: 'code-head' }, h('span', { class: 'sketch-k' }, k.head), h('span', { class: 'path' }, k.label), k.fn ? h('span', { class: 'fn' }, k.fn) : null, originTag(k.originTag)),
+    h('div', { class: 'code' }, h('div', { class: 'lines' }, k.rows.map(r => h('div', { class: COMMENT.test(r.text) ? 'row cm' : 'row' }, h('span', { class: 'tx' }, r.text))))));
+
+  const codeGroup = (label, blocks) => h('div', { class: 'code-group' }, h('div', { class: 'group-label' }, label), blocks);
+
+  // Today's checked blocks and the plan's sketches; with both, each under its label.
+  function codeBlocks(s) {
+    const today = s.blocks.map(codeBlock), plan = (s.sketches || []).map(sketchBlock);
+    return today.length && plan.length ? [codeGroup(WORDS.today, today), codeGroup(WORDS.plan, plan)] : [today, plan];
+  }
+
   const codeColumn = s => h('div', { class: 'code-col' },
-    s.blocks.map(codeBlock),
+    codeBlocks(s),
     s.notes.length ? h('details', { class: 'notes' }, h('summary', null, s.notesLabel), h('ul', null, s.notes.map(n => h('li', null, md(n))))) : null);
 
   const whereLine = s => h('div', { class: 'where' },
-    s.blocks.map((b, i) => [i ? ', ' : null, h('code', null, b.label), b.fn ? [' ', h('span', { class: 'fn' }, b.fn)] : null]));
+    [...s.blocks, ...(s.sketches || [])].map((b, i) => [i ? ', ' : null, h('code', null, b.label), b.fn ? [' ', h('span', { class: 'fn' }, b.fn)] : null]));
 
-  const whatBody = s => (s.what ? h('p', null, md(s.what)) : null);
+  // The sentence, then the bullets; a changed stop says how it works today, then the plan.
+  const sentence = x => [x.what ? h('p', null, md(x.what)) : null, x.points && x.points.length ? h('ul', { class: 'points' }, x.points.map(p => h('li', null, md(p)))) : null];
+  const part = (label, x) => h('div', { class: 'part' }, h('div', { class: 'part-k' }, label), sentence(x));
+  const whatBody = s => (s.today ? [part(WORDS.today, s.today), part(WORDS.plan, s)] : sentence(s));
 
-  const dataBody = s => (s.dataIn || s.dataOut ? h('div', { class: 'io' },
-    s.dataIn ? [h('span', { class: 'io-k' }, WORDS.in), h('span', { class: 'io-v' }, md(s.dataIn))] : null,
-    s.dataIn && s.dataOut ? h('span', { class: 'io-arrow', 'aria-hidden': 'true' }, '→') : null,
-    s.dataOut ? [h('span', { class: 'io-k' }, WORDS.out), h('span', { class: 'io-v' }, md(s.dataOut))] : null) : null);
-
-  function reason(w) {
-    const detail = h('div', { class: 'chip-detail', hidden: true }, w.detail);
-    const chip = h('button', {
-      type: 'button', class: `chip chip-${w.tone}`, 'aria-expanded': 'false',
-      onclick: () => { detail.hidden = !detail.hidden; chip.setAttribute('aria-expanded', String(!detail.hidden)); },
-    }, w.chip);
-    return h('li', { class: w.notRecorded ? 'not-recorded' : null }, md(w.text), ' ', chip, detail);
+  const names = list => (list || []).map(x => h('span', { class: 'name-chip' }, x));
+  function dataBody(s) {
+    const takes = s.dataIn || (s.takes && s.takes.length), gives = s.dataOut || (s.gives && s.gives.length);
+    return takes || gives ? h('div', { class: 'io' },
+      takes ? [h('span', { class: 'io-k' }, WORDS.in), s.dataIn ? h('span', { class: 'io-v' }, md(s.dataIn)) : null, names(s.takes)] : null,
+      takes && gives ? h('span', { class: 'io-arrow', 'aria-hidden': 'true' }, '→') : null,
+      gives ? [h('span', { class: 'io-k' }, WORDS.out), s.dataOut ? h('span', { class: 'io-v' }, md(s.dataOut)) : null, names(s.gives)] : null) : null;
   }
+
+  function quoteChip(label, text, tone) {
+    const detail = h('div', { class: 'chip-detail', hidden: true }, text);
+    const chip = h('button', {
+      type: 'button', class: `chip chip-${tone}`, 'aria-expanded': 'false',
+      onclick: () => { detail.hidden = !detail.hidden; chip.setAttribute('aria-expanded', String(!detail.hidden)); },
+    }, label);
+    return [chip, detail];
+  }
+
+  const reason = w => h('li', { class: w.notRecorded ? 'not-recorded' : null }, md(w.text), ' ', quoteChip(w.chip, w.detail, w.tone));
+
+  // A quoted choice gets a written-source chip; an open one has no chip and the not-recorded colour.
+  const choice = c => h('li', { class: c.open ? 'open' : null }, md(c.text), ' ', originTag(c.tag), c.chip ? [' ', quoteChip(c.chip, c.detail, 'doc')] : null);
 
   const whyBody = s => [
     s.why.length ? h('ul', { class: 'why' }, s.why.map(reason)) : null,
+    s.choices && s.choices.length ? h('ul', { class: 'why choices' }, s.choices.map(choice)) : null,
     s.guesses.map(g => h('p', { class: 'guess' }, h('span', { class: 'guess-tag' }, WORDS.guess), ' ', md(g))),
   ];
 
@@ -180,7 +221,7 @@
     navButton($('prev'), s.prevLabel, WORDS.prev);
     navButton($('next'), s.nextLabel, WORDS.next);
     put($('stop'), h('div', { class: 'stop-in' },
-      h('div', { class: 'stop-head' }, h('div', { class: 'kicker' }, s.kicker), h('h2', { class: 'stop-title' }, s.name), whereLine(s)),
+      h('div', { class: 'stop-head' }, M.plan ? h('div', { class: 'kick-row' }, h('div', { class: 'kicker' }, s.kicker), stopTags(s)) : h('div', { class: 'kicker' }, s.kicker), h('h2', { class: 'stop-title' }, s.name), whereLine(s)),
       h('div', { class: 'stop-grid' }, codeColumn(s), sideColumn(s))));
     $('stop').scrollTop = 0;
   }
@@ -194,12 +235,13 @@
 
   /* ---------- Look up ---------- */
 
-  const haystacks = STOPS.map(s => [s.name, s.summary, ...s.blocks.flatMap(b => [b.label, b.fn])].filter(Boolean).join('\n').toLowerCase());
+  const haystacks = STOPS.map(s => [s.name, s.summary, ...[...s.blocks, ...(s.sketches || [])].flatMap(b => [b.label, b.fn])].filter(Boolean).join('\n').toLowerCase());
   let openRow = 0;
 
   const outlineRows = STOPS.map(s => h('div', { class: 'outline-row', 'data-n': s.n },
     h('button', { type: 'button', class: 'outline-head', 'aria-expanded': 'false', onclick: () => toggleRow(s.n) },
       h('span', { class: 'on' }, String(s.n)),
+      M.plan ? h('span', { class: 'ostat' }, statusTag(s.statusTag), h('span', { class: 'otask' }, s.task)) : null,
       h('span', { class: 'ot' }, s.name),
       h('span', { class: 'of' }, s.firstFile, s.moreLabel ? [' ', h('span', { class: 'more' }, s.moreLabel)] : null),
       h('span', { class: 'os' }, md(s.summary)),
@@ -233,7 +275,7 @@
     const gapsOnly = $('only-gaps').checked;
     let shown = 0;
     outlineRows.forEach((row, i) => {
-      row.hidden = Boolean((q && !haystacks[i].includes(q)) || (gapsOnly && !STOPS[i].badge));
+      row.hidden = Boolean((q && !haystacks[i].includes(q)) || (gapsOnly && !(M.plan ? STOPS[i].hasOpen : STOPS[i].badge)));
       if (!row.hidden) shown++;
     });
     $('count').textContent = `${shown} ${M.outOf}`;
@@ -242,16 +284,35 @@
   $('filter').addEventListener('input', renderLookup);
   $('only-gaps').addEventListener('change', renderLookup);
 
-  /* ---------- Where to extend ---------- */
+  /* ---------- Where to extend, or a plan's Build order ---------- */
+
+  // No href: inside a note the page sits under the vault's <base>, so a link must never navigate.
+  function stopLink(n, label) {
+    const open = ev => { if (ev.type === 'click' || ev.key === 'Enter') { ev.preventDefault(); readAt(n); } };
+    return h('a', { class: 'ex-link', 'data-stop': n, role: 'link', tabindex: '0', onclick: open, onkeydown: open }, label);
+  }
 
   function renderExtend() {
-    const open = n => ev => { if (ev.type === 'click' || ev.key === 'Enter') { ev.preventDefault(); readAt(n); } };
+    if (M.plan) return renderOrder();
     put($('extend-list'), M.extend.map(e => h('li', { class: 'extend-item' },
       h('code', { class: 'ex-where' }, e.where),
       h('div', { class: 'ex-text' }, md(e.text)),
-      // No href: inside a note the page sits under the vault's <base>, so a link must never navigate.
-      e.stopN ? h('a', { class: 'ex-link', 'data-stop': e.stopN, role: 'link', tabindex: '0', onclick: open(e.stopN), onkeydown: open(e.stopN) }, e.link) : null)));
+      e.stopN ? stopLink(e.stopN, e.link) : null)));
     $('no-extend').hidden = M.extend.length > 0;
+  }
+
+  // Tasks in build order with their stops and tests, then the other lists, then stops another ticket builds.
+  function renderOrder() {
+    const o = M.order;
+    const item = x => [h('span', { class: 'order-text' }, md(x.text)), originTag(x.tag)];
+    put(document.querySelector('#extend .extend-in'),
+      h('div', { class: 'order-head' }, h('h2', null, M.extendTab), h('span', { class: 'order-sum' }, o.summary)),
+      h('ol', { class: 'order' }, o.tasks.map(t => h('li', { class: 'order-task' },
+        h('div', { class: 'order-row' }, h('span', { class: 'order-n' }, `${t.n}.`), h('span', { class: 'order-name' }, md(t.name)), originTag(t.tag), t.stops.map(x => stopLink(x.n, x.link))),
+        t.tests.map(x => h('div', { class: 'order-test' }, item(x)))))),
+      o.groups.map(g => h('section', { class: 'order-group' }, h('h3', null, g.title), h('ul', null, g.items.map(x => h('li', null, item(x)))))),
+      o.elsewhere.length ? h('section', { class: 'order-group' }, h('h3', null, STOPS[o.elsewhere[0].n - 1].statusTag),
+        h('ul', null, o.elsewhere.map(e => h('li', null, h('span', { class: 'order-text' }, e.name), statusTag(e.ticket), stopLink(e.n, e.link))))) : null);
   }
 
   /* ---------- views, theme, map size, narrow ---------- */

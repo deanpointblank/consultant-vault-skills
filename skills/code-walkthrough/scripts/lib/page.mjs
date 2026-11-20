@@ -63,7 +63,8 @@ const TONE = {
 const stopWord = n => (n === 1 ? 'stop' : 'stops');
 const linkTo = s => `${s.n}. ${s.name}`;
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const taskPart = ns => (!ns.length ? '' : ` · ${ns.length === 1 ? 'Task' : 'Tasks'} ${ns.join(', ')}`);
+const taskWord = ns => (!ns.length ? '' : `${ns.length === 1 ? 'Task' : 'Tasks'} ${ns.join(', ')}`);
+const taskPart = ns => (ns.length ? ` · ${taskWord(ns)}` : '');
 const STATUS_TAGS = { new: 'NEW', changed: 'CHANGED', unchanged: 'UNCHANGED', elsewhere: 'ANOTHER TICKET' };
 const isGap = r => r.source?.kind === 'not-recorded';
 
@@ -83,6 +84,7 @@ function planStop(s, data) {
     statusTag: inExisting ? 'NEW · in an existing file' : STATUS_TAGS[s.status] || '',
     originTag: originTag(s.from),
     ticket: s.ticket ?? '',
+    task: taskWord(tasksOf(s.id, data)),
     sketches: sketches.map(sketchModel),
     points: s.points || [],
     today: s.today ? { what: s.today.what, points: s.today.points || [] } : null,
