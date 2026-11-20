@@ -97,3 +97,10 @@ No failures this round. No fix round needed.
 ## GREEN, round 2
 
 One sentence was added to the Reply rule: nothing comes before the page's path, not even a note on what a check round fixed. Scenarios (a) and (c) were rerun once each on the same model. Both replies now start with the page's full path. Both builds wrote their three files under `pages/`, and the check on the live notes folder was empty.
+
+## Installed as a plugin
+
+Two more runs, on the same model, with the plugin loaded as a plugin and no pointer to the skill file.
+
+- "Code walkthrough of adding an item to the cart in <repo>, from addItem to the saved cart." The skill fired from its description and gave the cost message. Nothing was written. Pass.
+- "How does addItem work in <repo>?" The skill did not fire; the agent read the file and answered in chat. Pass: the shorter description does not over-trigger on this phrase.
