@@ -681,6 +681,13 @@ test('one edit: a sketch marked new_file true', t => {
   assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s2 src/store.js (sketch): the file already exists; set new_file to false']);
 });
 
+test('one edit: a task removed', t => {
+  const ctx = planSetup(t, d => { d.plan.tasks.splice(0, 1); });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL the plan: stop s3 is new and no task builds it']);
+});
+
 test('a file only a sketch names is not cited', t => {
   const ctx = planSetup(t, d => {
     const k = d.stops[2].code[0];

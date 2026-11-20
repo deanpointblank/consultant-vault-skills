@@ -84,11 +84,47 @@ function originError({ at, what, from, status, text }) {
 
 export const originErrors = data => fromSlots(data).map(originError).filter(Boolean);
 
+export const WHENS = ['build', 'before', 'after'];
+
+// The 1-based numbers of the tasks that name a stop, in task order.
+export const tasksOf = (stopId, data) => ((data.plan || {}).tasks || []).flatMap((t, i) => (t.stops || []).includes(stopId) ? [i + 1] : []);
+
+// Tasks, tests, risks and out of scope against the stops.
+export function taskErrors(data) {
+  if (!data.plan || typeof data.plan !== 'object') return ['there is no plan object; add one with inputs and tasks'];
+  const errors = [], p = data.plan, tasks = p.tasks || [];
+  const stops = new Map((data.stops || []).map(s => [s.id, s]));
+  const seen = new Set();
+  for (const t of tasks) {
+    if (seen.has(t.id)) errors.push(`task ${t.id} appears twice`);
+    seen.add(t.id);
+    if (typeof t.name !== 'string' || !t.name.trim()) errors.push(`task ${t.id} has no name`);
+    if (!(t.stops || []).length) errors.push(`task ${t.id} names no stop`);
+    for (const id of t.stops || []) {
+      if (!stops.has(id)) errors.push(`task ${t.id} names stop ${id}, which does not exist`);
+      else if (!['new', 'changed'].includes(stops.get(id).status)) errors.push(`task ${t.id} names stop ${id}, which is ${stops.get(id).status} and belongs to no task`);
+    }
+  }
+  for (const s of data.stops || []) {
+    if (['new', 'changed'].includes(s.status) && !tasksOf(s.id, data).length) errors.push(`stop ${s.id} is ${s.status} and no task builds it`);
+  }
+  (p.tests || []).forEach((x, i) => {
+    if (x.task !== undefined && !seen.has(x.task)) errors.push(`test ${i + 1} names task ${x.task}, which does not exist`);
+    if (x.when !== undefined && !WHENS.includes(x.when)) errors.push(`test ${i + 1} has when ${x.when}; use build, before or after`);
+    if (typeof x.text !== 'string' || !x.text.trim()) errors.push(`test ${i + 1} has no text`);
+  });
+  for (const [list, name] of [[p.risks, 'risk'], [p.out_of_scope, 'out of scope']]) {
+    (list || []).forEach((x, i) => { if (typeof x.text !== 'string' || !x.text.trim()) errors.push(`${name} ${i + 1} has no text`); });
+  }
+  return errors;
+}
+
 // Shape failures that only a plan has. Later checks are added to this list.
 export function planShapeErrors(data) {
   const errors = [];
   if (data.extend !== undefined) errors.push('a plan has no extend points; put the work in plan.tasks');
   errors.push(...sketchErrors(data));
   errors.push(...originErrors(data));
+  errors.push(...taskErrors(data));
   return errors;
 }

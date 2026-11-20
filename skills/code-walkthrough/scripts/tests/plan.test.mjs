@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planShapeErrors, sketchErrors, originErrors } from '../lib/plan.mjs';
+import { planShapeErrors, sketchErrors, originErrors, taskErrors, tasksOf } from '../lib/plan.mjs';
 import { shapeErrors } from '../lib/data.mjs';
 import { tempRoot, ledgerRepo, samplePlan } from './helpers.mjs';
 
@@ -80,3 +80,39 @@ test('a reason cannot quote the chat', t => {
   d.stops[0].reasons = [{ text: 'x', quote: 'Let users attach files', source: { kind: 'chat', ref: 'goal' } }];
   assert.ok(shapeErrors(d).includes('stop s1 Why entry 1 has an unknown source kind, chat'));
 });
+
+// One edit to the example plan, then its task failures. s = the stops, p = d.plan.
+const tasksAfter = (t, edit) => {
+  const d = samplePlan(ledgerRepo(tempRoot(t)));
+  edit(d.stops, d.plan, d);
+  return taskErrors(d);
+};
+
+test('the example plan has no task failures', t => {
+  assert.deepEqual(tasksAfter(t, () => {}), []);
+});
+
+test('a stop is found in the tasks that name it', t => {
+  assert.deepEqual(tasksOf('s3', samplePlan(ledgerRepo(tempRoot(t)))), [1]);
+});
+
+// Some edits leave a second failure behind (a stop left unbuilt, or t2 gone); those rows check the line is there.
+for (const [title, edit, line, only = true] of [
+  ['no plan object', (s, p, d) => { delete d.plan; }, 'there is no plan object; add one with inputs and tasks'],
+  ['a task names a stop that does not exist', (s, p) => { p.tasks[1].stops = ['s9']; }, 'task t2 names stop s9, which does not exist', false],
+  ['a new stop no task builds', (s, p) => { p.tasks.splice(0, 1); }, 'stop s3 is new and no task builds it'],
+  ['a changed stop no task builds', (s, p) => { p.tasks.splice(1, 1); p.tests = []; }, 'stop s2 is changed and no task builds it'],
+  ['a task names an unchanged stop', (s, p) => { p.tasks[1].stops.push('s1'); }, 'task t2 names stop s1, which is unchanged and belongs to no task'],
+  ['a task names an elsewhere stop', (s, p) => { s[0].status = 'elsewhere'; p.tasks[1].stops.push('s1'); }, 'task t2 names stop s1, which is elsewhere and belongs to no task'],
+  ['a test names a task that does not exist', (s, p) => { p.tests[0].task = 't9'; }, 'test 1 names task t9, which does not exist'],
+  ['a test has an unknown when', (s, p) => { p.tests[0].when = 'later'; }, 'test 1 has when later; use build, before or after'],
+  ['a task id appears twice', (s, p) => { p.tasks[1].id = 't1'; }, 'task t1 appears twice', false],
+  ['a task names no stop', (s, p) => { p.tasks[0].stops = []; }, 'task t1 names no stop', false],
+  ['a task has no name', (s, p) => { delete p.tasks[0].name; }, 'task t1 has no name'],
+  ['a risk has no text', (s, p) => { p.risks[0].text = ''; }, 'risk 1 has no text'],
+]) {
+  test(title, t => {
+    const got = tasksAfter(t, edit);
+    if (only) assert.deepEqual(got, [line]); else assert.ok(got.includes(line));
+  });
+}
