@@ -100,3 +100,20 @@ test('replace on the first note of the day keeps its names', t => {
     page: 'booking-flow.html', data: 'booking-flow.walkthrough.json', note: 'Walkthrough - booking flow.md', earlier: null, replace: true,
   });
 });
+
+test('plan names', t => {
+  assert.equal(noteBaseOf('invoice attachments', 'plan'), 'Plan - invoice attachments');
+  const dir = path.join(tempRoot(t), 'P');
+  const ask = extra => chooseNames({ folderPath: dir, slug: 'invoice-attachments', noteBase: 'Plan - invoice attachments', date: '2026-11-20', mode: 'plan', ...extra });
+  const base = { page: 'invoice-attachments.plan.html', data: 'invoice-attachments.plan.json', note: 'Plan - invoice attachments.md' };
+  assert.deepEqual(ask(), { ...base, earlier: null, replace: false });
+  note(dir, 'Plan - invoice attachments.md', '2026-11-20');
+  const dated = { page: 'invoice-attachments-2026-11-20.plan.html', data: 'invoice-attachments-2026-11-20.plan.json', note: 'Plan - invoice attachments 2026-11-20.md' };
+  assert.deepEqual(ask({ sameDay: 'keep' }), { ...dated, earlier: 'Plan - invoice attachments', replace: false });
+  assert.deepEqual(ask({ sameDay: 'replace' }), { ...base, earlier: null, replace: true });
+  assert.deepEqual(ask(), { clash: [base.page, base.data, base.note] });
+  // a walkthrough of the same short name is not an earlier plan
+  const other = path.join(tempRoot(t), 'W');
+  note(other, 'Walkthrough - invoice attachments.md', '2026-11-19');
+  assert.equal(chooseNames({ folderPath: other, slug: 'invoice-attachments', noteBase: 'Plan - invoice attachments', date: '2026-11-20', mode: 'plan' }).earlier, null);
+});

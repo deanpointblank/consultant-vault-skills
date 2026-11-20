@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { checkQuotes } from '../lib/quotes.mjs';
-import { tempRoot, bookingRepo, sampleData } from './helpers.mjs';
-import { reasonCounts, builtLine, checksShort, reasonsLine, replyLines, questionLines, stopBadge, outlineTail, whyLabel, chipLabel, chipDetail } from '../lib/words.mjs';
+import { tempRoot, bookingRepo, sampleData, samplePlan, withPlanChecks } from './helpers.mjs';
+import { reasonCounts, builtLine, checksShort, reasonsLine, replyLines, questionLines, stopBadge, outlineTail, whyLabel, chipLabel, chipDetail, originTag, planCounts, planBuiltLine, planChecksShort, planStopsLine, planReplyLines, planQuestionLines } from '../lib/words.mjs';
 
 const mk = (over = {}) => ({
   built: '2026-11-11',
@@ -110,6 +110,11 @@ test('chip labels', () => {
   assert.equal(l('not-recorded'), 'not recorded');
 });
 
+test('chip labels for a plan\'s sources', () => {
+  assert.equal(chipLabel({ kind: 'chat', ref: 'goal' }), 'chat');
+  assert.equal(chipLabel({ kind: 'plan-file', ref: '/tmp/plan.md' }), 'plan');
+});
+
 test('chip detail is the exact quote and where it comes from', () => {
   const q = 'every booking must reach the yard service';
   const d = mk({ sources: [{ kind: 'ticket', ref: 'PFD-1', fetched: '2026-11-11', text: q }] });
@@ -170,4 +175,78 @@ test('what checkQuotes writes feeds the words unchanged', t => {
   assert.match(replyLines(data)[1], /\(1 in a saved copy of a ticket\)\.$/);
   assert.match(checksShort(data), /\(1 in a saved copy\)/);
   assert.equal(chipDetail(data.stops[0].reasons[1], data), `“${quote}” — ticket PFD-1, saved copy fetched 2026-11-11`);
+});
+
+// The example plan as a build leaves it, with one edit.
+const plan = (change = () => {}) => { const d = withPlanChecks(samplePlan({ path: '/x' })); change(d); return d; };
+const noBase = d => { delete d.repos[0].base; };
+const web = d => { d.repos.push({ name: 'web', path: '/y', commit: 'def5678', uncommitted: [] }); };
+const planChecks = (key, value) => d => { d.checks[key] = { ...d.checks[key], ...value }; };
+
+test('origin tags', () => {
+  assert.deepEqual(['plan', 'review', 'proposal', 'open'].map(kind => originTag({ kind })), ['In plan', 'Awaiting review', 'Proposal', 'Open']);
+  assert.equal(originTag(undefined), '');
+  assert.equal(originTag(plan(d => { d.stops[1].from.kind = 'review'; }).stops[1].from), 'Awaiting review');
+});
+
+test('plan counts', () => {
+  assert.deepEqual(planCounts(plan()), { status: { new: 1, changed: 1, unchanged: 1, elsewhere: 0 }, open: 1, proposals: 5, tasks: 2, tests: 1, risks: 1, outOfScope: 1, today: 2, sketches: 2 });
+});
+
+test('plan built line', () => {
+  assert.equal(planBuiltLine(plan()), 'Code as at `origin/main` (commit abc1234), 2026-11-20. Nothing in this plan is built yet.');
+  assert.equal(planBuiltLine(plan(noBase)), 'Code as on disk at commit abc1234, 2026-11-20. Nothing in this plan is built yet.');
+  assert.equal(planBuiltLine(plan(web)), 'Code as at `origin/main` in ledger-api (commit abc1234) and on disk in web (commit def5678), 2026-11-20. Nothing in this plan is built yet.');
+  assert.equal(planBuiltLine(plan(d => { noBase(d); d.repos[0].uncommitted = ['src/store.js']; })), 'Code as on disk at commit abc1234 plus uncommitted changes in 1 file, 2026-11-20. Nothing in this plan is built yet.');
+});
+
+test('plan facts line', () => {
+  assert.equal(planChecksShort(plan()), '2 today blocks match origin/main · 2 sketches not checked · 4 quotes found · 2 of 5 arrows traced, 2 planned, 1 guess');
+  assert.equal(planChecksShort(plan(noBase)), '2 today blocks match the files · 2 sketches not checked · 4 quotes found · 2 of 5 arrows traced, 2 planned, 1 guess');
+  assert.equal(planChecksShort(plan(web)), '2 today blocks match the code as built · 2 sketches not checked · 4 quotes found · 2 of 5 arrows traced, 2 planned, 1 guess');
+  assert.equal(planChecksShort(plan(d => { d.checks.map = { built: false }; })), '2 today blocks match origin/main · 2 sketches not checked · 4 quotes found · Map not built, because chalk-talk is not installed');
+});
+
+test('plan stops line', () => {
+  assert.equal(planStopsLine(plan()), '1 new, 1 changed, 1 unchanged · 1 open · 5 proposals');
+  assert.equal(planStopsLine(plan(d => { d.stops[0].status = 'elsewhere'; })), '1 new, 1 changed, 1 built by another ticket · 1 open · 5 proposals');
+});
+
+test('plan reply lines', () => {
+  assert.deepEqual(planReplyLines(plan()), [
+    'Code: the 2 today blocks match origin/main (commit abc1234). 2 sketches are not checked.',
+    'Sources: all 4 quotes were found word for word (4 in a saved copy of the chat).',
+    'Map: 2 of 5 arrows are traced to a line of code. 2 are planned. 1 is marked as a guess. None are broken.',
+    'Plan: 2 tasks, 1 test, 1 risk, 1 out of scope. 1 open question, 5 proposals.',
+  ]);
+  assert.equal(planReplyLines(plan(noBase))[0], 'Code: the 2 today blocks match the files on disk (commit abc1234). 2 sketches are not checked.');
+  assert.equal(planReplyLines(plan(web))[0], 'Code: the 2 today blocks match the code as built (ledger-api at origin/main, commit abc1234; web on disk, commit def5678). 2 sketches are not checked.');
+  const gone = plan(d => {
+    d.plan.risks[0].from = { kind: 'plan', quote: 'large files could slow', source: { kind: 'plan-file', ref: '/gone/plan.md' } };
+    d.checks.quotes = { quotes: 5, saved: 5, savedOf: { ticket: [], 'pull-request': [], chat: ['goal'], 'plan-file': ['/gone/plan.md'] } };
+  });
+  assert.equal(planReplyLines(gone)[1], 'Sources: all 5 quotes were found word for word (4 in a saved copy of the chat; 1 in a saved copy of the plan file, which is gone).');
+  const ticket = plan(d => {
+    d.stops[0].reasons.push({ text: 'x', quote: 'x', source: { kind: 'ticket', ref: 'PROJ-123' } });
+    d.checks.quotes = { quotes: 5, saved: 5, savedOf: { ticket: ['PROJ-123'], 'pull-request': [], chat: ['goal'], 'plan-file': [] } };
+  });
+  assert.equal(planReplyLines(ticket)[1], 'Sources: all 5 quotes were found word for word (4 in a saved copy of the chat; 1 in a saved copy of a ticket).');
+  const notBuilt = plan(d => { d.checks.map = { built: false }; });
+  assert.deepEqual(planReplyLines(notBuilt).slice(2), [replyLines(notBuilt)[2], 'Plan: 2 tasks, 1 test, 1 risk, 1 out of scope. 1 open question, 5 proposals.']);
+});
+
+test('plan singular and zero forms', () => {
+  const reply = change => planReplyLines(plan(change));
+  assert.equal(reply(planChecks('code', { blocks: 1, sketches: 1 }))[0], 'Code: the 1 today block matches origin/main (commit abc1234). 1 sketch is not checked.');
+  assert.equal(reply(planChecks('code', { blocks: 0, sketches: 3 }))[0], 'Code: there are no today blocks to check (origin/main, commit abc1234). 3 sketches are not checked.');
+  assert.equal(reply(planChecks('quotes', { quotes: 1, saved: 1 }))[1], 'Sources: the 1 quote was found word for word (in a saved copy of the chat).');
+  assert.equal(reply(planChecks('quotes', { quotes: 0, saved: 0, savedOf: { ticket: [], 'pull-request': [], chat: [], 'plan-file': [] } }))[1], 'Sources: there are no quotes to check.');
+  const small = { ...plan(), stops: [], plan: { tasks: [{ id: 't1', name: 'x', stops: [], from: { kind: 'proposal' } }] } };
+  assert.equal(planReplyLines(small).at(-1), 'Plan: 1 task, 0 tests, 0 risks, 0 out of scope. 0 open questions, 1 proposal.');
+  const none = plan(d => { planChecks('code', { blocks: 0, sketches: 1 })(d); planChecks('quotes', { quotes: 0, saved: 0 })(d); });
+  assert.equal(planChecksShort(none), 'no today blocks · 1 sketch not checked · no quotes to check · 2 of 5 arrows traced, 2 planned, 1 guess');
+});
+
+test('plan questions: open choices, then not-recorded reasons, numbered on', () => {
+  assert.deepEqual(planQuestionLines(plan()), ['1. Is there a size limit per file?', '2. Why is an invoice limited to 500 lines?', '3. Why is the audit entry written before the insert?']);
 });

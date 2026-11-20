@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
-import { tempRoot, bookingRepo, sampleData, makeVault, makeRepo, commitAll, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
+import { pageModel } from '../lib/page.mjs';
+import { tempRoot, ledgerRepo, samplePlan, bookingRepo, sampleData, makeVault, makeRepo, commitAll, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
 
 const SCRIPT = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
 const DAY1 = '2026-11-11';
@@ -29,10 +30,27 @@ function setup(t, change = d => d, { dirty = false } = {}) {
 }
 
 function run(ctx, extra = [], { chalk = 'none', file = ctx.dataFile, out = ctx.out, date = DAY1, env = {} } = {}) {
-  const args = [SCRIPT, file, '--out', out, '--vault', ctx.vault, '--folder', 'Walkthroughs', '--chalk', chalk, '--date', date, ...extra];
+  const args = [SCRIPT, file, '--out', out, '--vault', ctx.vault, '--folder', ctx.folderName ?? 'Walkthroughs', '--chalk', chalk, '--date', date, ...extra];
   const home = chalk === 'none' ? { HOME: ctx.noChalkHome } : {};
   const r = spawnSync(process.execPath, args, { encoding: 'utf8', env: { ...process.env, CW_GH: '0', ...home, ...env }, cwd: ctx.root });
   return { status: r.status, out: r.stdout, err: r.stderr, lines: r.stdout.split('\n') };
+}
+
+// The plan-mode twin of setup: the ledger repo and the example plan, folder Plans.
+function planSetup(t, change = d => d, { ahead = false, remote = false } = {}) {
+  const root = tempRoot(t);
+  const repo = ledgerRepo(root, { ahead, remote });
+  const vault = makeVault(root, { 'README.md': 'a vault\n' });
+  const data = samplePlan(repo);
+  change(data, repo);
+  const dataFile = path.join(root, 'in', 'invoice.json');
+  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
+  fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+  const noChalkHome = path.join(root, 'no-chalk-home');
+  fs.mkdirSync(noChalkHome);
+  const ctx = { root, repo, vault, data, dataFile, noChalkHome, out: path.join(root, 'work'), folder: path.join(vault, 'Plans'), folderName: 'Plans' };
+  ctx.snapshot = repoSnapshot(repo.path);
+  return ctx;
 }
 
 // D11: the walked repo is untouched and chalk-talk made no folder of its own.
@@ -627,4 +645,271 @@ test('with chalk-talk the page carries the map', { skip: !chalk || !findChrome()
   assert.equal(d.checks.map.built, true);
   assert.ok(fs.existsSync(path.join(ctx.out, 'booking-flow-snaps')));
   finish(ctx);
+});
+
+test('an unknown mode is refused', t => {
+  const ctx = planSetup(t, d => { d.mode = 'draft'; });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.ok(r.err.includes('has mode draft; only plan is known'), r.err);
+  assert.equal(fs.existsSync(ctx.out), false);
+  assert.equal(fs.existsSync(ctx.folder), false);
+});
+
+test('plan shape failures print as the plan\'s', t => {
+  const ctx = planSetup(t, d => { d.extend = [{ stop: 's2', file: 'src/store.js', lines: [16, 20], text: 'x' }]; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.ok(r.out.includes('FAIL the plan: a plan has no extend points; put the work in plan.tasks'), r.out);
+  const fails = r.lines.filter(l => l.startsWith('FAIL'));
+  assert.ok(fails.length && fails.every(l => l.startsWith('FAIL the plan: ')), r.out);
+});
+
+test('the example plan builds', t => {
+  const ctx = planSetup(t);
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 0, r.out + r.err);
+  const files = vaultFiles(ctx);
+  for (const f of ['Plan - invoice attachments.md', 'invoice-attachments.plan.html', 'invoice-attachments.plan.json']) assert.ok(files.includes(f), files.join(', '));
+  assert.deepEqual(readJson(ctx.dataFile).checks.code, { blocks: 2, sketches: 2 });
+  finish(ctx);
+});
+
+test('the example plan prints its plan lines and writes a plan note', t => {
+  const ctx = planSetup(t);
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.ok(r.lines.includes('Sources: all 4 quotes were found word for word (4 in a saved copy of the chat).'), r.out);
+  const p = r.lines.indexOf('Plan: 2 tasks, 1 test, 1 risk, 1 out of scope. 1 open question, 5 proposals.');
+  assert.ok(p > 0, r.out);
+  assert.deepEqual(r.lines.slice(p + 1, p + 4), ['1. Is there a size limit per file?', '2. Why is an invoice limited to 500 lines?', '3. Why is the audit entry written before the insert?'], r.out);
+  assert.match(fs.readFileSync(path.join(ctx.folder, 'Plan - invoice attachments.md'), 'utf8'), /^---\ntype: code-plan\n/);
+  finish(ctx);
+});
+
+test('a plan prints the walkthrough it names', t => {
+  const ctx = planSetup(t, d => { d.walkthrough = 'Walkthrough - saving an invoice'; });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  const p = r.lines.findIndex(l => l.startsWith('Plan: '));
+  assert.deepEqual(r.lines.slice(p + 1, p + 3), ['Walkthrough of the same code: [[Walkthrough - saving an invoice]] (named in the data file, not checked).', '1. Is there a size limit per file?'], r.out);
+});
+
+test('one edit: a sketch marked new_file true', t => {
+  const ctx = planSetup(t, d => { d.stops[1].code[1].new_file = true; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s2 src/store.js (sketch): the file already exists; set new_file to false']);
+});
+
+test('one edit: a task removed', t => {
+  const ctx = planSetup(t, d => { d.plan.tasks.splice(0, 1); });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL the plan: stop s3 is new and no task builds it']);
+});
+
+test('one edit: a takes renamed', t => {
+  const ctx = planSetup(t, d => { d.stops[2].takes[0] = 'invoice record'; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL the plan: stop s3 takes "invoice record", which no earlier stop gives and plan.inputs does not list']);
+});
+
+test('a file only a sketch names is not cited', t => {
+  const ctx = planSetup(t, d => {
+    const k = d.stops[2].code[0];
+    Object.assign(k, { file: 'src/attachments.js', new_file: true });
+    delete k.after;
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.deepEqual(readJson(ctx.dataFile).cited_files, { 'ledger-api': ['src/routes/invoices.js', 'src/store.js'] });
+});
+
+test('one edit: a quote changed', t => {
+  const ctx = planSetup(t, d => { d.stops[2].from.quote = 'Attachments are kept in their own table'; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s3 from (chat goal): the quote is not found word for word in the source']);
+});
+
+// Stop s3 quotes a plan file in the test's temp root, outside the repo and the vault.
+function planFileSetup(t) {
+  let file;
+  const ctx = planSetup(t, (d, repo) => {
+    file = path.join(path.dirname(repo.path), 'plan.md');
+    fs.writeFileSync(file, 'Attachments are saved in their own table.\n');
+    d.stops[2].from.source = { kind: 'plan-file', ref: file };
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  return { ctx, file };
+}
+const planFileCopies = ctx => readJson(ctx.dataFile).sources.filter(s => s.kind === 'plan-file');
+
+test('a plan file is read live and saved', t => {
+  const { ctx, file } = planFileSetup(t);
+  assert.deepEqual(planFileCopies(ctx), [{ kind: 'plan-file', ref: file, fetched: DAY1, text: 'Attachments are saved in their own table.\n' }]);
+});
+
+test('a plan file that no longer holds the quote', t => {
+  const { ctx, file } = planFileSetup(t);
+  const saved = planFileCopies(ctx);
+  fs.writeFileSync(file, 'Attachments live with the invoice.\n');
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s3 from (plan-file): the plan file no longer says this; re-quote it or make this a proposal']);
+  assert.deepEqual(planFileCopies(ctx), saved);
+});
+
+test('a plan file that is gone', t => {
+  const { ctx, file } = planFileSetup(t);
+  fs.rmSync(file);
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.deepEqual(readJson(ctx.dataFile).checks.quotes.savedOf['plan-file'], [file]);
+});
+
+test('one edit: a sketch with an empty file name', t => {
+  const ctx = planSetup(t, d => {
+    const k = d.stops[2].code[0];
+    Object.assign(k, { file: '', new_file: true });
+    delete k.after;
+  });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL the plan: stop s3 code block 1 has no file name']);
+  assert.deepEqual(vaultFiles(ctx), []);
+});
+
+const gitOut = (p, args) => execFileSync('git', args, { cwd: p, encoding: 'utf8' });
+const refState = p => ({ refs: gitOut(p, ['for-each-ref']), heads: gitOut(p, ['rev-parse', 'HEAD', 'origin/main']) });
+const fetchHead = ctx => path.join(ctx.repo.path, '.git', 'FETCH_HEAD');
+// The page model as the built plan page carries it in #walk-data.
+const planPageModel = ctx => JSON.parse(fs.readFileSync(path.join(ctx.out, 'invoice-attachments.plan.html'), 'utf8').match(/<script type="application\/json" id="walk-data">([\s\S]*?)<\/script>/)[1]);
+
+test('a plan reads origin/main, fetches nothing and changes nothing', t => {
+  const ctx = planSetup(t, d => d, { ahead: true, remote: true });
+  const before = refState(ctx.repo.path);
+  assert.equal(fs.existsSync(fetchHead(ctx)), false);
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  finish(ctx);
+  assert.deepEqual(refState(ctx.repo.path), before);
+  assert.equal(fs.existsSync(fetchHead(ctx)), false);
+  const d = readJson(ctx.dataFile);
+  assert.equal(d.repos[0].commit, ctx.repo.base);
+  assert.deepEqual(d.repos[0].uncommitted, []);
+  const rows = pageModel(d).stops[1].blocks[0].rows;
+  const atBase = gitOut(ctx.repo.path, ['show', `${ctx.repo.base}:src/store.js`]).split('\n');
+  assert.deepEqual(rows.map(x => x.n), [16, 17, 18, 19, 20]);
+  assert.deepEqual(rows.map(x => x.text), atBase.slice(15, 20));
+  const built = planPageModel(ctx).built;
+  assert.ok(built.startsWith('Code as at `origin/main` (commit '), built);
+});
+
+test('a base the repo does not know is refused', t => {
+  const ctx = planSetup(t, d => { d.repos[0].base = 'origin/nope'; });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.ok(r.err.includes('walkthrough-build: ledger-api: git cannot find origin/nope here; the build never fetches, so fetch it yourself or change base'), r.err);
+  assert.ok(r.err.includes('usage: walkthrough-build.mjs'), r.err);
+  assert.equal(fs.readFileSync(ctx.dataFile, 'utf8'), JSON.stringify(ctx.data, null, 2));
+  assert.equal(fs.existsSync(ctx.out), false);
+  assert.equal(fs.existsSync(ctx.folder), false);
+  finish(ctx);
+});
+
+test('a bad base value is refused', t => {
+  const ctx = planSetup(t, d => { d.repos[0].base = '-x'; });
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.ok(r.err.includes('has a bad base for ledger-api, "-x"; give a git ref such as origin/main'), r.err);
+  assert.equal(fs.readFileSync(ctx.dataFile, 'utf8'), JSON.stringify(ctx.data, null, 2));
+  assert.equal(fs.existsSync(ctx.out), false);
+});
+
+test('today\'s code that differs from the base', t => {
+  const ctx = planSetup(t, d => {
+    const b = d.stops[1].code[0];
+    const ls = b.text.split('\n');
+    ls[1] = '  const total = 0;';
+    b.text = ls.join('\n');
+  }, { ahead: true });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), [`FAIL s2 src/store.js:16-20: the text differs from origin/main (commit ${ctx.repo.base}), first at line 2 of the shown text`]);
+});
+
+test('a cited file that is only on disk', t => {
+  const ctx = planSetup(t, (d, repo) => {
+    fs.writeFileSync(path.join(repo.path, 'src/new.js'), 'one\ntwo\n');
+    d.stops[0].code.push({ file: 'src/new.js', lines: [1, 2], text: 'one\ntwo' });
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s1 src/new.js:1-2: the file is not at origin/main']);
+});
+
+test('a design-doc quote is read at the base', t => {
+  const ctx = planSetup(t, d => { d.stops[2].from.source = { kind: 'design-doc', ref: { path: 'docs/plan.md' } }; }, { ahead: true });
+  assert.equal(fs.readFileSync(path.join(ctx.repo.path, 'docs/plan.md'), 'utf8'), 'Attachments moved.\n');
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+});
+
+test('two repos, one with a base', t => {
+  let web;
+  const upload = 'export function upload(file) {\n  return send(file);\n}\n';
+  const ctx = planSetup(t, (d, repo) => {
+    web = makeRepo(path.join(path.dirname(repo.path), 'web'), { files: { 'src/upload.js': upload }, message: 'Add the upload', dirty: { 'src/upload.js': upload + '// a later line\n' } });
+    d.repos.push({ name: 'web', path: web.path });
+    for (const s of d.stops) for (const b of s.code || []) b.repo = 'ledger-api';
+    d.stops[0].code.push({ repo: 'web', file: 'src/upload.js', lines: [1, 3], function: 'upload', text: upload.trimEnd() });
+  }, { ahead: true });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  const d = readJson(ctx.dataFile);
+  assert.equal(d.repos[0].commit, ctx.repo.base);
+  assert.deepEqual(d.repos[0].uncommitted, []);
+  assert.equal(d.repos[1].commit, web.head);
+  assert.deepEqual(d.repos[1].uncommitted, ['src/upload.js']);
+  assert.equal(planPageModel(ctx).built, `Code as at \`origin/main\` in ledger-api (commit ${ctx.repo.base}) and on disk in web (commit ${web.head}) plus uncommitted changes in 1 file, ${DAY1}. Nothing in this plan is built yet.`);
+  finish(ctx);
+});
+
+test('a walkthrough ignores base', t => {
+  const ctx = setup(t, d => { d.repos[0].base = 'origin/nope'; });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+});
+
+// origin/main moves to a commit that holds a folder, src/dir; the cited lines stay where they were.
+const folderAtBase = repo => {
+  fs.mkdirSync(path.join(repo.path, 'src/dir'));
+  fs.writeFileSync(path.join(repo.path, 'src/dir/f.js'), 'x\n');
+  commitAll(repo.path, 'A folder');
+  execFileSync('git', ['update-ref', 'refs/remotes/origin/main', 'HEAD'], { cwd: repo.path });
+};
+
+test('a sketch placed on a folder at the base', t => {
+  const ctx = planSetup(t, (d, repo) => {
+    folderAtBase(repo);
+    d.stops[2].code[0].file = 'src/dir';
+    delete d.stops[2].code[0].after;
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s3 src/dir (sketch): the file is not at origin/main; set new_file to true']);
+});
+
+test('a today block citing a folder at the base', t => {
+  const ctx = planSetup(t, (d, repo) => {
+    folderAtBase(repo);
+    d.stops[0].code.push({ file: 'src/dir', lines: [1, 1], text: 'x' });
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s1 src/dir:1-1: the file is not at origin/main']);
 });

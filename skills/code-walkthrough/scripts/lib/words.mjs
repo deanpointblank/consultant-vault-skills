@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { findSavedCopy } from './quotes.mjs';
+import { fromItems, isSketch } from './plan.mjs';
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const all = data => (data.stops || []).flatMap(s => s.reasons || []);
@@ -23,17 +24,20 @@ export function builtLine(data) {
 
 const savedKeys = (q, kind) => new Set((q.savedOf && q.savedOf[kind]) || []);
 
+function savedTail(q) {
+  const tickets = savedKeys(q, 'ticket'), prs = savedKeys(q, 'pull-request');
+  const what = (set, one, many) => set.size === 1 ? `a ${one}` : `${set.size} ${many}`;
+  if (tickets.size && prs.size) return ' of tickets and pull requests';
+  if (tickets.size) return ` of ${what(tickets, 'ticket', 'tickets')}`;
+  if (prs.size) return ` of ${what(prs, 'pull request', 'pull requests')}`;
+  return '';
+}
+
 function savedPhrase(q) {
   const n = q.saved || 0;
   if (!n) return '';
-  const tickets = savedKeys(q, 'ticket'), prs = savedKeys(q, 'pull-request');
-  const what = (set, one, many) => set.size === 1 ? `a ${one}` : `${set.size} ${many}`;
-  let tail = '';
-  if (tickets.size && prs.size) tail = ' of tickets and pull requests';
-  else if (tickets.size) tail = ` of ${what(tickets, 'ticket', 'tickets')}`;
-  else if (prs.size) tail = ` of ${what(prs, 'pull request', 'pull requests')}`;
   const copy = n === 1 ? 'a saved copy' : 'saved copies';
-  return q.quotes === 1 ? ` (in ${copy}${tail})` : ` (${n} in ${copy}${tail})`;
+  return q.quotes === 1 ? ` (in ${copy}${savedTail(q)})` : ` (${n} in ${copy}${savedTail(q)})`;
 }
 
 const count = (n, one, many) => n === 1 ? one : many;
@@ -70,15 +74,18 @@ export function replyLines(data) {
   const reasonLine = q0 === 0 ? 'Reasons: no reasons are recorded, so there are no quotes to check.'
     : q0 === 1 ? `Reasons: the 1 quote was found word for word in its source${savedPhrase(quotes)}.`
     : `Reasons: all ${q0} quotes were found word for word in their sources${savedPhrase(quotes)}.`;
-  const lines = [codeLine, reasonLine];
-  if (!map.built) {
-    lines.push(leftOut(map) ? `Map: ${LEFT_OUT}.` : 'Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.');
-    return lines;
-  }
-  const g = map.guesses, br = brokenCount(map), n = map.arrows;
+  return [codeLine, reasonLine, ...mapLines(map)];
+}
+
+// plan: a plan's map line also says how many arrows are planned.
+function mapLines(map, plan = false) {
+  if (!map.built) return [leftOut(map) ? `Map: ${LEFT_OUT}.` : 'Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.'];
+  const lines = [];
+  const g = map.guesses, br = brokenCount(map), n = map.arrows, p = map.planned || 0;
+  const planned = !plan ? '' : n === 1 ? (p ? ' It is planned.' : ' It is not planned.') : ` ${p ? `${p} ${count(p, 'is', 'are')} planned` : 'None are planned'}.`;
   if (n === 0) lines.push('Map: there are no arrows to trace.');
-  else if (n === 1) lines.push(`Map: ${map.traced === 1 ? 'the 1 arrow is' : '0 of 1 arrow is'} traced to a line of code. ${g ? 'It is marked as a guess.' : 'It is not marked as a guess.'} ${br ? 'It is broken.' : 'It is not broken.'}`);
-  else lines.push(`Map: ${map.traced} of ${n} arrows are traced to a line of code. ${g ? `${g} ${count(g, 'is', 'are')} marked as ${count(g, 'a guess', 'guesses')}` : 'None are marked as guesses'}. ${br ? `${br} ${count(br, 'is', 'are')} broken` : 'None are broken'}.`);
+  else if (n === 1) lines.push(`Map: ${map.traced === 1 ? 'the 1 arrow is' : '0 of 1 arrow is'} traced to a line of code.${planned} ${g ? 'It is marked as a guess.' : 'It is not marked as a guess.'} ${br ? 'It is broken.' : 'It is not broken.'}`);
+  else lines.push(`Map: ${map.traced} of ${n} arrows are traced to a line of code.${planned} ${g ? `${g} ${count(g, 'is', 'are')} marked as ${count(g, 'a guess', 'guesses')}` : 'None are marked as guesses'}. ${br ? `${br} ${count(br, 'is', 'are')} broken` : 'None are broken'}.`);
   if (map.layoutChecked === false) lines.push('Map: not checked by eye, because Chrome was not found.');
   return lines;
 }
@@ -119,6 +126,8 @@ export function chipLabel(source) {
     case 'ticket': return `ticket ${ref}`;
     case 'code-comment': return 'code comment';
     case 'build-note': return 'build note';
+    case 'chat': return 'chat';
+    case 'plan-file': return 'plan';
     default: return 'not recorded';
   }
 }
@@ -139,4 +148,108 @@ export function chipDetail(reason, data) {
     if (copy) where += `, saved copy fetched ${copy.fetched}`;
   }
   return `“${reason.quote}” — ${where}`;
+}
+
+// Plan mode: the words for code not yet written.
+
+const ORIGIN_TAGS = { plan: 'In plan', review: 'Awaiting review', proposal: 'Proposal', open: 'Open' };
+export const originTag = from => ORIGIN_TAGS[from?.kind] || '';
+
+const PROPOSED = ['sketch', 'choice', 'task'];
+const choicesOf = data => (data.stops || []).flatMap(s => s.choices || []);
+const isOpen = c => c.from?.kind === 'open';
+
+export function planCounts(data) {
+  const stops = data.stops || [], p = data.plan || {};
+  const status = { new: 0, changed: 0, unchanged: 0, elsewhere: 0 };
+  for (const s of stops) if (Object.hasOwn(status, s.status)) status[s.status]++;
+  const blocks = stops.flatMap(s => s.code || []);
+  const sketches = blocks.filter(isSketch).length;
+  return {
+    status,
+    open: choicesOf(data).filter(isOpen).length,
+    proposals: fromItems(data).filter(x => PROPOSED.includes(x.what) && x.from?.kind === 'proposal').length,
+    tasks: (p.tasks || []).length, tests: (p.tests || []).length, risks: (p.risks || []).length, outOfScope: (p.out_of_scope || []).length,
+    today: blocks.length - sketches, sketches,
+  };
+}
+
+const atCommit = r => `(commit ${r.commit})`;
+
+export function planBuiltLine(data) {
+  const repos = data.repos || [];
+  const one = repos.length === 1 ? repos[0] : null;
+  const where = one ? (one.base ? `at \`${one.base}\` ${atCommit(one)}` : `on disk at commit ${one.commit}`)
+    : andJoin(repos.map(r => (r.base ? `at \`${r.base}\` in ${r.name} ${atCommit(r)}` : `on disk in ${r.name} ${atCommit(r)}`)));
+  return `Code as ${where}${plus(data)}, ${data.built}. Nothing in this plan is built yet.`;
+}
+
+// What the today blocks were checked against: the base, the disk, or both across repos.
+const target = (data, disk) => {
+  const repos = data.repos || [];
+  if (repos.length > 1) return 'the code as built';
+  return repos[0]?.base || disk;
+};
+
+const arrowsShort = map => {
+  if (!map.built) return `Map ${leftOut(map) ? LEFT_OUT : NOT_BUILT}`;
+  if (map.arrows === 0) return 'no map arrows';
+  return `${map.traced} of ${plural(map.arrows, 'arrow', 'arrows')} traced, ${map.planned || 0} planned, ${plural(map.guesses, 'guess', 'guesses')}`;
+};
+
+export function planChecksShort(data) {
+  const { code = {}, quotes = {}, map = { built: false } } = data.checks || {};
+  const b = code.blocks;
+  const today = b === 0 ? 'no today blocks' : `${plural(b, 'today block', 'today blocks')} ${count(b, 'matches', 'match')} ${target(data, 'the files')}`;
+  const found = quotes.quotes === 0 ? 'no quotes to check' : `${plural(quotes.quotes, 'quote', 'quotes')} found`;
+  return `${today} · ${plural(code.sketches, 'sketch', 'sketches')} not checked · ${found} · ${arrowsShort(map)}`;
+}
+
+export function planStopsLine(data) {
+  const c = planCounts(data);
+  const words = { new: 'new', changed: 'changed', unchanged: 'unchanged', elsewhere: 'built by another ticket' };
+  const status = Object.keys(words).filter(k => c.status[k]).map(k => `${c.status[k]} ${words[k]}`).join(', ');
+  return `${status} · ${c.open} open · ${plural(c.proposals, 'proposal', 'proposals')}`;
+}
+
+// How many quotes came from a saved copy of each plan source kind, counted as checkQuotes counts them.
+const savedFrom = (data, q, kind) => {
+  const keys = savedKeys(q, kind);
+  return fromItems(data).filter(({ from }) => ['plan', 'review'].includes(from?.kind) && from.source?.kind === kind && keys.has(String(from.source.ref))).length;
+};
+
+function planSavedPhrase(data, q) {
+  const n = q.saved || 0;
+  if (!n) return '';
+  const chat = savedFrom(data, q, 'chat'), file = savedFrom(data, q, 'plan-file'), rest = n - chat - file;
+  const files = savedKeys(q, 'plan-file').size, chats = savedKeys(q, 'chat').size;
+  const num = k => (q.quotes === 1 ? '' : `${k} `);
+  const parts = [];
+  if (chat) parts.push(`${num(chat)}in ${chats > 1 ? 'saved copies' : 'a saved copy'} of the chat`);
+  if (file) parts.push(`${num(file)}in ${files > 1 ? `saved copies of ${files} plan files, which are gone` : 'a saved copy of the plan file, which is gone'}`);
+  if (rest > 0) parts.push(`${num(rest)}in ${rest === 1 ? 'a saved copy' : 'saved copies'}${savedTail(q)}`);
+  return parts.length ? ` (${parts.join('; ')})` : '';
+}
+
+export function planReplyLines(data) {
+  const { code = {}, quotes = {}, map = { built: false } } = data.checks || {};
+  const repos = data.repos || [];
+  const commits = repos.length === 1 ? `commit ${repos[0].commit}`
+    : repos.map(r => `${r.name} ${r.base ? `at ${r.base}` : 'on disk'}, commit ${r.commit}`).join('; ');
+  const b = code.blocks, k = code.sketches;
+  const today = b === 0 ? `there are no today blocks to check (${repos.length === 1 ? `${repos[0].base || 'on disk'}, ` : ''}${commits}${plus(data)})`
+    : `${b === 1 ? 'the 1 today block matches' : `the ${b} today blocks match`} ${target(data, 'the files on disk')} (${commits}${plus(data)})`;
+  const codeLine = `Code: ${today}. ${plural(k, 'sketch', 'sketches')} ${count(k, 'is', 'are')} not checked.`;
+  const q = quotes.quotes;
+  const sources = q === 0 ? 'Sources: there are no quotes to check.'
+    : `Sources: ${q === 1 ? 'the 1 quote was' : `all ${q} quotes were`} found word for word${planSavedPhrase(data, quotes)}.`;
+  const c = planCounts(data);
+  const planLine = `Plan: ${plural(c.tasks, 'task', 'tasks')}, ${plural(c.tests, 'test', 'tests')}, ${plural(c.risks, 'risk', 'risks')}, ${c.outOfScope} out of scope. ${plural(c.open, 'open question', 'open questions')}, ${plural(c.proposals, 'proposal', 'proposals')}.`;
+  return [codeLine, sources, ...mapLines(map, true), planLine];
+}
+
+// The plan's questions, ready to copy: its open choices in stop order, then the not-recorded reasons, numbered on.
+export function planQuestionLines(data) {
+  const texts = [...choicesOf(data).filter(isOpen), ...all(data).filter(isGap)].map(x => String(x.text).replace(/\s+/g, ' ').trim());
+  return texts.map((t, i) => `${i + 1}. ${t}`);
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { quoteFound, checkQuotes } from '../lib/quotes.mjs';
-import { tempRoot, makeVault, bookingRepo, sampleData, repoSnapshot } from './helpers.mjs';
+import { tempRoot, makeVault, bookingRepo, sampleData, repoSnapshot, ledgerRepo, samplePlan } from './helpers.mjs';
 import { isCommitHash } from '../lib/git.mjs';
 
 test('exact quote is found', () => assert.equal(quoteFound('reach the yard service', 'Every booking must reach the yard service, so'), true));
@@ -222,4 +222,27 @@ test('gh on: reads the pull request, falls back when gh fails', t => {
   data.sources = [{ kind: 'pull-request', ref: 7, fetched: 'd', text: 'Saved text here.' }];
   const fb = checkQuotes(withReason(data, src, 'Saved text here'), { vault, gh: true });
   assert.deepEqual(fb.failures, []); assert.equal(fb.saved, 1);
+});
+
+// The example plan: its four plan entries quote the saved chat goal.
+function planQuotes(t, edit = () => {}) {
+  const root = tempRoot(t);
+  const d = samplePlan(ledgerRepo(root));
+  edit(d);
+  return checkQuotes(d, { vault: makeVault(root, {}), gh: false, date: '2026-11-11' });
+}
+
+test('the example plan quotes the chat', t => {
+  const r = planQuotes(t);
+  assert.equal(r.quotes, 4); assert.equal(r.saved, 4); assert.deepEqual(r.savedOf.chat, ['goal']); assert.deepEqual(r.failures, []);
+});
+
+test('a plan entry quote not in the chat', t => {
+  const r = planQuotes(t, d => { d.plan.out_of_scope[0].from.quote = 'no screens'; });
+  assert.deepEqual(r.failures, [{ where: 'out of scope 1 from (chat goal)', why: 'the quote is not found word for word in the source' }]);
+});
+
+test('a chat with no saved copy', t => {
+  const r = planQuotes(t, d => { d.sources = []; });
+  assert.deepEqual(r.failures[0], { where: 's2 from (chat goal)', why: 'no saved copy of chat goal' });
 });

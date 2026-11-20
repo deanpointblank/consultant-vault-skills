@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 
+import { isPlan, isSketch, planShapeErrors } from './plan.mjs';
+
 export const SOURCE_KINDS = ['vault-note', 'design-doc', 'commit', 'pull-request', 'ticket', 'code-comment', 'build-note', 'not-recorded'];
 
 const NEEDS_REPO = ['design-doc', 'commit', 'pull-request', 'code-comment'];
@@ -45,11 +47,13 @@ export function shapeErrors(data) {
     (s.code || []).forEach((b, i) => {
       const p = repoProblem(b, `stop ${id} code block ${i + 1}`);
       if (p) errors.push(p);
+      if (isPlan(data) && isSketch(b)) return;
       const f = fieldProblem(b, true);
       if (f) errors.push(`stop ${id} code block ${i + 1} ${f}`);
     });
     const reasons = s.reasons || [];
-    if (!reasons.length) errors.push(`stop ${id} has no Why entry`);
+    // In a plan, reasons are about existing code, so new and elsewhere stops need none.
+    if (!reasons.length && (!isPlan(data) || ['unchanged', 'changed'].includes(s.status))) errors.push(`stop ${id} has no Why entry`);
     reasons.forEach((r, i) => {
       const at = `stop ${id} Why entry ${i + 1}`;
       if (/^guess/i.test(r.text || '')) { errors.push(`${at} is a guess; guesses go in the guesses list`); return; }
@@ -75,5 +79,6 @@ export function shapeErrors(data) {
     const f = fieldProblem(e, false);
     if (f) errors.push(`extend point ${i + 1} (stop ${e.stop}) ${f}`);
   });
+  if (isPlan(data)) errors.push(...planShapeErrors(data));
   return errors;
 }

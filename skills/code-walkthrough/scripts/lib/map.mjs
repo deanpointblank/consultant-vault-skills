@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { repoByName } from './data.mjs';
-import { gitEnv } from './git.mjs';
+import { gitEnv, fileAt, plainRelative } from './git.mjs';
 
 const TEN_MINUTES = 10 * 60 * 1000;
 const SCENE_TAG = '<script id="scene" type="application/json">';
@@ -28,7 +28,7 @@ function commonParent(dirs) {
 }
 
 // The scene, and every reason it cannot stand for the data's map.
-function makeScene(data) {
+function makeScene(data, mirror) {
   const failures = [];
   const fail = (where, why) => failures.push({ where, why });
 
@@ -43,7 +43,7 @@ function makeScene(data) {
   };
 
   const repos = (Array.isArray(data.repos) ? data.repos : []).map(r => {
-    try { const x = repoByName(data, r?.name); return { name: x.name, path: path.resolve(x.path) }; } catch { return null; }
+    try { const x = repoByName(data, r?.name); return { name: x.name, path: mirror ? path.join(mirror, x.name) : path.resolve(x.path) }; } catch { return null; }
   });
   if (!repos.length) fail('map', 'the data names no repo');
   else if (repos.includes(null)) fail('map', 'every repo needs a name and a folder');
@@ -78,7 +78,47 @@ function makeScene(data) {
   return { scene, failures };
 }
 
-export const sceneFor = data => makeScene(data).scene;
+export const sceneFor = (data, { mirror } = {}) => makeScene(data, mirror).scene;
+
+// chalk-talk reads cited code from disk only, so a plan's base is written into the working folder
+// and the scene points there. A repo with no base is copied from disk. The repo is never written.
+export function mirrorBase(data, { out, slug, bases = {} }) {
+  const root = path.join(path.resolve(out), `${slug}-base`);
+  const failures = [];
+  const repos = Array.isArray(data.repos) ? data.repos : [];
+  const cited = [];
+  const add = (x, where) => {
+    const c = x?.code;
+    if (typeof c !== 'string' && !isObject(c)) return;
+    const name = typeof c === 'string' || c.repo === undefined ? (repos.length === 1 ? repos[0]?.name : undefined) : c.repo;
+    const file = typeof c === 'string' ? c.replace(/:[\d,\-\s]*$/, '') : c.file;
+    if (typeof file !== 'string' || !repos.some(r => r?.name === name)) return; // makeScene says why
+    cited.push({ name, file, where });
+  };
+  const items = k => (isObject(data.map) && Array.isArray(data.map[k]) ? data.map[k] : []).filter(isObject);
+  items('nodes').forEach((n, i) => add(n, `map block ${n.id || `n${i + 1}`}`));
+  items('edges').forEach((e, i) => add(e, `map arrow ${e.id || `e${i + 1}`}`));
+
+  const done = new Set();
+  for (const { name, file, where } of cited) {
+    if (done.has(name + '\0' + file)) continue;
+    done.add(name + '\0' + file);
+    if (!plainRelative(name) || !plainRelative(file) || file.startsWith('./')) { failures.push({ where, why: 'its code path must stay inside the repo' }); continue; }
+    const repoPath = path.resolve(repoByName(data, name).path);
+    const base = bases[name];
+    let text;
+    if (base) {
+      text = fileAt(repoPath, base.hash, file);
+      if (text === null) { failures.push({ where, why: `the file is not at ${base.ref}` }); continue; }
+    } else {
+      try { text = fs.readFileSync(path.join(repoPath, file), 'utf8'); } catch { continue; } // chalk-talk reports a missing file
+    }
+    const to = path.join(root, name, file);
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.writeFileSync(to, text);
+  }
+  return { root, failures };
+}
 
 // The line of a child's stderr that says what went wrong, without the tool's own prefix.
 function reason(stderr, fallback) {
@@ -98,7 +138,7 @@ function readPage(file) {
   } catch { return null; }
 }
 
-export function buildMap(data, { chalk, out, slug } = {}) {
+export function buildMap(data, { chalk, out, slug, bases = {} } = {}) {
   for (const [name, v] of Object.entries({ chalk, out, slug })) if (typeof v !== 'string' || !v) throw new Error(`buildMap needs ${name}`);
   if (/[\\/]/.test(slug)) throw new Error(`buildMap: slug ${slug} must be a plain file name`);
 
@@ -106,10 +146,14 @@ export function buildMap(data, { chalk, out, slug } = {}) {
   const scenePath = path.join(dir, `${slug}.scene.json`);
   const page = path.join(dir, `${slug}.map.html`);
   const snaps = path.join(dir, `${slug}-snaps`);
+  const mirror = path.join(dir, `${slug}-base`);
   // A failed run must not leave an earlier run's map looking current.
-  for (const f of [scenePath, page, snaps]) fs.rmSync(f, { recursive: true, force: true });
+  for (const f of [scenePath, page, snaps, mirror]) fs.rmSync(f, { recursive: true, force: true });
 
-  const { scene, failures } = makeScene(data);
+  const useMirror = Object.keys(bases).length > 0;
+  const mirrored = useMirror ? mirrorBase(data, { out, slug, bases }) : null;
+  const { scene, failures } = makeScene(data, mirrored?.root);
+  if (mirrored) failures.push(...mirrored.failures);
   const result = { html: null, arrows: 0, traced: 0, guesses: 0, broken: 0, unproven: 0, failures, layout: { checked: false, errors: [] } };
   if (failures.length) return result;
 

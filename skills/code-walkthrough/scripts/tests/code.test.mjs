@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { checkCode, codeRows, splitLines, expectedText } from '../lib/code.mjs';
-import { tempRoot, bookingRepo, sampleData } from './helpers.mjs';
+import { tempRoot, bookingRepo, sampleData, ledgerRepo, samplePlan } from './helpers.mjs';
 
 const setup = t => { const repo = bookingRepo(tempRoot(t)); return { repo, d: sampleData(repo) }; };
 const s2 = d => d.stops[1].code[0];
@@ -147,4 +147,37 @@ test('codeRows splits text the way the check does', t => {
     assert.deepEqual(rows.map(r => r.text), ['x', 'y', 'z']);
     assert.deepEqual(rows.filter(r => r.key).map(r => r.n), [2]);
   }
+});
+
+// One edit to the example plan, then its code failures. s = the stops, k = stop s3's sketch.
+const planFailures = (t, edit) => {
+  const d = samplePlan(ledgerRepo(tempRoot(t)));
+  edit(d.stops, d.stops[2].code[0]);
+  return checkCode(d).failures;
+};
+
+test('the example plan counts today blocks and sketches apart', t => {
+  const r = checkCode(samplePlan(ledgerRepo(tempRoot(t))));
+  assert.deepEqual(r.failures, []);
+  assert.equal(r.blocks, 2);
+  assert.equal(r.sketches, 2);
+});
+
+for (const [title, edit, where, why] of [
+  ['a sketch marked new_file in a file on disk', s => { s[1].code[1].new_file = true; }, 's2 src/store.js (sketch)', 'the file already exists; set new_file to false'],
+  ['a sketch in a file not on disk', (s, k) => { k.file = 'src/attachments.js'; delete k.after; }, 's3 src/attachments.js (sketch)', 'the file is not on disk; set new_file to true'],
+  ['a sketch after a line past the end', (s, k) => { k.after = 90; }, 's3 src/store.js (sketch)', 'after line 90, but the file has 20 lines'],
+  ['a sketch after text the file does not hold', (s, k) => { k.after = 'nosuch'; }, 's3 src/store.js (sketch)', 'after "nosuch", but the file does not contain it'],
+]) {
+  test(title, t => {
+    assert.deepEqual(planFailures(t, edit), [{ where, why }]);
+  });
+}
+
+test('two new-file sketches in one absent file pass', t => {
+  assert.deepEqual(planFailures(t, (s, k) => {
+    Object.assign(k, { file: 'src/attachments.js', new_file: true });
+    delete k.after;
+    s[2].code.push({ ...k, function: 'listAttachments' });
+  }), []);
 });

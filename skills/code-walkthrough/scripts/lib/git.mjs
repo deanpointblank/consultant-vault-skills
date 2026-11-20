@@ -75,3 +75,30 @@ export function repoFacts(repoPath, files) {
 }
 
 export const isCommitHash = s => typeof s === 'string' && /^[0-9a-f]{4,40}$/i.test(s);
+
+// A plan's base: the commit a ref names here. Nothing is fetched, so a ref this repo does not hold is refused.
+export function resolveBase(repoPath, ref) {
+  try {
+    const hash = gitRead(repoPath, ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`]).trim();
+    return { ref, hash, short: gitRead(repoPath, ['rev-parse', '--short=7', hash]).trim() };
+  } catch { throw new Error(`git cannot find ${ref} here; the build never fetches, so fetch it yourself or change base`); }
+}
+
+// The empty tree, which git knows without storing it: a diff from it lists every file at a commit with its mode.
+const EMPTY_TREE = { 40: '4b825dc642cb6eb9a060e54bf8d69288fbee4904', 64: '6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321' };
+
+// Whether the commit holds a regular file under exactly that name: not a folder, a link or a submodule.
+// A leading `./` would be read from the top folder, so it is not that name.
+export function existsAt(repoPath, hash, file) {
+  if (!plainRelative(file) || file.startsWith('./')) return false;
+  let parts;
+  try { parts = gitRead(repoPath, ['diff', '--raw', '-z', '--no-renames', EMPTY_TREE[hash.length], hash, '--', file]).split('\0'); } catch { return false; }
+  // -z output: ":000000 <mode> <id> <id> A", then the path, each ended by NUL.
+  for (let i = 0; i + 1 < parts.length; i += 2) if (parts[i + 1] === file && /^:000000 100(644|755) /.test(parts[i])) return true;
+  return false;
+}
+
+// The file's text at the commit, or null when the commit does not hold it.
+export function fileAt(repoPath, hash, file) {
+  return existsAt(repoPath, hash, file) ? gitRead(repoPath, ['show', `${hash}:${file}`]) : null;
+}
