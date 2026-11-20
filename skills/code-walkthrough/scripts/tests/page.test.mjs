@@ -584,6 +584,64 @@ test('the divider hides with the strip and without a map', needsMap, async t => 
   assert.deepEqual(none.none, ['hidden', 0, false]);
 });
 
+test('the divider drags and resets on double-click', needsMap, async t => {
+  const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), (r, k) => {
+    const s = k.$('#split');
+    const rd = k.$('#read').getBoundingClientRect();
+    const ev = (type, y) => s.dispatchEvent(new PointerEvent(type, { pointerId: 1, clientY: y, bubbles: true, cancelable: true }));
+    const at = f => rd.top + f * rd.height;
+    const now = () => s.getAttribute('aria-valuenow');
+    ev('pointerdown', at(0.46));
+    r.dragging = k.html.hasAttribute('data-dragging');
+    r.seen = [];
+    for (const f of [0.7, 0.95, 0.05]) { ev('pointermove', at(f)); r.seen.push(now()); }
+    const fr = k.$('#map-frame').getBoundingClientRect();
+    ev('pointerup', fr.top + fr.height / 2);
+    r.after = [k.html.hasAttribute('data-dragging'), getComputedStyle(k.$('#map-frame')).pointerEvents];
+    r.stored = localStorage.getItem('code-walkthrough:split');
+    s.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    r.reset = now();
+  });
+  assert.equal(r.dragging, true);
+  assert.deepEqual(r.seen, ['70', '80', '20']);
+  assert.equal(r.after[0], false);
+  assert.notEqual(r.after[1], 'none');
+  assert.equal(r.stored, '20');
+  assert.equal(r.reset, '46');
+});
+
+test('the divider share is remembered, and a bad value means the default', needsMap, async t => {
+  const withSaved = v => `<script>localStorage.setItem('code-walkthrough:split', ${JSON.stringify(v)});</script>`;
+  const probe = (r, k) => {
+    r.now = k.$('#split').getAttribute('aria-valuenow');
+    r.frame = k.$('#map-frame').getBoundingClientRect().height;
+    r.read = k.$('#read').getBoundingClientRect().height;
+  };
+  const page = assemblePage(pageModel(sample()), sampleMap());
+  const ok = await run(t, page, probe, { head: withSaved('30') });
+  assert.equal(ok.now, '30');
+  assert.ok(Math.abs(ok.frame - ok.read * 0.3) <= 2, `frame ${ok.frame}px of ${ok.read}px`);
+  for (const bad of ['95', '5', 'abc', '']) {
+    const r = await run(t, page, probe, { head: withSaved(bad) });
+    assert.equal(r.now, '46', `stored ${JSON.stringify(bad)}`);
+  }
+});
+
+test('the divider with storage that throws', needsMap, async t => {
+  const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), (r, k) => {
+    const s = k.$('#split');
+    r.ready = k.html.dataset.ready;
+    s.focus();
+    k.key(s, 'End');
+    r.end = s.getAttribute('aria-valuenow');
+    s.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    r.reset = s.getAttribute('aria-valuenow');
+  }, { head: BREAK_STORAGE });
+  assert.equal(r.ready, '1');
+  assert.equal(r.end, '80');
+  assert.equal(r.reset, '46');
+});
+
 test('storage that throws', needsMap, async t => {
   const r = await run(t, assemblePage(pageModel(sample()), sampleMap()), (r, k) => {
     r.throws = (() => { try { return !window.localStorage; } catch (e) { return e.name; } })();

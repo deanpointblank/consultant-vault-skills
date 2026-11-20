@@ -312,6 +312,32 @@
     setSplit(to);
   });
 
+  // Drag: the pointer's height inside #read sets the share; it is stored once, on release.
+  const splitEl = $('split');
+  let dragging = false;
+  const endDrag = () => { html.removeAttribute('data-dragging'); dragging = false; };
+  splitEl.addEventListener('pointerdown', ev => {
+    dragging = true;
+    html.dataset.dragging = '1';
+    try { splitEl.setPointerCapture(ev.pointerId); } catch (_) { /* a synthetic event has no live pointer */ }
+    ev.preventDefault();
+  });
+  splitEl.addEventListener('pointermove', ev => {
+    if (!dragging) return;
+    const r = $('read').getBoundingClientRect();
+    setSplit(((ev.clientY - r.top) / r.height) * 100, { save: false });
+  });
+  splitEl.addEventListener('pointerup', () => {
+    if (dragging) store.set(KEY_SPLIT, splitEl.getAttribute('aria-valuenow'));
+    endDrag();
+  });
+  splitEl.addEventListener('pointercancel', endDrag);
+  splitEl.addEventListener('lostpointercapture', endDrag);
+  splitEl.addEventListener('dblclick', () => setSplit(SPLIT.start));
+  // A stored share that is not a number from 20 to 80 means the default; it is not clamped.
+  const savedSplit = store.get(KEY_SPLIT);
+  if (/^\d+(\.\d+)?$/.test(savedSplit || '') && savedSplit >= SPLIT.min && savedSplit <= SPLIT.max) setSplit(Number(savedSplit), { save: false });
+
   const setNarrow = () => { html.dataset.narrow = NARROW.matches ? '1' : '0'; };
   NARROW.addEventListener('change', setNarrow);
 

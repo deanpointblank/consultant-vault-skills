@@ -215,3 +215,5 @@ html[data-narrow="1"] .outline-head .chev { grid-area: c; }
 html[data-narrow="1"] .outline-body { padding-left: 14px; }
 html[data-narrow="1"] .extend-item { grid-template-columns: minmax(0, 1fr) auto; }
 html[data-narrow="1"] .ex-text { grid-column: 1 / -1; grid-row: 2; }
+html[data-dragging] #map-frame { pointer-events: none; }
+html[data-dragging] { user-select: none; -webkit-user-select: none; }
