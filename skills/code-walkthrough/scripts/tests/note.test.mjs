@@ -24,7 +24,7 @@ test('frontmatter matches the schema', t => {
   const head = text.slice(0, text.indexOf('\n---\n', 4) + 5);
   assert.equal(head, `---
 type: code-walkthrough
-client: uscold
+client: acme
 created: 2026-11-11
 repos:
   - "[[booking-mini]]"

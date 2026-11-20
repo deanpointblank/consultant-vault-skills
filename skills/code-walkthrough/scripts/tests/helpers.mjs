@@ -167,7 +167,7 @@ export function sampleData(repo) {
     journey: 'Saving a booking, from the form to the dock check',
     short_name: 'booking flow',
     summary: 'A booking leaves the form, reaches the API and is checked against dock days.',
-    client: 'uscold',
+    client: 'acme',
     repos: [{ name: 'booking-mini', path: repo.path }],
     stops: [
       {
