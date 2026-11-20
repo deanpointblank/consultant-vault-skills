@@ -706,3 +706,16 @@ export function samplePlan(repo) {
   plan.repos[0].path = repo.path;
   return plan;
 }
+
+// What a build of the example plan writes into it: the facts the plan words read.
+export function withPlanChecks(d) {
+  d.built = '2026-11-20';
+  d.repos[0].commit = 'abc1234';
+  d.repos[0].uncommitted = [];
+  d.checks = {
+    code: { blocks: 2, sketches: 2 },
+    quotes: { quotes: 4, saved: 4, savedOf: { ticket: [], 'pull-request': [], chat: ['goal'], 'plan-file': [] } },
+    map: { built: true, arrows: 5, traced: 2, planned: 2, guesses: 1, broken: 0, layoutChecked: true },
+  };
+  return d;
+}

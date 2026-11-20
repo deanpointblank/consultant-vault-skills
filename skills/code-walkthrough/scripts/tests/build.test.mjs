@@ -674,6 +674,26 @@ test('the example plan builds', t => {
   finish(ctx);
 });
 
+test('the example plan prints its plan lines and writes a plan note', t => {
+  const ctx = planSetup(t);
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.ok(r.lines.includes('Sources: all 4 quotes were found word for word (4 in a saved copy of the chat).'), r.out);
+  const p = r.lines.indexOf('Plan: 2 tasks, 1 test, 1 risk, 1 out of scope. 1 open question, 5 proposals.');
+  assert.ok(p > 0, r.out);
+  assert.deepEqual(r.lines.slice(p + 1, p + 4), ['1. Is there a size limit per file?', '2. Why is an invoice limited to 500 lines?', '3. Why is the audit entry written before the insert?'], r.out);
+  assert.match(fs.readFileSync(path.join(ctx.folder, 'Plan - invoice attachments.md'), 'utf8'), /^---\ntype: code-plan\n/);
+  finish(ctx);
+});
+
+test('a plan prints the walkthrough it names', t => {
+  const ctx = planSetup(t, d => { d.walkthrough = 'Walkthrough - saving an invoice'; });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  const p = r.lines.findIndex(l => l.startsWith('Plan: '));
+  assert.deepEqual(r.lines.slice(p + 1, p + 3), ['Walkthrough of the same code: [[Walkthrough - saving an invoice]] (named in the data file, not checked).', '1. Is there a size limit per file?'], r.out);
+});
+
 test('one edit: a sketch marked new_file true', t => {
   const ctx = planSetup(t, d => { d.stops[1].code[1].new_file = true; });
   const r = run(ctx);
