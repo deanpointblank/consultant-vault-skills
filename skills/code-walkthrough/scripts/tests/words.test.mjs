@@ -110,6 +110,11 @@ test('chip labels', () => {
   assert.equal(l('not-recorded'), 'not recorded');
 });
 
+test('chip labels for a plan\'s sources', () => {
+  assert.equal(chipLabel({ kind: 'chat', ref: 'goal' }), 'chat');
+  assert.equal(chipLabel({ kind: 'plan-file', ref: '/tmp/plan.md' }), 'plan');
+});
+
 test('chip detail is the exact quote and where it comes from', () => {
   const q = 'every booking must reach the yard service';
   const d = mk({ sources: [{ kind: 'ticket', ref: 'PFD-1', fetched: '2026-11-11', text: q }] });

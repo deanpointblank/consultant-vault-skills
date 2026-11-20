@@ -126,6 +126,8 @@ export function chipLabel(source) {
     case 'ticket': return `ticket ${ref}`;
     case 'code-comment': return 'code comment';
     case 'build-note': return 'build note';
+    case 'chat': return 'chat';
+    case 'plan-file': return 'plan';
     default: return 'not recorded';
   }
 }

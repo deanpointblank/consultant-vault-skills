@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { codeRows, splitLines } from './code.mjs';
-import { isPlan, isSketch } from './plan.mjs';
-import { builtLine, checksShort, reasonsLine, stopBadge, whyLabel, chipLabel, chipDetail } from './words.mjs';
+import { isPlan, isSketch, tasksOf } from './plan.mjs';
+import { builtLine, checksShort, reasonsLine, stopBadge, whyLabel, chipLabel, chipDetail, originTag, planCounts, planBuiltLine, planChecksShort, planStopsLine } from './words.mjs';
 import { CAPTION_BAR, CODE_PANEL } from './settings.mjs';
 
 export const FOLD_AT = 14;
@@ -37,14 +37,22 @@ export function foldRows(rows) {
 
 const range = o => `${o.file}:${o.lines[0]}-${o.lines[1]}`;
 
-// A sketch has no line numbers: it is labelled by its file alone.
-function blockModel(block, sketch) {
-  const all = sketch ? splitLines(block.text).map(text => ({ n: '', text, key: false }))
-    : codeRows(block).map(r => r.gap ? { ...r, label: `lines ${label(r.gap)} left out` } : r);
+function blockModel(block) {
+  const all = codeRows(block).map(r => r.gap ? { ...r, label: `lines ${label(r.gap)} left out` } : r);
   const total = all.filter(r => !r.gap).length;
   const rows = foldRows(all);
-  return { label: sketch ? block.file : range(block), fn: block.function, rows, total, folded: rows.length !== all.length, showAll: `Show all ${total} lines` };
+  return { label: range(block), fn: block.function, rows, total, folded: rows.length !== all.length, showAll: `Show all ${total} lines` };
 }
+
+function sketchLabel(b) {
+  if (b.new_file) return `${b.file} · new file`;
+  if (typeof b.after === 'number') return `${b.file} · new, after line ${b.after}`;
+  if (b.after !== undefined) return `${b.file} · new, after ${b.after}`;
+  return `${b.file} · changed`;
+}
+
+// A sketch is never checked and never folds (30 lines at most): no line numbers, every line shown.
+const sketchModel = b => ({ label: sketchLabel(b), head: 'Sketch · not checked', fn: b.function, rows: splitLines(b.text).map(text => ({ text })), originTag: originTag(b.from) });
 
 // The chip's colour: written sources, commits and pull requests, comments in the code, and gaps.
 const TONE = {
@@ -54,6 +62,62 @@ const TONE = {
 
 const stopWord = n => (n === 1 ? 'stop' : 'stops');
 const linkTo = s => `${s.n}. ${s.name}`;
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const taskPart = ns => (!ns.length ? '' : ` · ${ns.length === 1 ? 'Task' : 'Tasks'} ${ns.join(', ')}`);
+const STATUS_TAGS = { new: 'NEW', changed: 'CHANGED', unchanged: 'UNCHANGED', elsewhere: 'ANOTHER TICKET' };
+const isGap = r => r.source?.kind === 'not-recorded';
+
+// What a plan page adds to a stop.
+function planStop(s, data) {
+  const sketches = (s.code || []).filter(isSketch);
+  const inExisting = s.status === 'new' && sketches.length && sketches.every(b => !b.new_file);
+  const choices = (s.choices || []).map(c => {
+    const quoted = ['plan', 'review'].includes(c.from?.kind);
+    return { text: c.text, tag: originTag(c.from), open: c.from?.kind === 'open', chip: quoted ? chipLabel(c.from.source) : '', detail: quoted ? chipDetail(c.from, data) : '' };
+  });
+  const reasons = s.reasons || [];
+  const open = choices.filter(c => c.open).length, gaps = reasons.filter(isGap).length;
+  const openPart = open ? `${open} open` : '', gapPart = gaps ? `${gaps} not recorded` : '';
+  return {
+    status: s.status,
+    statusTag: inExisting ? 'NEW · in an existing file' : STATUS_TAGS[s.status] || '',
+    originTag: originTag(s.from),
+    ticket: s.ticket ?? '',
+    sketches: sketches.map(sketchModel),
+    points: s.points || [],
+    today: s.today ? { what: s.today.what, points: s.today.points || [] } : null,
+    takes: s.takes || [], gives: s.gives || [],
+    choices,
+    whyLabel: [`Why & choices ${reasons.length + choices.length}`, openPart, gapPart].filter(Boolean).join(' · '),
+    badge: [openPart, gapPart].filter(Boolean).join(' · '),
+    hasOpen: open > 0,
+  };
+}
+
+// The Build order view: tasks with their stops and build tests, the other lists, and stops another ticket builds.
+function buildOrder(data, names) {
+  const p = data.plan || {}, tests = p.tests || [], c = planCounts(data);
+  const when = x => x.when || 'build';
+  const items = list => list.map(x => ({ text: x.text, tag: originTag(x.from) }));
+  const stopLink = n => ({ n, link: `Stop ${n} →` });
+  const groups = [
+    ['Checks before the build', tests.filter(x => when(x) === 'before')],
+    ['Tests', tests.filter(x => when(x) === 'build' && x.task === undefined)],
+    ['After deploy', tests.filter(x => when(x) === 'after')],
+    ['Risks', p.risks || []],
+    ['Out of scope', p.out_of_scope || []],
+  ].filter(([, list]) => list.length).map(([title, list]) => ({ title, items: items(list) }));
+  return {
+    summary: `${plural(c.tasks, 'task', 'tasks')} · ${plural(c.tests, 'test', 'tests')} · ${plural(c.risks, 'risk', 'risks')} · ${c.outOfScope} out of scope`,
+    tasks: (p.tasks || []).map((t, i) => ({
+      n: i + 1, name: t.name, tag: originTag(t.from),
+      stops: (t.stops || []).filter(id => names.has(id)).map(id => stopLink(names.get(id).n)),
+      tests: items(tests.filter(x => x.task === t.id && when(x) === 'build')),
+    })),
+    groups,
+    elsewhere: (data.stops || []).flatMap((s, i) => (s.status === 'elsewhere' ? [{ n: i + 1, name: s.name, ticket: s.ticket ?? '', ...stopLink(i + 1) }] : [])),
+  };
+}
 
 export function pageModel(data) {
   const stops = data.stops || [];
@@ -61,8 +125,9 @@ export function pageModel(data) {
   const multi = (data.repos || []).length > 1;
   const uncommittedFiles = (data.repos || []).flatMap(r => (r.uncommitted || []).map(f => multi ? `${r.name}: ${f}` : f));
   const at = i => (i >= 0 && i < stops.length ? { n: i + 1, name: stops[i].name } : null);
-  const sketch = b => isPlan(data) && isSketch(b);
-  return {
+  const plan = isPlan(data);
+  const sketch = b => plan && isSketch(b);
+  const model = {
     title: data.journey,
     built: builtLine(data),
     uncommittedFiles,
@@ -73,9 +138,9 @@ export function pageModel(data) {
     stops: stops.map((s, i) => {
       const code = s.code || [];
       const notes = s.notes || [];
-      const kicker = `Stop ${i + 1} of ${stops.length}`;
+      const kicker = `Stop ${i + 1} of ${stops.length}${plan ? taskPart(tasksOf(s.id, data)) : ''}`;
       const prev = at(i - 1), next = at(i + 1);
-      return {
+      const stop = {
         n: i + 1, id: s.id, name: s.name, summary: s.summary,
         kicker, label: `${kicker} — ${s.name}`,
         prevLabel: prev ? `← ${linkTo(prev)}` : '',
@@ -84,7 +149,7 @@ export function pageModel(data) {
         firstFile: !code.length ? '' : sketch(code[0]) ? code[0].file : range(code[0]),
         more: Math.max(0, code.length - 1),
         moreLabel: code.length > 1 ? `+${code.length - 1} more` : '',
-        blocks: code.map(b => blockModel(b, sketch(b))),
+        blocks: code.filter(b => !sketch(b)).map(blockModel),
         what: s.what, dataIn: s.data?.in, dataOut: s.data?.out,
         notes,
         notesLabel: `Notes on the code (${notes.length})`,
@@ -95,11 +160,20 @@ export function pageModel(data) {
         })),
         guesses: s.guesses || [],
       };
+      return plan ? { ...stop, ...planStop(s, data) } : stop;
     }),
     extend: (data.extend || []).map(e => {
       const to = names.get(e.stop);
       return { where: range(e), text: e.text, stopN: to?.n, stopName: to?.name, link: to ? `${linkTo(to)} →` : '' };
     }),
+  };
+  if (!plan) return model;
+  return {
+    ...model, plan: true,
+    built: planBuiltLine(data), checks: planChecksShort(data),
+    reasonsKey: 'Stops:', reasons: planStopsLine(data),
+    lookupOnly: 'Only stops with something open', extendTab: 'Build order',
+    order: buildOrder(data, names),
   };
 }
 

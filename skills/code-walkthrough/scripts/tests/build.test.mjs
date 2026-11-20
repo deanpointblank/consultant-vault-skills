@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { pageModel } from '../lib/page.mjs';
-import { planBuiltLine } from '../lib/words.mjs';
 import { tempRoot, ledgerRepo, samplePlan, bookingRepo, sampleData, makeVault, makeRepo, commitAll, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
 
 const SCRIPT = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
@@ -787,6 +786,8 @@ test('one edit: a sketch with an empty file name', t => {
 const gitOut = (p, args) => execFileSync('git', args, { cwd: p, encoding: 'utf8' });
 const refState = p => ({ refs: gitOut(p, ['for-each-ref']), heads: gitOut(p, ['rev-parse', 'HEAD', 'origin/main']) });
 const fetchHead = ctx => path.join(ctx.repo.path, '.git', 'FETCH_HEAD');
+// The page model as the built plan page carries it in #walk-data.
+const planPageModel = ctx => JSON.parse(fs.readFileSync(path.join(ctx.out, 'invoice-attachments.plan.html'), 'utf8').match(/<script type="application\/json" id="walk-data">([\s\S]*?)<\/script>/)[1]);
 
 test('a plan reads origin/main, fetches nothing and changes nothing', t => {
   const ctx = planSetup(t, d => d, { ahead: true, remote: true });
@@ -804,7 +805,8 @@ test('a plan reads origin/main, fetches nothing and changes nothing', t => {
   const atBase = gitOut(ctx.repo.path, ['show', `${ctx.repo.base}:src/store.js`]).split('\n');
   assert.deepEqual(rows.map(x => x.n), [16, 17, 18, 19, 20]);
   assert.deepEqual(rows.map(x => x.text), atBase.slice(15, 20));
-  assert.ok(planBuiltLine(d).startsWith('Code as at `origin/main` (commit '), planBuiltLine(d));
+  const built = planPageModel(ctx).built;
+  assert.ok(built.startsWith('Code as at `origin/main` (commit '), built);
 });
 
 test('a base the repo does not know is refused', t => {
@@ -873,7 +875,7 @@ test('two repos, one with a base', t => {
   assert.deepEqual(d.repos[0].uncommitted, []);
   assert.equal(d.repos[1].commit, web.head);
   assert.deepEqual(d.repos[1].uncommitted, ['src/upload.js']);
-  assert.equal(planBuiltLine(d), `Code as at \`origin/main\` in ledger-api (commit ${ctx.repo.base}) and on disk in web (commit ${web.head}) plus uncommitted changes in 1 file, ${DAY1}. Nothing in this plan is built yet.`);
+  assert.equal(planPageModel(ctx).built, `Code as at \`origin/main\` in ledger-api (commit ${ctx.repo.base}) and on disk in web (commit ${web.head}) plus uncommitted changes in 1 file, ${DAY1}. Nothing in this plan is built yet.`);
   finish(ctx);
 });
 
