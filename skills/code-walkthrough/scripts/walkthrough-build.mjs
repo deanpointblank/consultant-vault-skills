@@ -7,7 +7,7 @@ import { isPlan, isSketch } from './lib/plan.mjs';
 import { repoFacts, topFolderAbove, resolveBase } from './lib/git.mjs';
 import { checkCode } from './lib/code.mjs';
 import { checkQuotes } from './lib/quotes.mjs';
-import { chalkTalkAt, buildMap } from './lib/map.mjs';
+import { chalkTalkAt, buildMap, plannedArrowFailures } from './lib/map.mjs';
 import { pageModel, assemblePage } from './lib/page.mjs';
 import { replyLines, questionLines, planReplyLines, planQuestionLines } from './lib/words.mjs';
 import { slugOf, noteBaseOf, chooseNames } from './lib/names.mjs';
@@ -176,6 +176,7 @@ function main() {
   const { failures: quoteFailures, ...quotes } = checkQuotes(data, { vault, gh: process.env.CW_GH !== '0', date: args.date, bases });
   failures.push(...quoteFailures);
 
+  if (isPlan(data)) failures.push(...plannedArrowFailures(data));
   let map = { built: false };
   let mapHtml = null;
   if (chalk) {
@@ -183,7 +184,7 @@ function main() {
       const m = buildMap(data, { chalk: chalk.dir, out, slug, bases });
       failures.push(...m.failures);
       mapHtml = m.html;
-      map = { built: m.html != null, arrows: m.arrows, traced: m.traced, guesses: m.guesses, broken: m.broken, layoutChecked: m.layout.checked };
+      map = { built: m.html != null, arrows: m.arrows, traced: m.traced, guesses: m.guesses, broken: m.broken, layoutChecked: m.layout.checked, ...(isPlan(data) && { planned: m.planned }) };
     } catch (e) { failures.push({ where: 'map', why: e.message }); }
     data.map_tool = { name: 'chalk-talk', commit: chalk.commit };
   } else {

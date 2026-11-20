@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { pageModel } from '../lib/page.mjs';
+import { chalkTalkAt } from '../lib/map.mjs';
 import { tempRoot, ledgerRepo, samplePlan, bookingRepo, sampleData, makeVault, makeRepo, commitAll, repoSnapshot, chalkDir, findChrome } from './helpers.mjs';
 
 const SCRIPT = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
@@ -902,6 +904,23 @@ test('a sketch placed on a folder at the base', t => {
   const r = run(ctx);
   assert.equal(r.status, 1, r.out + r.err);
   assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s3 src/dir (sketch): the file is not at origin/main; set new_file to true']);
+});
+
+test('one edit: a planned arrow given code', t => {
+  const ctx = planSetup(t, d => { d.map.edges[3].code = 'src/store.js:16-20'; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL map arrow to-attach: it is planned, so it cannot cite code yet']);
+});
+
+test('the example plan builds with its map and counts planned arrows', { skip: !chalkDir() || !findChrome() }, t => {
+  const chalk = chalkDir();
+  assert.equal(chalkTalkAt(chalk).commit, '4f88ead');
+  const ctx = planSetup(t, d => d, { ahead: true });
+  const r = run(ctx, [], { chalk, env: { HOME: os.homedir() } });
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.ok(r.lines.includes('Map: 2 of 5 arrows are traced to a line of code. 2 are planned. 1 is marked as a guess. None are broken.'), r.out);
+  assert.equal(readJson(ctx.dataFile).checks.map.planned, 2);
 });
 
 test('a today block citing a folder at the base', t => {

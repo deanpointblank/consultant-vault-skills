@@ -260,3 +260,35 @@ test('two repos, one with a base, mirror from both', t => {
   assert.equal(s.root, r.root);
   assert.equal(s.nodes.find(n => n.id === 'client').code.file, 'web/ui/form.js');
 });
+
+test('a planned arrow becomes an inferred, added arrow', t => {
+  const { d } = planBase(tempRoot(t));
+  const e = sceneFor(d).edges.find(x => x.id === 'to-attach');
+  assert.equal(e.inferred, 'Planned: saveInvoice will call saveAttachments');
+  assert.equal(e.change, 'added');
+  assert.equal('planned' in e, false);
+  const kept = structuredClone(d);
+  kept.map.edges.find(x => x.id === 'to-attach').change = 'changed';
+  assert.equal(sceneFor(kept).edges.find(x => x.id === 'to-attach').change, 'changed');
+});
+
+test('the plan scene has its eyebrow and diff', t => {
+  const { d } = planBase(tempRoot(t));
+  const s = sceneFor(d);
+  assert.equal(s.eyebrow, 'The plan');
+  assert.deepEqual(s.diff, { title: 'Plan · invoice attachments', base: 'origin/main' });
+  const w = sceneFor(setup(t).d);
+  assert.equal('eyebrow' in w, false);
+  assert.equal('diff' in w, false);
+});
+
+test('the example map builds at the base and counts planned arrows', needsChalk, t => {
+  assert.equal(chalkTalkAt(chalk).commit, '4f88ead');
+  const root = tempRoot(t);
+  const { d, bases } = planBase(root);
+  const r = buildMap(d, { chalk, out: path.join(root, 'out'), slug: 'w', bases });
+  const { arrows, traced, planned, guesses, broken, failures } = r;
+  assert.deepEqual({ arrows, traced, planned, guesses, broken, failures }, { arrows: 5, traced: 2, planned: 2, guesses: 1, broken: 0, failures: [] });
+  const page = JSON.parse(r.html.match(/<script id="scene" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(page.edges.filter(e => e.proof.status === 'cited' || e.proof.status === 'verified').map(e => e.id).sort(), ['insert', 'save']);
+});

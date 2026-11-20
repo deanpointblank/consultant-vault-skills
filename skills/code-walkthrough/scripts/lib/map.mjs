@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { repoByName } from './data.mjs';
+import { isPlan } from './plan.mjs';
 import { gitEnv, fileAt, plainRelative } from './git.mjs';
 
 const TEN_MINUTES = 10 * 60 * 1000;
@@ -66,7 +67,10 @@ function makeScene(data, mirror) {
     return { ...x, code };
   };
   const nodes = list('nodes', 'blocks').map((n, i) => withCode(n, `map block ${n.id || `n${i + 1}`}`));
-  const edges = list('edges', 'arrows').map((e, i) => withCode(e, `map arrow ${e.id || `e${i + 1}`}`));
+  const plan = isPlan(data);
+  // A planned arrow can only be one of chalk-talk's guesses, marked as new.
+  const planned = e => { if (!plan || e.planned === undefined) return e; const { planned: p, ...rest } = e; return { ...rest, inferred: `Planned: ${p}`, change: e.change ?? 'added' }; };
+  const edges = list('edges', 'arrows').map((e, i) => planned(withCode(e, `map arrow ${e.id || `e${i + 1}`}`)));
   const groups = list('groups', 'groups');
 
   const steps = (Array.isArray(data.stops) ? data.stops : []).map(stop => {
@@ -75,7 +79,17 @@ function makeScene(data, mirror) {
   });
 
   const scene = { title: data.journey, lang: 'en', style: map?.style || 'studio', root, proof: true, nodes, edges, groups, steps };
+  if (plan) {
+    scene.eyebrow = 'The plan';
+    scene.diff = { title: `Plan · ${data.short_name}`, base: data.repos.map(r => r?.base ?? r?.commit).filter(Boolean).join(', ') };
+  }
   return { scene, failures };
+}
+
+// A planned arrow has no code yet, so citing code is a mistake chalk-talk would call a proof.
+export function plannedArrowFailures(data) {
+  const edges = isObject(data.map) && Array.isArray(data.map.edges) ? data.map.edges : [];
+  return edges.flatMap((e, i) => isObject(e) && e.planned !== undefined && e.code !== undefined ? [{ where: `map arrow ${e.id || `e${i + 1}`}`, why: 'it is planned, so it cannot cite code yet' }] : []);
 }
 
 export const sceneFor = (data, { mirror } = {}) => makeScene(data, mirror).scene;
@@ -155,6 +169,7 @@ export function buildMap(data, { chalk, out, slug, bases = {} } = {}) {
   const { scene, failures } = makeScene(data, mirrored?.root);
   if (mirrored) failures.push(...mirrored.failures);
   const result = { html: null, arrows: 0, traced: 0, guesses: 0, broken: 0, unproven: 0, failures, layout: { checked: false, errors: [] } };
+  if (isPlan(data)) result.planned = 0;
   if (failures.length) return result;
 
   fs.mkdirSync(dir, { recursive: true });
@@ -177,7 +192,10 @@ export function buildMap(data, { chalk, out, slug, bases = {} } = {}) {
     const where = `map arrow ${e?.id || `e${i + 1}`}`;
     const status = e?.proof?.status;
     if (status === 'verified' || status === 'cited') result.traced++;
-    else if (status === 'inferred') result.guesses++;
+    else if (status === 'inferred') {
+      const edge = (Array.isArray(data.map?.edges) ? data.map.edges : []).find(x => x?.id === e.id);
+      if (isPlan(data) && edge?.planned !== undefined) result.planned++; else result.guesses++;
+    }
     else if (status === 'broken') { result.broken++; failures.push({ where, why: e.proof.why || 'its cited code was not found' }); }
     else if (status === 'unproven') { result.unproven++; failures.push({ where, why: 'it points at no code and is not marked as a guess' }); }
     else failures.push({ where, why: 'chalk-talk did not check it' });
