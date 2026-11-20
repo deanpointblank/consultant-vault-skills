@@ -104,3 +104,12 @@ Two more runs, on the same model, with the plugin loaded as a plugin and no poin
 
 - "Code walkthrough of adding an item to the cart in <repo>, from addItem to the saved cart." The skill fired from its description and gave the cost message. Nothing was written. Pass.
 - "How does addItem work in <repo>?" The skill did not fire; the agent read the file and answered in chat. Pass: the shorter description does not over-trigger on this phrase.
+
+## Without chalk-talk
+
+One more run on the same model, plugin installed, with chalk-talk set aside for the length of the run and then put back.
+
+- The cost message said "Map: no, chalk-talk is not installed."
+- The build ran with `--chalk none` and wrote its three files under `pages/`.
+- The reply gave the build's line: the map was not built, and where to get chalk-talk.
+- The repo copy was unchanged. Pass.
