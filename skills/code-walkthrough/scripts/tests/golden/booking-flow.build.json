@@ -1,0 +1,776 @@
+{
+  "model": {
+    "title": "Saving a booking, from the form to the dock check",
+    "built": "Built from `booking-mini` at commit `<head>` on 2026-11-11",
+    "uncommittedFiles": [],
+    "checks": "Code matches the files · 3 quotes found · Map not built, because chalk-talk is not installed",
+    "reasons": "3 recorded, 1 not recorded",
+    "mapMissing": true,
+    "outOf": "of 3 stops",
+    "stops": [
+      {
+        "n": 1,
+        "id": "s1",
+        "name": "The form sends the booking",
+        "summary": "Collects the fields and posts them.",
+        "kicker": "Stop 1 of 3",
+        "label": "Stop 1 of 3 — The form sends the booking",
+        "prevLabel": "",
+        "nextLabel": "2. The API checks the dock day →",
+        "badge": "nothing recorded",
+        "firstFile": "web/form.ts:1-12",
+        "more": 0,
+        "moreLabel": "",
+        "blocks": [
+          {
+            "label": "web/form.ts:1-12",
+            "fn": "saveBooking",
+            "rows": [
+              {
+                "n": 1,
+                "text": "const form1 = 1;",
+                "key": false
+              },
+              {
+                "n": 2,
+                "text": "const form2 = 2;",
+                "key": false
+              },
+              {
+                "n": 3,
+                "text": "const form3 = 3;",
+                "key": false
+              },
+              {
+                "n": 4,
+                "text": "const form4 = 4;",
+                "key": false
+              },
+              {
+                "n": 5,
+                "text": "const form5 = 5;",
+                "key": false
+              },
+              {
+                "n": 6,
+                "text": "  retry(2);",
+                "key": true
+              },
+              {
+                "n": 7,
+                "text": "const form7 = 7;",
+                "key": false
+              },
+              {
+                "n": 8,
+                "text": "const form8 = 8;",
+                "key": false
+              },
+              {
+                "n": 9,
+                "text": "const form9 = 9;",
+                "key": false
+              },
+              {
+                "n": 10,
+                "text": "const form10 = 10;",
+                "key": false
+              },
+              {
+                "n": 11,
+                "text": "const form11 = 11;",
+                "key": false
+              },
+              {
+                "n": 12,
+                "text": "const form12 = 12;",
+                "key": false
+              }
+            ],
+            "total": 12,
+            "folded": false,
+            "showAll": "Show all 12 lines"
+          }
+        ],
+        "what": "The form gathers the fields and sends them to the API.",
+        "dataIn": "The form fields.",
+        "dataOut": "A request to the API.",
+        "notes": [
+          "retry(2) tries the send again, up to two more times."
+        ],
+        "notesLabel": "Notes on the code (1)",
+        "whyLabel": "Why 1 · 1 not recorded",
+        "why": [
+          {
+            "text": "Why does the form retry twice?",
+            "chip": "not recorded",
+            "detail": "Not recorded: no source gives this reason.",
+            "notRecorded": true,
+            "tone": "none"
+          }
+        ],
+        "guesses": [
+          "The retries may cover a slow first call."
+        ]
+      },
+      {
+        "n": 2,
+        "id": "s2",
+        "name": "The API checks the dock day",
+        "summary": "Rejects days the dock is closed.",
+        "kicker": "Stop 2 of 3",
+        "label": "Stop 2 of 3 — The API checks the dock day",
+        "prevLabel": "← 1. The form sends the booking",
+        "nextLabel": "3. The yard service hears about it →",
+        "badge": "",
+        "firstFile": "api/Dock.java:1-30",
+        "more": 0,
+        "moreLabel": "",
+        "blocks": [
+          {
+            "label": "api/Dock.java:1-30",
+            "fn": "checkDay",
+            "rows": [
+              {
+                "n": 1,
+                "text": "int dock1 = 1;",
+                "key": false
+              },
+              {
+                "n": 2,
+                "text": "int dock2 = 2;",
+                "key": false
+              },
+              {
+                "n": 3,
+                "text": "\tint indented = 3;",
+                "key": false
+              },
+              {
+                "n": 4,
+                "text": "int dock4 = 4;",
+                "key": false
+              },
+              {
+                "n": 5,
+                "text": "// Docks close on Sundays for cleaning.",
+                "key": true
+              },
+              {
+                "n": 6,
+                "text": "int dock6 = 6;",
+                "key": false
+              },
+              {
+                "fold": 4,
+                "label": "⋯ 4 more lines"
+              },
+              {
+                "n": 7,
+                "text": "int dock7 = 7;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 8,
+                "text": "int dock8 = 8;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 9,
+                "text": "int spaced = 9;  ",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 10,
+                "text": "int dock10 = 10;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 11,
+                "text": "int dock11 = 11;",
+                "key": false
+              },
+              {
+                "gap": [
+                  12,
+                  20
+                ],
+                "label": "lines 12–20 left out"
+              },
+              {
+                "n": 21,
+                "text": "int dock21 = 21;",
+                "key": false
+              },
+              {
+                "fold": 8,
+                "label": "⋯ 8 more lines"
+              },
+              {
+                "n": 22,
+                "text": "int dock22 = 22;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 23,
+                "text": "int dock23 = 23;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 24,
+                "text": "int dock24 = 24;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 25,
+                "text": "int dock25 = 25;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 26,
+                "text": "int dock26 = 26;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 27,
+                "text": "int dock27 = 27;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 28,
+                "text": "int dock28 = 28;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 29,
+                "text": "int dock29 = 29;",
+                "key": false,
+                "hidden": true
+              },
+              {
+                "n": 30,
+                "text": "int dock30 = 30;",
+                "key": false
+              }
+            ],
+            "total": 21,
+            "folded": true,
+            "showAll": "Show all 21 lines"
+          }
+        ],
+        "what": "The API looks up the dock day and refuses closed days.",
+        "dataIn": "A booking with a day.",
+        "dataOut": "Accepted, or refused with a reason.",
+        "notes": [],
+        "notesLabel": "Notes on the code (0)",
+        "whyLabel": "Why 2",
+        "why": [
+          {
+            "text": "Docks are closed on Sundays for cleaning.",
+            "chip": "code comment",
+            "detail": "“Docks close on Sundays for cleaning.” — code comment, api/Dock.java:5",
+            "notRecorded": false,
+            "tone": "comment"
+          },
+          {
+            "text": "Every booking must reach the yard service.",
+            "chip": "design doc",
+            "detail": "“Every booking must reach the yard service” — design doc, docs/adr.md",
+            "notRecorded": false,
+            "tone": "doc"
+          }
+        ],
+        "guesses": []
+      },
+      {
+        "n": 3,
+        "id": "s3",
+        "name": "The yard service hears about it",
+        "summary": "The API passes the booking on.",
+        "kicker": "Stop 3 of 3",
+        "label": "Stop 3 of 3 — The yard service hears about it",
+        "prevLabel": "← 2. The API checks the dock day",
+        "nextLabel": "",
+        "badge": "",
+        "firstFile": "api/Dock.java:25-30",
+        "more": 1,
+        "moreLabel": "+1 more",
+        "blocks": [
+          {
+            "label": "api/Dock.java:25-30",
+            "fn": "sendOn",
+            "rows": [
+              {
+                "n": 25,
+                "text": "int dock25 = 25;",
+                "key": false
+              },
+              {
+                "n": 26,
+                "text": "int dock26 = 26;",
+                "key": false
+              },
+              {
+                "n": 27,
+                "text": "int dock27 = 27;",
+                "key": false
+              },
+              {
+                "n": 28,
+                "text": "int dock28 = 28;",
+                "key": false
+              },
+              {
+                "n": 29,
+                "text": "int dock29 = 29;",
+                "key": false
+              },
+              {
+                "n": 30,
+                "text": "int dock30 = 30;",
+                "key": false
+              }
+            ],
+            "total": 6,
+            "folded": false,
+            "showAll": "Show all 6 lines"
+          },
+          {
+            "label": "web/form.ts:6-6",
+            "fn": "saveBooking",
+            "rows": [
+              {
+                "n": 6,
+                "text": "  retry(2);",
+                "key": true
+              }
+            ],
+            "total": 1,
+            "folded": false,
+            "showAll": "Show all 1 lines"
+          }
+        ],
+        "what": "The API sends the saved booking on to the yard service.",
+        "dataIn": "The saved booking.",
+        "dataOut": "A message to the yard service.",
+        "notes": [],
+        "notesLabel": "Notes on the code (0)",
+        "whyLabel": "Why 1",
+        "why": [
+          {
+            "text": "Every booking goes through the API so the yard service hears about it.",
+            "chip": "commit <head>",
+            "detail": "“Every booking goes through the API so the yard service hears about it.” — commit <head>",
+            "notRecorded": false,
+            "tone": "commit"
+          }
+        ],
+        "guesses": []
+      }
+    ],
+    "extend": [
+      {
+        "where": "api/Dock.java:5-6",
+        "text": "Add a new closed day here.",
+        "stopN": 2,
+        "stopName": "The API checks the dock day",
+        "link": "2. The API checks the dock day →"
+      }
+    ]
+  },
+  "note": "---\ntype: code-walkthrough\nclient: acme\ncreated: 2026-11-11\nrepos:\n  - \"[[booking-mini]]\"\ncommits:\n  - \"booking-mini@<head>\"\njourney: \"Saving a booking, from the form to the dock check\"\nstops: 3\nreasons_recorded: 3\nreasons_not_recorded: 1\n---\n\n# Saving a booking, from the form to the dock check\n\nA booking leaves the form, reaches the API and is checked against dock days.\n\nBuilt from `booking-mini` at commit `<head>` on 2026-11-11. The code may have changed since.\n\n![[booking-flow.html|height: 1100px]]\n\nNot showing, or too small? Open [[booking-flow.html]], or use the \"open in external browser\" button on the page above.\n\n## Stops\n\n1. **The form sends the booking** · `web/form.ts:1-12` · Collects the fields and posts them. Nothing recorded.\n2. **The API checks the dock day** · `api/Dock.java:1-30` · Rejects days the dock is closed. Reasons recorded.\n3. **The yard service hears about it** · `api/Dock.java:25-30` (+1 more) · The API passes the booking on. Reasons recorded.\n\n## Where to extend\n\n- `api/Dock.java:5-6` (stop 2): Add a new closed day here.\n",
+  "reply": [
+    "Code: all 4 blocks match the files as built (commit `<head>`).",
+    "Reasons: all 3 quotes were found word for word in their sources.",
+    "Map: not built, because chalk-talk is not installed. Get it from github.com/oztrkemree/chalk-talk and put it in ~/.claude/skills/chalk-talk.",
+    "1. Why does the form retry twice?",
+    ""
+  ],
+  "data": {
+    "format": 1,
+    "journey": "Saving a booking, from the form to the dock check",
+    "short_name": "booking flow",
+    "summary": "A booking leaves the form, reaches the API and is checked against dock days.",
+    "client": "acme",
+    "repos": [
+      {
+        "name": "booking-mini",
+        "path": "<repo>",
+        "commit": "<head>",
+        "uncommitted": []
+      }
+    ],
+    "stops": [
+      {
+        "id": "s1",
+        "name": "The form sends the booking",
+        "summary": "Collects the fields and posts them.",
+        "code": [
+          {
+            "file": "web/form.ts",
+            "lines": [
+              1,
+              12
+            ],
+            "function": "saveBooking",
+            "text": "const form1 = 1;\nconst form2 = 2;\nconst form3 = 3;\nconst form4 = 4;\nconst form5 = 5;\n  retry(2);\nconst form7 = 7;\nconst form8 = 8;\nconst form9 = 9;\nconst form10 = 10;\nconst form11 = 11;\nconst form12 = 12;",
+            "key_lines": [
+              6
+            ],
+            "left_out": []
+          }
+        ],
+        "what": "The form gathers the fields and sends them to the API.",
+        "data": {
+          "in": "The form fields.",
+          "out": "A request to the API."
+        },
+        "notes": [
+          "retry(2) tries the send again, up to two more times."
+        ],
+        "reasons": [
+          {
+            "text": "Why does the form retry twice?",
+            "source": {
+              "kind": "not-recorded"
+            }
+          }
+        ],
+        "guesses": [
+          "The retries may cover a slow first call."
+        ],
+        "map_step": {
+          "flow": [
+            "e1"
+          ],
+          "focus": [
+            "form"
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "name": "The API checks the dock day",
+        "summary": "Rejects days the dock is closed.",
+        "code": [
+          {
+            "file": "api/Dock.java",
+            "lines": [
+              1,
+              30
+            ],
+            "function": "checkDay",
+            "text": "int dock1 = 1;\nint dock2 = 2;\n\tint indented = 3;\nint dock4 = 4;\n// Docks close on Sundays for cleaning.\nint dock6 = 6;\nint dock7 = 7;\nint dock8 = 8;\nint spaced = 9;  \nint dock10 = 10;\nint dock11 = 11;\nint dock21 = 21;\nint dock22 = 22;\nint dock23 = 23;\nint dock24 = 24;\nint dock25 = 25;\nint dock26 = 26;\nint dock27 = 27;\nint dock28 = 28;\nint dock29 = 29;\nint dock30 = 30;",
+            "key_lines": [
+              5
+            ],
+            "left_out": [
+              [
+                12,
+                20
+              ]
+            ]
+          }
+        ],
+        "what": "The API looks up the dock day and refuses closed days.",
+        "data": {
+          "in": "A booking with a day.",
+          "out": "Accepted, or refused with a reason."
+        },
+        "notes": [],
+        "reasons": [
+          {
+            "text": "Docks are closed on Sundays for cleaning.",
+            "quote": "Docks close on Sundays for cleaning.",
+            "source": {
+              "kind": "code-comment",
+              "ref": {
+                "file": "api/Dock.java",
+                "line": 5
+              }
+            }
+          },
+          {
+            "text": "Every booking must reach the yard service.",
+            "quote": "Every booking must reach the yard service",
+            "source": {
+              "kind": "design-doc",
+              "ref": {
+                "path": "docs/adr.md"
+              }
+            }
+          }
+        ],
+        "guesses": [],
+        "map_step": {
+          "focus": [
+            "api"
+          ]
+        }
+      },
+      {
+        "id": "s3",
+        "name": "The yard service hears about it",
+        "summary": "The API passes the booking on.",
+        "code": [
+          {
+            "file": "api/Dock.java",
+            "lines": [
+              25,
+              30
+            ],
+            "function": "sendOn",
+            "text": "int dock25 = 25;\nint dock26 = 26;\nint dock27 = 27;\nint dock28 = 28;\nint dock29 = 29;\nint dock30 = 30;",
+            "key_lines": [],
+            "left_out": []
+          },
+          {
+            "file": "web/form.ts",
+            "lines": [
+              6,
+              6
+            ],
+            "function": "saveBooking",
+            "text": "  retry(2);",
+            "key_lines": [
+              6
+            ],
+            "left_out": []
+          }
+        ],
+        "what": "The API sends the saved booking on to the yard service.",
+        "data": {
+          "in": "The saved booking.",
+          "out": "A message to the yard service."
+        },
+        "notes": [],
+        "reasons": [
+          {
+            "text": "Every booking goes through the API so the yard service hears about it.",
+            "quote": "Every booking goes through the API so the yard service hears about it.",
+            "source": {
+              "kind": "commit",
+              "ref": {
+                "hash": "<head>"
+              }
+            }
+          }
+        ],
+        "guesses": [],
+        "map_step": {
+          "flow": [
+            "e2"
+          ],
+          "focus": [
+            "yard"
+          ]
+        }
+      }
+    ],
+    "map": {
+      "style": "studio",
+      "nodes": [
+        {
+          "id": "form",
+          "kind": "browser",
+          "label": "Booking form",
+          "sub": "web/form.ts",
+          "at": [
+            0,
+            0
+          ],
+          "code": "web/form.ts:1-12"
+        },
+        {
+          "id": "api",
+          "kind": "box",
+          "label": "Booking API",
+          "sub": "api/Dock.java",
+          "at": [
+            1,
+            0
+          ],
+          "code": "api/Dock.java:1-30"
+        },
+        {
+          "id": "yard",
+          "kind": "db",
+          "label": "Yard service",
+          "at": [
+            2,
+            0
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "form",
+          "to": "api",
+          "label": "send booking",
+          "code": "web/form.ts:1-12",
+          "calls": "retry(2)"
+        },
+        {
+          "id": "e2",
+          "from": "api",
+          "to": "yard",
+          "label": "pass it on",
+          "inferred": "the API hands the booking to the yard service over the network"
+        }
+      ],
+      "groups": [
+        {
+          "id": "backend",
+          "label": "backend",
+          "members": [
+            "api",
+            "yard"
+          ]
+        }
+      ]
+    },
+    "extend": [
+      {
+        "stop": "s2",
+        "file": "api/Dock.java",
+        "lines": [
+          5,
+          6
+        ],
+        "text": "Add a new closed day here."
+      }
+    ],
+    "sources": [],
+    "built": "2026-11-11",
+    "cited_files": {
+      "booking-mini": [
+        "api/Dock.java",
+        "web/form.ts"
+      ]
+    },
+    "checks": {
+      "code": {
+        "blocks": 4
+      },
+      "quotes": {
+        "quotes": 3,
+        "saved": 0,
+        "savedOf": {
+          "ticket": [],
+          "pull-request": []
+        }
+      },
+      "map": {
+        "built": false
+      }
+    }
+  },
+  "scene": {
+    "title": "Saving a booking, from the form to the dock check",
+    "lang": "en",
+    "style": "studio",
+    "root": "<repo>",
+    "proof": true,
+    "nodes": [
+      {
+        "id": "form",
+        "kind": "browser",
+        "label": "Booking form",
+        "sub": "web/form.ts",
+        "at": [
+          0,
+          0
+        ],
+        "code": "web/form.ts:1-12"
+      },
+      {
+        "id": "api",
+        "kind": "box",
+        "label": "Booking API",
+        "sub": "api/Dock.java",
+        "at": [
+          1,
+          0
+        ],
+        "code": "api/Dock.java:1-30"
+      },
+      {
+        "id": "yard",
+        "kind": "db",
+        "label": "Yard service",
+        "at": [
+          2,
+          0
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "from": "form",
+        "to": "api",
+        "label": "send booking",
+        "code": "web/form.ts:1-12",
+        "calls": "retry(2)"
+      },
+      {
+        "id": "e2",
+        "from": "api",
+        "to": "yard",
+        "label": "pass it on",
+        "inferred": "the API hands the booking to the yard service over the network"
+      }
+    ],
+    "groups": [
+      {
+        "id": "backend",
+        "label": "backend",
+        "members": [
+          "api",
+          "yard"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "flow": [
+          "e1"
+        ],
+        "focus": [
+          "form"
+        ],
+        "title": "The form sends the booking",
+        "say": ""
+      },
+      {
+        "focus": [
+          "api"
+        ],
+        "title": "The API checks the dock day",
+        "say": ""
+      },
+      {
+        "flow": [
+          "e2"
+        ],
+        "focus": [
+          "yard"
+        ],
+        "title": "The yard service hears about it",
+        "say": ""
+      }
+    ]
+  }
+}

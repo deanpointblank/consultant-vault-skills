@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pageModel, assemblePage } from '../lib/page.mjs';
 import { chalkTalkAt, buildMap } from '../lib/map.mjs';
-import { tempRoot, bookingRepo, sampleData, pageSample, chalkDir, findChrome, dumpDom, captureApp } from './helpers.mjs';
+import { tempRoot, bookingRepo, sampleData, pageSample, chalkDir, findChrome, dumpDom, captureApp, captureBuild } from './helpers.mjs';
 
 const GOLDEN = path.join(path.dirname(fileURLToPath(import.meta.url)), 'golden', 'booking-flow.app.html');
 const noChrome = !findChrome() && 'no Chrome';
@@ -16,6 +16,12 @@ test('a walkthrough page renders as before, apart from the divider', needsChrome
   const got = (await captureApp(tempRoot(t))).replace(/<div id="split"[^>]*><\/div>/g, '');
   assert.ok(fs.existsSync(GOLDEN), `missing golden file ${GOLDEN}`);
   assert.equal(got, fs.readFileSync(GOLDEN, 'utf8'));
+});
+
+test('an existing walkthrough builds as before', t => {
+  const file = path.join(path.dirname(GOLDEN), 'booking-flow.build.json');
+  assert.ok(fs.existsSync(file), `missing golden file ${file}`);
+  assert.deepEqual(captureBuild(tempRoot(t)), JSON.parse(fs.readFileSync(file, 'utf8')));
 });
 
 test('the map keeps its height when no size is stored', needsMap, async t => {

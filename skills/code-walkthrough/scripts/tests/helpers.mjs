@@ -7,6 +7,7 @@ import { expectedText } from '../lib/code.mjs';
 import { gitEnv } from '../lib/git.mjs';
 import { BUDGET_MS } from '../lib/settings.mjs';
 import { pageModel, assemblePage } from '../lib/page.mjs';
+import { sceneFor } from '../lib/map.mjs';
 
 const IDENTITY = {
   GIT_AUTHOR_NAME: 'Test Author', GIT_AUTHOR_EMAIL: 'author@example.com',
@@ -261,4 +262,28 @@ export async function captureApp(root) {
   const head = `<script>try { localStorage['code-walkthrough:theme'] = 'light'; } catch (e) {}</script>`;
   const dump = await dumpDom(file, { size: [1280, 900], head });
   return normalized(appDom(dump), repo);
+}
+
+// One full build of the sample walkthrough, everything it makes, with no repo head or path in it.
+export function captureBuild(root) {
+  const repo = bookingRepo(root);
+  const vault = makeVault(root, { 'README.md': 'a vault\n' });
+  const dataFile = path.join(root, 'in', 'booking.json');
+  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
+  fs.writeFileSync(dataFile, JSON.stringify(sampleData(repo), null, 2));
+  const home = path.join(root, 'no-chalk-home');
+  fs.mkdirSync(home);
+  const script = new URL('../walkthrough-build.mjs', import.meta.url).pathname;
+  const r = spawnSync(process.execPath, [script, dataFile, '--out', path.join(root, 'work'), '--vault', vault, '--folder', 'Walkthroughs', '--chalk', 'none', '--date', '2026-11-11', '--write'],
+    { encoding: 'utf8', env: { ...process.env, CW_GH: '0', HOME: home }, cwd: root });
+  if (r.status !== 0) throw new Error(`build exited ${r.status}: ${r.stdout}${r.stderr}`);
+  const folder = path.join(vault, 'Walkthroughs');
+  const read = ext => fs.readFileSync(path.join(folder, fs.readdirSync(folder).find(n => n.endsWith(ext))), 'utf8');
+  const model = JSON.parse(read('.html').match(/<script type="application\/json" id="walk-data">([\s\S]*?)<\/script>/)[1]);
+  return normalized({
+    model, note: read('.md'),
+    reply: r.stdout.split('\n').filter(l => !l.startsWith('WROTE ')),
+    data: JSON.parse(fs.readFileSync(dataFile, 'utf8')),
+    scene: sceneFor(sampleData(repo)),
+  }, repo);
 }
