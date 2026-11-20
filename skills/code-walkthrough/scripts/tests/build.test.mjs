@@ -688,6 +688,13 @@ test('one edit: a task removed', t => {
   assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL the plan: stop s3 is new and no task builds it']);
 });
 
+test('one edit: a takes renamed', t => {
+  const ctx = planSetup(t, d => { d.stops[2].takes[0] = 'invoice record'; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL the plan: stop s3 takes "invoice record", which no earlier stop gives and plan.inputs does not list']);
+});
+
 test('a file only a sketch names is not cited', t => {
   const ctx = planSetup(t, d => {
     const k = d.stops[2].code[0];

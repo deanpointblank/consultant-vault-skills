@@ -119,6 +119,26 @@ export function taskErrors(data) {
   return errors;
 }
 
+export const nameKey = s => String(s).trim().toLowerCase();
+
+// Takes and gives, and the data chain: each stop's takes come from plan.inputs or an earlier stop's gives.
+export function chainErrors(data) {
+  if (!data.plan || typeof data.plan !== 'object') return []; // taskErrors reports the missing plan
+  const errors = [];
+  if (!Array.isArray(data.plan.inputs)) errors.push('plan.inputs is missing; list what the journey starts with');
+  const known = new Set((Array.isArray(data.plan.inputs) ? data.plan.inputs : []).map(nameKey));
+  for (const s of data.stops || []) {
+    const built = ['new', 'changed'].includes(s.status);
+    if (built && !Array.isArray(s.takes)) errors.push(`stop ${s.id} has no takes`);
+    if (built && !(Array.isArray(s.gives) && s.gives.length)) errors.push(`stop ${s.id} gives nothing`);
+    if (s.status !== 'elsewhere') for (const n of Array.isArray(s.takes) ? s.takes : []) {
+      if (!known.has(nameKey(n))) errors.push(`stop ${s.id} takes "${n}", which no earlier stop gives and plan.inputs does not list`);
+    }
+    for (const n of Array.isArray(s.gives) ? s.gives : []) known.add(nameKey(n));
+  }
+  return errors;
+}
+
 // Shape failures that only a plan has. Later checks are added to this list.
 export function planShapeErrors(data) {
   const errors = [];
@@ -126,5 +146,6 @@ export function planShapeErrors(data) {
   errors.push(...sketchErrors(data));
   errors.push(...originErrors(data));
   errors.push(...taskErrors(data));
+  errors.push(...chainErrors(data));
   return errors;
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planShapeErrors, sketchErrors, originErrors, taskErrors, tasksOf } from '../lib/plan.mjs';
+import { planShapeErrors, sketchErrors, originErrors, taskErrors, tasksOf, chainErrors, nameKey } from '../lib/plan.mjs';
 import { shapeErrors } from '../lib/data.mjs';
 import { tempRoot, ledgerRepo, samplePlan } from './helpers.mjs';
 
@@ -116,3 +116,36 @@ for (const [title, edit, line, only = true] of [
     if (only) assert.deepEqual(got, [line]); else assert.ok(got.includes(line));
   });
 }
+
+const chainAfter = (t, edit) => {
+  const d = samplePlan(ledgerRepo(tempRoot(t)));
+  edit(d.stops, d.plan, d);
+  return chainErrors(d);
+};
+
+const NOT_GIVEN = n => `stop s3 takes "${n}", which no earlier stop gives and plan.inputs does not list`;
+for (const [title, edit, line, only = true] of [
+  ['a takes renamed', s => { s[2].takes[0] = 'invoice record'; }, NOT_GIVEN('invoice record')],
+  ['a stop with no takes', s => { delete s[2].takes; }, 'stop s3 has no takes'],
+  ['a stop that gives nothing', s => { s[2].gives = []; }, 'stop s3 gives nothing'],
+  ['no plan inputs', (s, p) => { delete p.inputs; }, 'plan.inputs is missing; list what the journey starts with', false],
+  ['a first stop takes what nothing gives', s => { s[0].takes = ['payment']; }, 'stop s1 takes "payment", which no earlier stop gives and plan.inputs does not list'],
+  ['a later stop gives do not count', s => { s[0].takes = ['invoice']; }, 'stop s1 takes "invoice", which no earlier stop gives and plan.inputs does not list'],
+]) {
+  test(`chain: ${title}`, t => {
+    const got = chainAfter(t, edit);
+    if (only) assert.deepEqual(got, [line]); else assert.ok(got.includes(line));
+  });
+}
+
+for (const [title, edit] of [
+  ['the example plan', () => {}],
+  ['names match after trimming and lower case', s => { s[2].takes[0] = ' Invoice Row '; }],
+  ['an unchanged stop may have no takes or gives', (s, p) => { delete s[0].takes; delete s[0].gives; p.inputs.push('invoice'); }],
+  ['an elsewhere stop is not checked and its gives count', s => { s[1].status = 'elsewhere'; s[1].takes = ['nothing known']; }],
+  ['no plan object is the task check\'s to report', (s, p, d) => { delete d.plan; }, true],
+]) {
+  test(`chain: ${title} has no failures`, t => assert.deepEqual(chainAfter(t, edit), []));
+}
+
+test('a name key is trimmed and lower case', () => assert.equal(nameKey('  Invoice Row '), 'invoice row'));
