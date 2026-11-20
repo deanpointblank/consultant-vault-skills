@@ -258,3 +258,37 @@ success; U1 printed nothing for all ten. No void rep. Reps: `wf/reps/r1-<row>`.
 | TN5 | `consultant-vault:code-walkthrough` (and `superpowers:brainstorming`) | code-walkthrough among `skills_used` | pass ("No walkthrough covers the invoice save path yet. Want one before we plan?") |
 
 Score: 10 of 10 passed.
+
+## GREEN, rerun after the review fixes
+
+The skill text changed at HEAD `b025de0` (step 4 skips a ref starting with `-` and uses `--end-of-options`; step 7 cites a
+vault plan file as `vault-note`; a change request quotes as `plan` only what the user states as decided). Fresh reps on a
+fresh plugin copy (each copy's `skills/wayfinder/SKILL.md` holds `--end-of-options`, 2 matches), `P_READ_W` prompts,
+`claude -p --model sonnet`. No trigger rows rerun (the description did not change). Nothing of mine was running before the
+launch. Folders: `wf/reps/g2-a`, `wf/reps/g2-b`.
+
+| Rep | `ended` t1 / t2 (/ t3) | U1 `live_touched` | `repo_ok` | U3 | U4 | `plans_ok` |
+|---|---|---|---|---|---|---|
+| g2-a | success / success | nothing | ok | 0 | nothing | ok |
+| g2-b (then c) | success / success / success | nothing | ok | 0 | nothing | ok |
+
+No void rep. `rebuild_ok` prints `exit 0` for both.
+
+### (a)
+
+PASS.
+- a1 pass. t1 reply: "Plan page for invoice attachments: from the invoice request to one attachment row per file." / "ledger-api: today's code read as it is on disk, at commit 88f2e87, because there is no `origin/main` here." / "About 4 stops, about 8 minutes. Map: yes, drawn with chalk-talk." / "It goes to the vault." / "Go ahead?". All sections of `t1.changed` empty.
+- a2 pass (`exit 0`). a3 pass (one `Plan - *.md`, one `*.plan.html`, one `*.plan.json`, all under `Plans/`). a4 pass (`a_data` ok). a5 pass (`repo_ok` ok).
+- Observation, not scored: the "no `origin/main` here" sentence is repeated; the repo copy does have `origin/main`.
+
+### (b)
+
+PASS. b1 pass (`b_data` ok). b2 pass: "Sources: all 11 quotes were found word for word." b3 pass (`plans_ok` ok).
+
+### (c)
+
+PASS.
+- c1 pass: t3's build carries `--same-day replace` (1 match).
+- c2 pass: still one note; `cmp` against `t2.plan.json` says they differ; `plans_ok` ok.
+- c3 pass: the reply holds "Your plan file would need to say:", followed by four bullets.
+- The changed entry's `from` in the data file (the quote appears on two entries, both the same): `{"kind":"plan","quote":"Change stop 2 so the files are saved before the invoice row","source":{"kind":"chat","ref":"change 1"}}`. The user stated the change as decided (an imperative), so `plan` with a `chat` source is the expected reading. A new `chat` source `change 1` holds the change request's text.
