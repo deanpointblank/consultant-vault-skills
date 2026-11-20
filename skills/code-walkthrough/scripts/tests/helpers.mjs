@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { expectedText } from '../lib/code.mjs';
 import { gitEnv } from '../lib/git.mjs';
 import { BUDGET_MS } from '../lib/settings.mjs';
+import { pageModel, assemblePage } from '../lib/page.mjs';
 
 const IDENTITY = {
   GIT_AUTHOR_NAME: 'Test Author', GIT_AUTHOR_EMAIL: 'author@example.com',
@@ -223,4 +224,41 @@ export function sampleData(repo) {
     extend: [{ stop: 's2', file: 'api/Dock.java', lines: [5, 6], text: 'Add a new closed day here.' }],
     sources: [],
   };
+}
+
+// sampleData with the checks a build writes, filled by hand (page.test.mjs's withChecks, by default).
+export function pageSample(repo) {
+  const d = sampleData(repo);
+  d.built = '2026-11-11';
+  d.repos[0].commit = repo.head;
+  d.repos[0].uncommitted = [];
+  d.checks = {
+    code: { blocks: 4 },
+    quotes: { quotes: 3, saved: 0, savedOf: { ticket: [], 'pull-request': [] } },
+    map: { built: true, arrows: 2, traced: 1, guesses: 1, broken: 0, layoutChecked: true },
+  };
+  return d;
+}
+
+// The same value with every repo head and repo path replaced, so it holds nothing of the machine.
+export function normalized(value, repo) {
+  const swap = s => s.split(repo.head).join('<head>').split(repo.path).join('<repo>');
+  const walk = v => typeof v === 'string' ? swap(v) : Array.isArray(v) ? v.map(walk) :
+    v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)])) : v;
+  return walk(value);
+}
+
+export const appDom = dump => {
+  const a = dump.indexOf('<div id="app">'), b = dump.indexOf('<script type="application/json" id="walk-data">');
+  if (a < 0 || b < a) throw new Error('appDom: the dump has no #app before #walk-data');
+  return dump.slice(a, b);
+};
+
+export async function captureApp(root) {
+  const repo = bookingRepo(root);
+  const file = path.join(root, 'page.html');
+  fs.writeFileSync(file, assemblePage(pageModel(pageSample(repo)), null));
+  const head = `<script>try { localStorage['code-walkthrough:theme'] = 'light'; } catch (e) {}</script>`;
+  const dump = await dumpDom(file, { size: [1280, 900], head });
+  return normalized(appDom(dump), repo);
 }
