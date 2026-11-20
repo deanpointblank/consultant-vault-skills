@@ -180,7 +180,7 @@ function main() {
   let mapHtml = null;
   if (chalk) {
     try {
-      const m = buildMap(data, { chalk: chalk.dir, out, slug });
+      const m = buildMap(data, { chalk: chalk.dir, out, slug, bases });
       failures.push(...m.failures);
       mapHtml = m.html;
       map = { built: m.html != null, arrows: m.arrows, traced: m.traced, guesses: m.guesses, broken: m.broken, layoutChecked: m.layout.checked };

@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { chalkTalkAt, sceneFor, buildMap } from '../lib/map.mjs';
-import { tempRoot, bookingRepo, sampleData, repoSnapshot, chalkDir } from './helpers.mjs';
+import { chalkTalkAt, sceneFor, buildMap, mirrorBase } from '../lib/map.mjs';
+import { resolveBase, fileAt } from '../lib/git.mjs';
+import { tempRoot, bookingRepo, sampleData, repoSnapshot, chalkDir, ledgerRepo, samplePlan, makeRepo } from './helpers.mjs';
 
 const setup = t => { const root = tempRoot(t); const repo = bookingRepo(root); return { root, repo, d: sampleData(repo) }; };
 
@@ -203,4 +204,59 @@ test('layout check runs or says why not', needsChalk, () => {
   else assert.equal(fs.existsSync(snaps), false);
   assert.deepEqual(s.r.layout.errors, []);
   untouched(s);
+});
+
+const planBase = (root, opts = { ahead: true }) => {
+  const repo = ledgerRepo(root, opts);
+  return { repo, d: samplePlan(repo), bases: { 'ledger-api': resolveBase(repo.path, 'origin/main') } };
+};
+
+test('the mirror holds the base text, not the disk', t => {
+  const root = tempRoot(t);
+  const { repo, d, bases } = planBase(root);
+  const before = repoSnapshot(repo.path);
+  const r = mirrorBase(d, { out: path.join(root, 'out'), slug: 'w', bases });
+  assert.deepEqual(r.failures, []);
+  assert.equal(r.root, path.join(root, 'out', 'w-base'));
+  const mirrored = fs.readFileSync(path.join(r.root, 'ledger-api/src/store.js'), 'utf8');
+  assert.equal(mirrored, fileAt(repo.path, bases['ledger-api'].hash, 'src/store.js'));
+  assert.notEqual(mirrored, fs.readFileSync(path.join(repo.path, 'src/store.js'), 'utf8'));
+  assert.equal(sceneFor(d, { mirror: r.root }).root, path.join(r.root, 'ledger-api'));
+  assert.deepEqual(repoSnapshot(repo.path), before);
+});
+
+test('a map block citing a file not at the base fails', t => {
+  const root = tempRoot(t);
+  const { repo, d, bases } = planBase(root);
+  fs.writeFileSync(path.join(repo.path, 'src/new.js'), 'a\nb\n');
+  d.map.nodes.find(n => n.id === 'api').code = 'src/new.js:1-2';
+  const r = mirrorBase(d, { out: path.join(root, 'out'), slug: 'w', bases });
+  assert.deepEqual(r.failures, [{ where: 'map block api', why: 'the file is not at origin/main' }]);
+});
+
+test('a cited path never leaves the mirror', t => {
+  const root = tempRoot(t);
+  const { d, bases } = planBase(root);
+  d.map.nodes.find(n => n.id === 'api').code = '../../escape.js:1-2';
+  const r = mirrorBase(d, { out: path.join(root, 'out'), slug: 'w', bases });
+  assert.equal(r.failures.length, 1);
+  assert.equal(fs.existsSync(path.join(root, 'escape.js')), false);
+});
+
+test('two repos, one with a base, mirror from both', t => {
+  const root = tempRoot(t);
+  const { d, bases } = planBase(root);
+  const other = path.join(root, 'web');
+  makeRepo(other, { files: { 'ui/form.js': 'the form\n' }, message: 'web' });
+  d.repos.push({ name: 'web', path: other });
+  d.map.nodes.find(n => n.id === 'api').code = { repo: 'ledger-api', file: 'src/routes/invoices.js', lines: [6, 13] };
+  d.map.nodes.find(n => n.id === 'store').code = { repo: 'ledger-api', file: 'src/store.js', lines: [16, 20] };
+  d.map.nodes.find(n => n.id === 'client').code = { repo: 'web', file: 'ui/form.js', lines: [1, 1] };
+  const r = mirrorBase(d, { out: path.join(root, 'out'), slug: 'w', bases });
+  assert.deepEqual(r.failures, []);
+  assert.equal(fs.readFileSync(path.join(r.root, 'web/ui/form.js'), 'utf8'), 'the form\n');
+  assert.ok(fs.existsSync(path.join(r.root, 'ledger-api/src/store.js')));
+  const s = sceneFor(d, { mirror: r.root });
+  assert.equal(s.root, r.root);
+  assert.equal(s.nodes.find(n => n.id === 'client').code.file, 'web/ui/form.js');
 });
