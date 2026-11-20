@@ -882,3 +882,32 @@ test('a walkthrough ignores base', t => {
   const r = run(ctx);
   assert.equal(r.status, 0, r.out + r.err);
 });
+
+// origin/main moves to a commit that holds a folder, src/dir; the cited lines stay where they were.
+const folderAtBase = repo => {
+  fs.mkdirSync(path.join(repo.path, 'src/dir'));
+  fs.writeFileSync(path.join(repo.path, 'src/dir/f.js'), 'x\n');
+  commitAll(repo.path, 'A folder');
+  execFileSync('git', ['update-ref', 'refs/remotes/origin/main', 'HEAD'], { cwd: repo.path });
+};
+
+test('a sketch placed on a folder at the base', t => {
+  const ctx = planSetup(t, (d, repo) => {
+    folderAtBase(repo);
+    d.stops[2].code[0].file = 'src/dir';
+    delete d.stops[2].code[0].after;
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s3 src/dir (sketch): the file is not at origin/main; set new_file to true']);
+});
+
+test('a today block citing a folder at the base', t => {
+  const ctx = planSetup(t, (d, repo) => {
+    folderAtBase(repo);
+    d.stops[0].code.push({ file: 'src/dir', lines: [1, 1], text: 'x' });
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s1 src/dir:1-1: the file is not at origin/main']);
+});

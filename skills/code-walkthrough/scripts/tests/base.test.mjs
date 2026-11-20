@@ -5,7 +5,8 @@ import path from 'node:path';
 import { resolveBase, fileAt, existsAt } from '../lib/git.mjs';
 import { checkCode } from '../lib/code.mjs';
 import { checkQuotes } from '../lib/quotes.mjs';
-import { tempRoot, ledgerRepo, samplePlan, makeVault } from './helpers.mjs';
+import { execFileSync } from 'node:child_process';
+import { tempRoot, ledgerRepo, samplePlan, makeVault, commitAll } from './helpers.mjs';
 
 const ahead = t => ledgerRepo(tempRoot(t), { ahead: true });
 
@@ -55,4 +56,19 @@ test('a code-comment quote is read at the base', t => {
   const r = checkQuotes(d, { vault: makeVault(root, {}), gh: false, date: '2026-11-20', bases });
   const n = d.stops[1].reasons.length;
   assert.deepEqual(r.failures, [{ where: `s2 reason ${n} (code comment src/none.js line 1)`, why: 'cannot read src/none.js at origin/main' }]);
+});
+
+test('a folder or a link at the base is not a file', t => {
+  const repo = ledgerRepo(tempRoot(t));
+  fs.mkdirSync(path.join(repo.path, 'src/dir'));
+  fs.writeFileSync(path.join(repo.path, 'src/dir/f.js'), 'x\n');
+  fs.symlinkSync('store.js', path.join(repo.path, 'src/link.js'));
+  const head = commitAll(repo.path, 'A folder and a link');
+  const { hash } = resolveBase(repo.path, head);
+  for (const f of ['src/dir', 'src/link.js']) {
+    assert.equal(existsAt(repo.path, hash, f), false, f);
+    assert.equal(fileAt(repo.path, hash, f), null, f);
+  }
+  assert.equal(fileAt(repo.path, hash, 'src/dir/f.js'), 'x\n');
+  for (const f of ['./src/store.js', 'src//store.js', 'SRC/store.js', '../ledger-api/src/store.js']) assert.equal(existsAt(repo.path, hash, f), false, f);
 });
