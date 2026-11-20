@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { repoByName, fieldProblem } from './data.mjs';
+import { isPlan, isSketch } from './plan.mjs';
 
 export const splitLines = t => { const ls = t.split(/\r\n|\n|\r/); if (ls.length && ls.at(-1) === '') ls.pop(); return ls; };
 
@@ -50,7 +51,7 @@ const MISNAMED = 'git names this file differently; use the path as git names it,
 // misnamed(repo name, file): true when git does not name the file exactly so; such a file is never read.
 export function checkCode(data, { readFile = fs.readFileSync, misnamed = () => false } = {}) {
   const failures = [];
-  let blocks = 0;
+  let blocks = 0, sketches = 0;
   const attempt = (where, fn) => {
     try { fn(); } catch (e) { failures.push({ where, why: e.message }); }
   };
@@ -61,6 +62,24 @@ export function checkCode(data, { readFile = fs.readFileSync, misnamed = () => f
   };
   for (const stop of data.stops) {
     (stop.code || []).forEach((block, i) => {
+      if (isPlan(data) && isSketch(block)) {
+        sketches++;
+        // A sketch's text is never checked; only the place it goes.
+        const where = `${stop.id} ${block.file} (sketch)`;
+        attempt(where, () => {
+          const text = read(data, block, readFile);
+          if (block.new_file === true) {
+            if (text != null) failures.push({ where, why: 'the file already exists; set new_file to false' });
+            return;
+          }
+          if (text == null) { failures.push({ where, why: 'the file is not on disk; set new_file to true' }); return; }
+          const { after } = block;
+          const n = splitLines(text).length;
+          if (typeof after === 'number' && after > n) failures.push({ where, why: `after line ${after}, but the file has ${n} lines` });
+          if (typeof after === 'string' && !text.includes(after)) failures.push({ where, why: `after "${after}", but the file does not contain it` });
+        });
+        return;
+      }
       blocks++;
       const named = typeof block.file === 'string' && Array.isArray(block.lines) ? `${stop.id} ${block.file}:${range(block.lines)}` : `${stop.id} code block ${i + 1}`;
       const bad = fieldProblem(block, true);
@@ -90,5 +109,5 @@ export function checkCode(data, { readFile = fs.readFileSync, misnamed = () => f
       if (exp.error) failures.push({ where, why: exp.error });
     });
   });
-  return { blocks, failures };
+  return { blocks, sketches, failures };
 }

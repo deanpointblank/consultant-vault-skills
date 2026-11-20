@@ -1,5 +1,6 @@
 import { OUTCOME, EMBED_HEIGHT, OPEN_LINK } from './settings.mjs';
 import { builtLine, reasonCounts, outlineTail } from './words.mjs';
+import { isPlan, isSketch } from './plan.mjs';
 
 const q = JSON.stringify;
 const list = (key, items) => (items.length ? [`${key}:`, ...items.map(i => `  - ${i}`)] : []);
@@ -39,7 +40,8 @@ export function noteText(data, names, { outcome = OUTCOME, embedHeight = EMBED_H
   body.push('## Stops', '');
   stops.forEach((s, i) => {
     const code = s.code || [];
-    const first = code.length ? `\`${code[0].file}:${code[0].lines[0]}-${code[0].lines[1]}\`${code.length > 1 ? ` (+${code.length - 1} more)` : ''}` : '';
+    const head = code.length && (isPlan(data) && isSketch(code[0]) ? `\`${code[0].file}\` (sketch)` : `\`${code[0].file}:${code[0].lines[0]}-${code[0].lines[1]}\``);
+    const first = code.length ? `${head}${code.length > 1 ? ` (+${code.length - 1} more)` : ''}` : '';
     body.push(`${i + 1}. **${s.name}** · ${first ? `${first} · ` : ''}${s.summary} ${outlineTail(s)}`);
   });
   const nameOf = new Map(stops.map((s, i) => [s.id, i + 1]));

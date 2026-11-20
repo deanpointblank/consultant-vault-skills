@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { noteText } from '../lib/note.mjs';
 import { builtLine, outlineTail } from '../lib/words.mjs';
 import { EMBED_HEIGHT } from '../lib/settings.mjs';
-import { tempRoot, bookingRepo, sampleData } from './helpers.mjs';
+import { tempRoot, bookingRepo, sampleData, ledgerRepo, samplePlan } from './helpers.mjs';
 
 const NAMES = { page: 'booking-flow.html', data: 'booking-flow.walkthrough.json', note: 'Walkthrough - booking flow.md', earlier: null, replace: false };
 
@@ -107,4 +107,10 @@ test('earlier link', t => {
   const text = noteText(built(t).data, { ...NAMES, earlier: 'Walkthrough - booking flow' });
   assert.match(text, /on the page above\.\n\nEarlier walkthrough of this journey: \[\[Walkthrough - booking flow\]\]\.\n/);
   assert.doesNotMatch(noteText(built(t).data, NAMES), /Earlier walkthrough/);
+});
+
+test('a sketch in the outline', t => {
+  const text = noteText(samplePlan(ledgerRepo(tempRoot(t))), NAMES);
+  assert.ok(text.includes('\n2. **The store saves the invoice, then its files** · `src/store.js:16-20` (+1 more) · '), text);
+  assert.ok(text.includes('\n3. **Each file becomes an attachment row** · `src/store.js` (sketch) · A new store function writes one row per file. '), text);
 });

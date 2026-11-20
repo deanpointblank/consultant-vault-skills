@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadData, shapeErrors, repoByName } from './lib/data.mjs';
-import { isPlan } from './lib/plan.mjs';
+import { isPlan, isSketch } from './lib/plan.mjs';
 import { repoFacts, topFolderAbove } from './lib/git.mjs';
 import { checkCode } from './lib/code.mjs';
 import { checkQuotes } from './lib/quotes.mjs';
@@ -144,7 +144,9 @@ function main() {
   data.built = args.date;
   const cited = {};
   for (const r of data.repos) cited[r.name] = new Set();
-  for (const b of [...data.stops.flatMap(s => s.code || []), ...(data.extend || [])]) cited[repoByName(data, b.repo).name].add(b.file);
+  // A sketch's file may not exist yet, so it is never cited.
+  const sketch = b => isPlan(data) && isSketch(b);
+  for (const b of [...data.stops.flatMap(s => (s.code || []).filter(b => !sketch(b))), ...(data.extend || [])]) cited[repoByName(data, b.repo).name].add(b.file);
   data.cited_files = {};
   const misnamedIn = {};
   for (const r of data.repos) {
@@ -177,7 +179,7 @@ function main() {
     // chalk-talk installed where SKILL.md step 2 looks (the home folder, then the project the command runs in): the command left the map out.
     if ([os.homedir(), process.cwd()].some(d => chalkTalkAt(path.join(d, '.claude', 'skills', 'chalk-talk')))) map.leftOut = true;
   }
-  data.checks = { code: { blocks: code.blocks }, quotes, map };
+  data.checks = { code: isPlan(data) ? { blocks: code.blocks, sketches: code.sketches } : { blocks: code.blocks }, quotes, map };
 
   const writeData = () => fs.writeFileSync(args.dataFile, JSON.stringify(data, null, 2) + '\n');
   writeData();

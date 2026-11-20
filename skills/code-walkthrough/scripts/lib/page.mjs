@@ -1,5 +1,6 @@
 import fs from 'node:fs';
-import { codeRows } from './code.mjs';
+import { codeRows, splitLines } from './code.mjs';
+import { isPlan, isSketch } from './plan.mjs';
 import { builtLine, checksShort, reasonsLine, stopBadge, whyLabel, chipLabel, chipDetail } from './words.mjs';
 import { CAPTION_BAR, CODE_PANEL } from './settings.mjs';
 
@@ -36,11 +37,13 @@ export function foldRows(rows) {
 
 const range = o => `${o.file}:${o.lines[0]}-${o.lines[1]}`;
 
-function blockModel(block) {
-  const all = codeRows(block).map(r => r.gap ? { ...r, label: `lines ${label(r.gap)} left out` } : r);
+// A sketch has no line numbers: it is labelled by its file alone.
+function blockModel(block, sketch) {
+  const all = sketch ? splitLines(block.text).map(text => ({ n: '', text, key: false }))
+    : codeRows(block).map(r => r.gap ? { ...r, label: `lines ${label(r.gap)} left out` } : r);
   const total = all.filter(r => !r.gap).length;
   const rows = foldRows(all);
-  return { label: range(block), fn: block.function, rows, total, folded: rows.length !== all.length, showAll: `Show all ${total} lines` };
+  return { label: sketch ? block.file : range(block), fn: block.function, rows, total, folded: rows.length !== all.length, showAll: `Show all ${total} lines` };
 }
 
 // The chip's colour: written sources, commits and pull requests, comments in the code, and gaps.
@@ -58,6 +61,7 @@ export function pageModel(data) {
   const multi = (data.repos || []).length > 1;
   const uncommittedFiles = (data.repos || []).flatMap(r => (r.uncommitted || []).map(f => multi ? `${r.name}: ${f}` : f));
   const at = i => (i >= 0 && i < stops.length ? { n: i + 1, name: stops[i].name } : null);
+  const sketch = b => isPlan(data) && isSketch(b);
   return {
     title: data.journey,
     built: builtLine(data),
@@ -77,10 +81,10 @@ export function pageModel(data) {
         prevLabel: prev ? `← ${linkTo(prev)}` : '',
         nextLabel: next ? `${linkTo(next)} →` : '',
         badge: stopBadge(s),
-        firstFile: code.length ? range(code[0]) : '',
+        firstFile: !code.length ? '' : sketch(code[0]) ? code[0].file : range(code[0]),
         more: Math.max(0, code.length - 1),
         moreLabel: code.length > 1 ? `+${code.length - 1} more` : '',
-        blocks: code.map(blockModel),
+        blocks: code.map(b => blockModel(b, sketch(b))),
         what: s.what, dataIn: s.data?.in, dataOut: s.data?.out,
         notes,
         notesLabel: `Notes on the code (${notes.length})`,

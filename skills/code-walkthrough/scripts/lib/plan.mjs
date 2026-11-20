@@ -1,8 +1,45 @@
 export const isPlan = data => data?.mode === 'plan';
 
+export const STATUSES = ['new', 'changed', 'unchanged', 'elsewhere'];
+
+export const isSketch = block => block?.planned === true;
+
+// Counted as code.mjs's splitLines counts; not imported from there, which would make an import cycle.
+const lineCount = t => { const ls = t.split(/\r\n|\n|\r/); if (ls.at(-1) === '') ls.pop(); return ls.length; };
+
+// Each stop's status, the code its status allows, and each sketch's shape.
+export function sketchErrors(data) {
+  const errors = [];
+  for (const s of data.stops || []) {
+    const id = s.id;
+    const code = s.code || [];
+    const sketches = code.filter(isSketch).length, today = code.length - sketches;
+    if (s.status === undefined) errors.push(`stop ${id} has no status; use new, changed, unchanged or elsewhere`);
+    else if (!STATUSES.includes(s.status)) errors.push(`stop ${id} has status ${s.status}; use new, changed, unchanged or elsewhere`);
+    if (s.status === 'unchanged' && sketches) errors.push(`stop ${id} is unchanged, so it cannot hold a sketch`);
+    if (s.status === 'new' && today) errors.push(`stop ${id} is new, so its code is sketches only`);
+    if (s.status === 'new' && !sketches) errors.push(`stop ${id} is new, so it needs a sketch`);
+    if (s.status === 'changed' && (!today || !sketches)) errors.push(`stop ${id} is changed, so it needs today's code and a sketch`);
+    code.forEach((b, i) => {
+      if (!isSketch(b)) return;
+      const at = `stop ${id} code block ${i + 1}`;
+      if (typeof b.new_file !== 'boolean') errors.push(`${at} is a sketch, so it needs new_file as true or false`);
+      if (typeof b.text === 'string') {
+        const n = lineCount(b.text);
+        if (n > 30) errors.push(`${at} is a sketch of ${n} lines; keep it to 30 or fewer`);
+        if (n < 2) errors.push(`${at} is a sketch of ${n} ${n === 1 ? 'line' : 'lines'}; give it 2 or more`);
+      }
+      if (b.lines !== undefined || b.key_lines !== undefined || b.left_out !== undefined) errors.push(`${at} is a sketch, so it cannot have lines, key_lines or left_out`);
+      if (b.after !== undefined && b.new_file === true) errors.push(`${at} has after and new_file together; use one`);
+    });
+  }
+  return errors;
+}
+
 // Shape failures that only a plan has. Later checks are added to this list.
 export function planShapeErrors(data) {
   const errors = [];
   if (data.extend !== undefined) errors.push('a plan has no extend points; put the work in plan.tasks');
+  errors.push(...sketchErrors(data));
   return errors;
 }

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pageModel, foldRows } from '../lib/page.mjs';
 import { builtLine, checksShort, reasonsLine } from '../lib/words.mjs';
-import { tempRoot, bookingRepo, sampleData } from './helpers.mjs';
+import { tempRoot, bookingRepo, sampleData, ledgerRepo, samplePlan } from './helpers.mjs';
 
 const build = t => {
   const repo = bookingRepo(tempRoot(t));
@@ -121,4 +121,18 @@ test('the fold limit is 14 numbered lines', () => {
   const f = foldRows(rows(15));
   assert.ok(f.some(r => r.fold));
   assert.ok(f.length > 15);
+});
+
+test('a sketch block has no line numbers', t => {
+  const m = pageModel(samplePlan(ledgerRepo(tempRoot(t))));
+  const s3 = m.stops[2];
+  assert.equal(s3.firstFile, 'src/store.js');
+  const b = s3.blocks[0];
+  assert.equal(b.label, 'src/store.js');
+  assert.equal(b.fn, 'saveAttachments');
+  assert.deepEqual(b.rows[0], { n: '', text: 'export async function saveAttachments(invoiceId, files) {', key: false });
+  assert.equal(b.rows.length, 5);
+  assert.ok(b.rows.every(r => r.n === '' && r.key === false));
+  assert.equal(m.stops[1].blocks[0].label, 'src/store.js:16-20');
+  assert.equal(m.stops[1].blocks[1].label, 'src/store.js');
 });

@@ -663,3 +663,31 @@ test('plan shape failures print as the plan\'s', t => {
   const fails = r.lines.filter(l => l.startsWith('FAIL'));
   assert.ok(fails.length && fails.every(l => l.startsWith('FAIL the plan: ')), r.out);
 });
+
+test('the example plan builds', t => {
+  const ctx = planSetup(t);
+  const r = run(ctx, ['--write']);
+  assert.equal(r.status, 0, r.out + r.err);
+  const files = vaultFiles(ctx);
+  for (const f of ['Plan - invoice attachments.md', 'invoice-attachments.plan.html', 'invoice-attachments.plan.json']) assert.ok(files.includes(f), files.join(', '));
+  assert.deepEqual(readJson(ctx.dataFile).checks.code, { blocks: 2, sketches: 2 });
+  finish(ctx);
+});
+
+test('one edit: a sketch marked new_file true', t => {
+  const ctx = planSetup(t, d => { d.stops[1].code[1].new_file = true; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s2 src/store.js (sketch): the file already exists; set new_file to false']);
+});
+
+test('a file only a sketch names is not cited', t => {
+  const ctx = planSetup(t, d => {
+    const k = d.stops[2].code[0];
+    Object.assign(k, { file: 'src/attachments.js', new_file: true });
+    delete k.after;
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.deepEqual(readJson(ctx.dataFile).cited_files, { 'ledger-api': ['src/routes/invoices.js', 'src/store.js'] });
+});
