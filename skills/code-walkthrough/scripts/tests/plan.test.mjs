@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planShapeErrors, sketchErrors, originErrors, taskErrors, tasksOf, chainErrors, nameKey } from '../lib/plan.mjs';
+import { planShapeErrors, sketchErrors, originErrors, taskErrors, tasksOf, chainErrors, nameKey, writingErrors } from '../lib/plan.mjs';
 import { shapeErrors } from '../lib/data.mjs';
 import { tempRoot, ledgerRepo, samplePlan } from './helpers.mjs';
 
@@ -149,3 +149,37 @@ for (const [title, edit] of [
 }
 
 test('a name key is trimmed and lower case', () => assert.equal(nameKey('  Invoice Row '), 'invoice row'));
+
+// One edit to the example plan, then its writing failures. s = the stops.
+const writingAfter = (t, edit) => {
+  const d = samplePlan(ledgerRepo(tempRoot(t)));
+  edit(d.stops, d);
+  return writingErrors(d);
+};
+const words = n => Array.from({ length: n }, () => 'word').join(' ') + '.';
+
+test('the example plan has no writing failures, though it says store and route', t => {
+  assert.deepEqual(writingAfter(t, () => {}), []);
+});
+
+for (const [title, edit, line] of [
+  ['a what of 44 words', s => { s[1].what = words(44); }, 'stop s2 what is 44 words; keep it to one sentence of 30 or fewer'],
+  ['a what of 2 sentences', s => { s[1].what = 'It saves the row. Then the files.'; }, 'stop s2 what is 2 sentences; keep it to one'],
+  ['a what names a file', s => { s[1].what = 'Changes src/store.js so files are saved.'; }, 'stop s2 what names src/store.js; keep file names in the header and the code'],
+  ['a point names a function', s => { s[1].points[0] = 'Calls saveAttachments after the insert.'; }, 'stop s2 point 1 names saveAttachments; keep function names in the header and the code'],
+  ['a point holds a backtick', s => { s[1].points[0] = 'Runs `fast.'; }, 'stop s2 point 1 holds a backtick; keep code in the code blocks'],
+  ['5 points', s => { s[1].points = ['One.', 'Two.', 'Three.', 'Four.', 'Five.']; }, 'stop s2 has 5 points; keep it to 4 or fewer'],
+  ['a point of 23 words', s => { s[1].points[0] = words(23); }, 'stop s2 point 1 is 23 words; keep it to 20 or fewer'],
+  ['a stop needs a what', s => { delete s[2].what; }, 'stop s3 has no what'],
+  ['a changed stop needs today', s => { delete s[1].today; }, 'stop s2 is changed, so it needs today with what and points'],
+  ['a new stop has no today', s => { s[2].today = { what: 'x' }; }, 'stop s3 is new, so it has no today'],
+  ['a today what names a base name', s => { s[1].today.what = 'Inserts into store.js.'; }, 'stop s2 today what names store.js; keep file names in the header and the code'],
+]) {
+  test(`writing: ${title}`, t => {
+    assert.deepEqual(writingAfter(t, edit), [line]);
+  });
+}
+
+test('writing: no code, points or today, and a block with no function, do not throw', t => {
+  assert.deepEqual(writingAfter(t, s => { delete s[0].code; delete s[0].points; delete s[2].code[0].function; }), []);
+});

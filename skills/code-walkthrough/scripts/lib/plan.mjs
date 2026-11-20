@@ -139,6 +139,56 @@ export function chainErrors(data) {
   return errors;
 }
 
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// The writing rules on each stop's what, points and today: short plain text, no cited names, no code.
+export function writingErrors(data) {
+  const blocks = (data.stops || []).flatMap(s => Array.isArray(s.code) ? s.code : []);
+  const named = list => [...new Set(list.filter(n => typeof n === 'string' && n))];
+  const paths = named(blocks.map(b => b.file));
+  // Full paths first, so a text with src/store.js names it rather than its base name store.js.
+  const files = named([...paths, ...paths.map(f => f.split('/').pop())]);
+  const functions = named(blocks.map(b => b.function));
+  // Whole words only, so the stem store never matches store.js.
+  const cited = (text, names) => names.find(n => new RegExp(`(?<!\\w)${escapeRe(n)}(?!\\w)`).test(text));
+  const wordCount = text => (text.match(/\S+/g) || []).length;
+  const nameErrors = (at, text) => {
+    const errors = [], file = cited(text, files), fn = cited(text, functions);
+    if (file) errors.push(`${at} names ${file}; keep file names in the header and the code`);
+    if (fn) errors.push(`${at} names ${fn}; keep function names in the header and the code`);
+    if (text.includes('`')) errors.push(`${at} holds a backtick; keep code in the code blocks`);
+    return errors;
+  };
+  const partErrors = (at, { what, points }) => {
+    const errors = [];
+    if (typeof what !== 'string' || !what.trim()) errors.push(`${at} has no what`);
+    else {
+      const words = wordCount(what), sentences = 1 + (what.match(/[.!?]\s+\S/g) || []).length;
+      if (words > 30) errors.push(`${at} what is ${words} words; keep it to one sentence of 30 or fewer`);
+      if (sentences > 1) errors.push(`${at} what is ${sentences} sentences; keep it to one`);
+      errors.push(...nameErrors(`${at} what`, what));
+    }
+    const list = Array.isArray(points) ? points : [];
+    if (list.length > 4) errors.push(`${at} has ${list.length} points; keep it to 4 or fewer`);
+    list.forEach((p, i) => {
+      const text = String(p ?? ''), words = wordCount(text);
+      if (words > 20) errors.push(`${at} point ${i + 1} is ${words} words; keep it to 20 or fewer`);
+      errors.push(...nameErrors(`${at} point ${i + 1}`, text));
+    });
+    return errors;
+  };
+  const errors = [];
+  for (const s of data.stops || []) {
+    const at = `stop ${s.id}`, today = s.today;
+    errors.push(...partErrors(at, s));
+    if (s.status === 'changed') {
+      if (!today || typeof today.what !== 'string' || !today.what.trim() || !Array.isArray(today.points)) errors.push(`${at} is changed, so it needs today with what and points`);
+      else errors.push(...partErrors(`${at} today`, today));
+    } else if (today !== undefined && STATUSES.includes(s.status)) errors.push(`${at} is ${s.status}, so it has no today`);
+  }
+  return errors;
+}
+
 // Shape failures that only a plan has. Later checks are added to this list.
 export function planShapeErrors(data) {
   const errors = [];
@@ -147,5 +197,6 @@ export function planShapeErrors(data) {
   errors.push(...originErrors(data));
   errors.push(...taskErrors(data));
   errors.push(...chainErrors(data));
+  errors.push(...writingErrors(data));
   return errors;
 }
