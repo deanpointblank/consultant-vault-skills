@@ -691,3 +691,47 @@ test('a file only a sketch names is not cited', t => {
   assert.equal(r.status, 0, r.out + r.err);
   assert.deepEqual(readJson(ctx.dataFile).cited_files, { 'ledger-api': ['src/routes/invoices.js', 'src/store.js'] });
 });
+
+test('one edit: a quote changed', t => {
+  const ctx = planSetup(t, d => { d.stops[2].from.quote = 'Attachments are kept in their own table'; });
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s3 from (chat goal): the quote is not found word for word in the source']);
+});
+
+// Stop s3 quotes a plan file in the test's temp root, outside the repo and the vault.
+function planFileSetup(t) {
+  let file;
+  const ctx = planSetup(t, (d, repo) => {
+    file = path.join(path.dirname(repo.path), 'plan.md');
+    fs.writeFileSync(file, 'Attachments are saved in their own table.\n');
+    d.stops[2].from.source = { kind: 'plan-file', ref: file };
+  });
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  return { ctx, file };
+}
+const planFileCopies = ctx => readJson(ctx.dataFile).sources.filter(s => s.kind === 'plan-file');
+
+test('a plan file is read live and saved', t => {
+  const { ctx, file } = planFileSetup(t);
+  assert.deepEqual(planFileCopies(ctx), [{ kind: 'plan-file', ref: file, fetched: DAY1, text: 'Attachments are saved in their own table.\n' }]);
+});
+
+test('a plan file that no longer holds the quote', t => {
+  const { ctx, file } = planFileSetup(t);
+  const saved = planFileCopies(ctx);
+  fs.writeFileSync(file, 'Attachments live with the invoice.\n');
+  const r = run(ctx);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.deepEqual(r.lines.filter(l => l.startsWith('FAIL')), ['FAIL s3 from (plan-file): the plan file no longer says this; re-quote it or make this a proposal']);
+  assert.deepEqual(planFileCopies(ctx), saved);
+});
+
+test('a plan file that is gone', t => {
+  const { ctx, file } = planFileSetup(t);
+  fs.rmSync(file);
+  const r = run(ctx);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.deepEqual(readJson(ctx.dataFile).checks.quotes.savedOf['plan-file'], [file]);
+});

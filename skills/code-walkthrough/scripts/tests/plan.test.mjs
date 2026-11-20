@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planShapeErrors, sketchErrors } from '../lib/plan.mjs';
+import { planShapeErrors, sketchErrors, originErrors } from '../lib/plan.mjs';
 import { shapeErrors } from '../lib/data.mjs';
 import { tempRoot, ledgerRepo, samplePlan } from './helpers.mjs';
 
@@ -43,4 +43,38 @@ test('only unchanged and changed stops need a Why entry', t => {
   assert.equal(shapeErrors(d).some(e => e.startsWith('stop s3 has no Why')), false);
   d.stops[1].reasons = [];
   assert.ok(shapeErrors(d).includes('stop s2 has no Why entry'));
+});
+
+// One edit to the example plan, then its origin failures. s = the stops, t = the tasks, c = stop s3's choices.
+const originAfter = (t, edit) => {
+  const d = samplePlan(ledgerRepo(tempRoot(t)));
+  edit(d.stops, d.plan.tasks, d.stops[2].choices);
+  return originErrors(d);
+};
+
+test('the example plan has no origin failures', t => {
+  assert.deepEqual(originAfter(t, () => {}), []);
+});
+
+for (const [title, edit, line] of [
+  ['a new stop needs a from', s => { delete s[2].from; }, 'stop s3 has no from; mark it plan, review or proposal'],
+  ['an unchanged stop has no from', s => { s[0].from = { kind: 'proposal' }; }, 'stop s1 is unchanged, so it has no from'],
+  ['an unknown origin kind', (s, t) => { t[0].from.kind = 'idea'; }, 'task t1 from has an unknown kind, idea; use plan, review, proposal or open'],
+  ['only a choice can be open', (s, t) => { t[0].from = { kind: 'open' }; }, 'task t1 is open, but only a choice can be open'],
+  ['an open choice is a question', (s, t, c) => { c[1].text = 'A size limit per file.'; }, 'stop s3 choice 2 is open, so its text must be a question'],
+  ['an open choice has no quote', (s, t, c) => { c[1].from.quote = 'x'; }, 'stop s3 choice 2 is open, so it cannot have a quote'],
+  ['a proposal has no quote', (s, t) => { t[0].from.quote = 'x'; }, 'task t1 is a proposal, so it cannot have a quote'],
+  ['from the plan needs a quote', s => { delete s[1].from.quote; }, 'stop s2 comes from the plan, so it needs a quote and a source'],
+  ['awaiting review needs a source', s => { s[1].from = { kind: 'review', quote: 'x' }; }, 'stop s2 is awaiting review, so it needs a quote and a source'],
+  ['an unknown origin source kind', s => { s[1].from.source.kind = 'code-comment'; }, 'stop s2 from has an unknown source kind, code-comment'],
+]) {
+  test(title, t => {
+    assert.deepEqual(originAfter(t, edit), [line]);
+  });
+}
+
+test('a reason cannot quote the chat', t => {
+  const d = samplePlan(ledgerRepo(tempRoot(t)));
+  d.stops[0].reasons = [{ text: 'x', quote: 'Let users attach files', source: { kind: 'chat', ref: 'goal' } }];
+  assert.ok(shapeErrors(d).includes('stop s1 Why entry 1 has an unknown source kind, chat'));
 });

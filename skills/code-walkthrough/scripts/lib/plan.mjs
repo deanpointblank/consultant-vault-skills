@@ -36,10 +36,56 @@ export function sketchErrors(data) {
   return errors;
 }
 
+export const ORIGIN_KINDS = ['plan', 'review', 'proposal', 'open'];
+
+// Own list, not data.mjs's SOURCE_KINDS, which would make an import cycle.
+export const FROM_SOURCES = ['design-doc', 'vault-note', 'ticket', 'pull-request', 'commit', 'plan-file', 'chat'];
+
+// Every part of a plan that can have a from, with what originErrors needs to judge it.
+function fromSlots(data) {
+  const slots = [];
+  for (const s of data.stops || []) {
+    slots.push({ at: `stop ${s.id}`, what: 'stop', from: s.from, status: s.status });
+    (s.code || []).forEach((b, i) => { if (isSketch(b)) slots.push({ at: `stop ${s.id} code block ${i + 1}`, what: 'sketch', from: b.from }); });
+    (s.choices || []).forEach((c, i) => slots.push({ at: `stop ${s.id} choice ${i + 1}`, what: 'choice', from: c.from, text: c.text }));
+  }
+  const plan = data.plan || {};
+  for (const t of plan.tasks || []) slots.push({ at: `task ${t.id}`, what: 'task', from: t.from });
+  for (const [list, name, what] of [[plan.tests, 'test', 'test'], [plan.risks, 'risk', 'risk'], [plan.out_of_scope, 'out of scope', 'out-of-scope']]) {
+    (list || []).forEach((x, i) => slots.push({ at: `${name} ${i + 1}`, what, from: x.from }));
+  }
+  return slots;
+}
+
+// Each from given in the plan, in page order.
+export const fromItems = data => fromSlots(data).filter(x => x.from !== undefined).map(({ at, what, from }) => ({ at, what, from }));
+
+// One failure per part at most: the first rule it breaks.
+function originError({ at, what, from, status, text }) {
+  if (what === 'stop' && status === 'unchanged') return from === undefined ? null : `${at} is unchanged, so it has no from`;
+  if (what === 'stop' && !['new', 'changed', 'elsewhere'].includes(status)) return null;
+  if (from === undefined) return `${at} has no from; mark it plan, review or proposal`;
+  const { kind, quote, source } = from || {};
+  if (!ORIGIN_KINDS.includes(kind)) return `${at} from has an unknown kind, ${kind}; use plan, review, proposal or open`;
+  if (kind === 'open') {
+    if (what !== 'choice') return `${at} is open, but only a choice can be open`;
+    if (!String(text || '').trim().endsWith('?')) return `${at} is open, so its text must be a question`;
+    if (quote !== undefined) return `${at} is open, so it cannot have a quote`;
+    return null;
+  }
+  if (kind === 'proposal') return quote === undefined ? null : `${at} is a proposal, so it cannot have a quote`;
+  if (!quote || !source) return `${at} ${kind === 'plan' ? 'comes from the plan' : 'is awaiting review'}, so it needs a quote and a source`;
+  if (!FROM_SOURCES.includes(source.kind)) return `${at} from has an unknown source kind, ${source.kind}`;
+  return null;
+}
+
+export const originErrors = data => fromSlots(data).map(originError).filter(Boolean);
+
 // Shape failures that only a plan has. Later checks are added to this list.
 export function planShapeErrors(data) {
   const errors = [];
   if (data.extend !== undefined) errors.push('a plan has no extend points; put the work in plan.tasks');
   errors.push(...sketchErrors(data));
+  errors.push(...originErrors(data));
   return errors;
 }

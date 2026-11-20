@@ -161,7 +161,7 @@ function main() {
 
   const code = checkCode(data, { misnamed: (repo, file) => misnamedIn[repo]?.has(file) === true });
   failures.push(...code.failures);
-  const { failures: quoteFailures, ...quotes } = checkQuotes(data, { vault, gh: process.env.CW_GH !== '0' });
+  const { failures: quoteFailures, ...quotes } = checkQuotes(data, { vault, gh: process.env.CW_GH !== '0', date: args.date });
   failures.push(...quoteFailures);
 
   let map = { built: false };

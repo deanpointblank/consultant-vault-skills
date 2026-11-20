@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { repoByName } from './data.mjs';
 import { gitRead, gitEnv, isCommitHash } from './git.mjs';
 import { splitLines } from './code.mjs';
+import { isPlan, fromItems } from './plan.mjs';
 
 export const normalizeForQuote = s => s.normalize('NFC')
   .replace(/[‘’‚‛′]/g, "'").replace(/[“”„‟″]/g, '"')
@@ -142,26 +143,78 @@ function sourceText(data, source, { vault, gh }) {
   }
 }
 
-export function checkQuotes(data, { vault, gh = false } = {}) {
-  const out = { quotes: 0, saved: 0, savedOf: { ticket: [], 'pull-request': [] }, failures: [] };
+const labelOf = source => {
+  if (source.kind === 'plan-file') return 'plan-file';
+  const ref = refLabel(source.kind, source.ref);
+  return `${KIND_WORDS[source.kind] || source.kind}${ref ? ' ' + ref : ''}`;
+};
+
+const savedText = (data, kind, ref) => {
+  const hit = (data.sources || []).find(s => s.kind === kind && s.ref === ref);
+  return typeof hit?.text === 'string' ? hit.text : undefined;
+};
+
+// A plan entry's source: chat and plan-file here, today's kinds as reasons read them.
+// A plan file that exists is read once per build into `live`; `copy` is its saved copy from an earlier build.
+function fromText(data, source, live, opts) {
+  const { kind, ref } = source;
+  if (kind === 'chat') {
+    const text = savedText(data, 'chat', ref);
+    if (text === undefined) throw new Error(`no saved copy of chat ${ref}`);
+    return { text, saved: true };
+  }
+  if (kind !== 'plan-file') return sourceText(data, source, opts);
+  needString(ref, 'file path');
+  if (!path.isAbsolute(ref)) throw new Error(`${ref} must be an absolute path`);
+  const copy = savedText(data, 'plan-file', ref);
+  if (!fs.existsSync(ref)) {
+    if (copy === undefined) throw new Error(`cannot read ${ref}: no such file, and there is no saved copy`);
+    return { text: copy, saved: true };
+  }
+  if (!live.has(ref)) live.set(ref, { text: readText(ref), allFound: true });
+  return { text: live.get(ref).text, live: live.get(ref), copy };
+}
+
+export function checkQuotes(data, { vault, gh = false, date } = {}) {
+  const plan = isPlan(data);
+  const out = { quotes: 0, saved: 0, savedOf: { ticket: [], 'pull-request': [], ...(plan ? { chat: [], 'plan-file': [] } : {}) }, failures: [] };
+  const check = (where, source, quote, read) => {
+    out.quotes++;
+    let got;
+    try { got = read(); }
+    catch (e) { out.failures.push({ where, why: e.message }); return; }
+    if (got.saved) {
+      out.saved++;
+      const key = source.kind === 'pull-request' ? prKey(source.ref) : String(source.ref);
+      const list = out.savedOf[source.kind];
+      if (!list.includes(key)) list.push(key);
+    }
+    if (quoteFound(quote ?? '', got.text)) return;
+    if (got.live) got.live.allFound = false;
+    const changed = got.live && got.copy !== undefined && quoteFound(quote ?? '', got.copy);
+    out.failures.push({ where, why: changed ? 'the plan file no longer says this; re-quote it or make this a proposal' : 'the quote is not found word for word in the source' });
+  };
   for (const stop of data.stops || []) {
     (stop.reasons || []).forEach((r, i) => {
       const source = r.source || {};
       if (!source.kind || source.kind === 'not-recorded') return;
-      out.quotes++;
-      const label = `${KIND_WORDS[source.kind] || source.kind}${refLabel(source.kind, source.ref) ? ' ' + refLabel(source.kind, source.ref) : ''}`;
-      const where = `${stop.id} reason ${i + 1} (${label})`;
-      let got;
-      try { got = sourceText(data, source, { vault, gh }); }
-      catch (e) { out.failures.push({ where, why: e.message }); return; }
-      if (got.saved) {
-        out.saved++;
-        const key = source.kind === 'pull-request' ? prKey(source.ref) : String(source.ref);
-        const list = out.savedOf[source.kind];
-        if (!list.includes(key)) list.push(key);
-      }
-      if (!quoteFound(r.quote ?? '', got.text)) out.failures.push({ where, why: 'the quote is not found word for word in the source' });
+      check(`${stop.id} reason ${i + 1} (${labelOf(source)})`, source, r.quote, () => sourceText(data, source, { vault, gh }));
     });
+  }
+  if (!plan) return out;
+  const live = new Map();
+  for (const { at, from } of fromItems(data)) {
+    if (from?.kind !== 'plan' && from?.kind !== 'review') continue;
+    const source = from.source || {};
+    check(`${at.replace(/^stop /, '')} from (${labelOf(source)})`, source, from.quote, () => fromText(data, source, live, { vault, gh }));
+  }
+  // A plan file's copy is saved only when every quote from it is found, so a changed file keeps the last good copy.
+  for (const [ref, f] of live) {
+    if (!f.allFound) continue;
+    const copy = { kind: 'plan-file', ref, fetched: date, text: f.text };
+    data.sources ??= [];
+    const i = data.sources.findIndex(s => s.kind === 'plan-file' && s.ref === ref);
+    if (i < 0) data.sources.push(copy); else data.sources[i] = copy;
   }
   return out;
 }
