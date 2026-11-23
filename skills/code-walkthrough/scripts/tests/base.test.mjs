@@ -6,7 +6,7 @@ import { resolveBase, fileAt, existsAt } from '../lib/git.mjs';
 import { checkCode } from '../lib/code.mjs';
 import { checkQuotes } from '../lib/quotes.mjs';
 import { execFileSync } from 'node:child_process';
-import { tempRoot, ledgerRepo, samplePlan, makeVault, commitAll } from './helpers.mjs';
+import { tempRoot, ledgerRepo, samplePlan, makeVault, commitAll, makeRepo } from './helpers.mjs';
 
 const ahead = t => ledgerRepo(tempRoot(t), { ahead: true });
 
@@ -22,6 +22,18 @@ test('a base the repo does not know', t => {
   const repo = ahead(t);
   assert.throws(() => resolveBase(repo.path, 'origin/nope'), { message: 'git cannot find origin/nope here; the build never fetches, so fetch it yourself or change base' });
   assert.throws(() => resolveBase(repo.path, '--all'));
+});
+
+test('a path that is not a git repo is named plainly', t => {
+  const dir = tempRoot(t);
+  assert.throws(() => resolveBase(dir, 'origin/main'), { message: `${dir} is not a git repo` });
+});
+
+test('a file over 1 MB is read at the base', t => {
+  const big = 'x'.repeat(2 * 1024 * 1024) + '\n';
+  const repo = makeRepo(path.join(tempRoot(t), 'big'), { files: { 'big.txt': big }, message: 'Add a big file' });
+  const { hash } = resolveBase(repo.path, 'HEAD');
+  assert.equal(fileAt(repo.path, hash, 'big.txt'), big);
 });
 
 test('a file is read at the base, not the disk', t => {

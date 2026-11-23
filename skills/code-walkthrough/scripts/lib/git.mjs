@@ -23,6 +23,7 @@ export function gitRead(repoPath, args) {
     encoding: 'utf8',
     env: { ...gitEnv(), GIT_LITERAL_PATHSPECS: '1', GIT_NO_LAZY_FETCH: '1', GIT_TERMINAL_PROMPT: '0' },
     stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 256 * 1024 * 1024, // the 1 MB default fails a large file at the base with ENOBUFS
   });
 }
 
@@ -81,7 +82,10 @@ export function resolveBase(repoPath, ref) {
   try {
     const hash = gitRead(repoPath, ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`]).trim();
     return { ref, hash, short: gitRead(repoPath, ['rev-parse', '--short=7', hash]).trim() };
-  } catch { throw new Error(`git cannot find ${ref} here; the build never fetches, so fetch it yourself or change base`); }
+  } catch {
+    try { gitRead(repoPath, ['rev-parse', '--git-dir']); } catch { throw new Error(`${repoPath} is not a git repo`); }
+    throw new Error(`git cannot find ${ref} here; the build never fetches, so fetch it yourself or change base`);
+  }
 }
 
 // The empty tree, which git knows without storing it: a diff from it lists every file at a commit with its mode.

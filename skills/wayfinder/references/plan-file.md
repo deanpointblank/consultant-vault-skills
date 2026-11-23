@@ -370,6 +370,7 @@ Not a check round: fix what it says and build again.
 | `<data file> has mode <x>; only plan is known` | Set `mode` to `"plan"` |
 | `<data file> has a bad base for <repo>, <value>; give a git ref such as origin/main` | Give a ref that does not start with `-`, or drop `base` |
 | `<repo>: git cannot find <ref> here; the build never fetches, so fetch it yourself or change base` | Never fetch. Pick the base again by step 4 of the skill, or drop `base` to read the disk, and tell the user which |
+| `<repo>: <path> is not a git repo` | Set the repo's `path` to its top folder |
 | `<data file> is inside the vault, and the build rewrites its data file; copy the data file to the working folder and build from the copy` | Build from the copy in the working folder |
 | `--out <path> is inside <place>; use a working folder outside the vault, the repos and the work folders` | Use the working folder the `echo` printed |
 | `<data file> has no <journey, short_name, summary or client>` | Fill it in |
