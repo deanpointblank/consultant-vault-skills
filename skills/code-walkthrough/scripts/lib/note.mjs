@@ -75,6 +75,7 @@ export function planNoteText(data, names, { embedHeight = EMBED_HEIGHT } = {}) {
     '---',
   ];
   const body = ['', `# ${data.journey}`, '', data.summary, '', planBuiltLine(data), '', `![[${names.page}|height: ${embedHeight}px]]`, ''];
+  body.push(`Not showing, or too small? Open [[${names.page}]], or use the "open in external browser" button on the page above.`, '');
   if (names.earlier) body.push(`Earlier plan of this journey: [[${names.earlier}]].`, '');
   if (data.walkthrough) body.push(`Walkthrough of the same code: [[${data.walkthrough}]].`, '');
   body.push('## Stops', '');

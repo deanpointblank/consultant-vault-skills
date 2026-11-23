@@ -152,6 +152,8 @@ proposals: 5
     '',
     '![[invoice-attachments.plan.html|height: 1100px]]',
     '',
+    'Not showing, or too small? Open [[invoice-attachments.plan.html]], or use the "open in external browser" button on the page above.',
+    '',
     '## Stops',
     '',
     '1. **The API takes the invoice** · unchanged · Refuses an invoice with too many lines, then hands it on.',
@@ -174,7 +176,13 @@ proposals: 5
 test('the plan note links an earlier plan and a walkthrough', () => {
   const lines = planNoteText(plan(d => { d.walkthrough = 'Walkthrough - saving an invoice'; }), { ...PLAN_NAMES, earlier: 'Plan - invoice attachments 2026-11-19' }).split('\n');
   const i = lines.indexOf('![[invoice-attachments.plan.html|height: 1100px]]');
-  assert.deepEqual(lines.slice(i + 1, i + 7), ['', 'Earlier plan of this journey: [[Plan - invoice attachments 2026-11-19]].', '', 'Walkthrough of the same code: [[Walkthrough - saving an invoice]].', '', '## Stops']);
+  assert.deepEqual(lines.slice(i + 1, i + 9), ['', 'Not showing, or too small? Open [[invoice-attachments.plan.html]], or use the "open in external browser" button on the page above.', '', 'Earlier plan of this journey: [[Plan - invoice attachments 2026-11-19]].', '', 'Walkthrough of the same code: [[Walkthrough - saving an invoice]].', '', '## Stops']);
+});
+
+test('the plan note has the open fallback line under the embed', () => {
+  const lines = planNoteText(plan(), PLAN_NAMES).split('\n');
+  const i = lines.indexOf('![[invoice-attachments.plan.html|height: 1100px]]');
+  assert.deepEqual(lines.slice(i + 1, i + 3), ['', 'Not showing, or too small? Open [[invoice-attachments.plan.html]], or use the "open in external browser" button on the page above.']);
 });
 
 test('the plan note says another ticket, with its ticket when given', () => {
