@@ -53,3 +53,44 @@ Scenario (a) did not repeat it, but it showed up in two other reps: green-d and 
 Both wrong reps ran, just before, the same chain in the repo copy:
 `git ls-files; GIT_OPTIONAL_LOCKS=0 git rev-parse --verify --quiet --abbrev-ref origin/HEAD; GIT_OPTIONAL_LOCKS=0 git rev-parse --verify --quiet origin/main; GIT_OPTIONAL_LOCKS=0 git rev-parse --short=7 HEAD`
 The output after `ls-files` was `88f2e870f1db7c6310f3b847cdcd95866ccd26b1` then `88f2e87`: `origin/HEAD` printed nothing (the fixture sets only `refs/remotes/origin/main`) and `origin/main` printed its full id, so it exists. The agent read the empty `origin/HEAD` line as "no origin/main". green-a ran an identical chain and read it right. This is a misreading of the output, not a missing ref. The page content is unaffected (code at the same commit).
+
+## Recheck after the origin/HEAD wording (commit b4e2566)
+
+Line 30 of `skills/wayfinder/SKILL.md` now says an empty `origin/HEAD` result is normal and that a ref is missing only when both
+checks print nothing. Nine GREEN reps (three each of (a), (d), (g)), every one `claude -p --model sonnet` on its own copies, same
+harness and overrides, run in parallel under `<scratchpad>/wf2/wf/reps/r-*`. (The first launch used a zsh loop that sent empty
+prompts; it was killed before any turn ended and everything was rerun from fresh copies. Not counted as a void rep.)
+
+### Per rep (U1 to U4, and the origin/main claim)
+
+| Rep | `ended` t1 / t2 | U1 | U2 `repo_ok` | U3 | U4 | `plans_ok` | `rebuild_ok` | origin/main claim |
+|---|---|---|---|---|---|---|---|---|
+| r-a1 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | none |
+| r-a2 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | "ledger-api: today's code read as it is on disk, at commit 88f2e87, because there is no `origin/main` here." |
+| r-a3 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | "ledger-api: today's code is read as it is on disk, at commit 88f2e87, because there is no `origin/main` here." |
+| r-d1 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | none |
+| r-d2 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | none |
+| r-d3 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | "ledger-api: today's code read as it is on disk, at commit 88f2e87, because there is no `origin/main` here." |
+| r-g1 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | none |
+| r-g2 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | "ledger-api: no `origin/main` here, so today's code is read as it is on disk, at commit 88f2e87." |
+| r-g3 | success / success | nothing | ok | 0 | nothing | ok | exit 0 | none |
+
+Void reps: none (every turn ended `success`, each made tool calls). The grep also matched "the 2 today blocks match origin/main
+(commit 88f2e87). N sketches are not checked." in the none rows; that names `origin/main` and is not a missing-ref claim.
+
+### Scenarios
+
+- (a) PASS in all three. a1 (t1 cost message with journey, repo, base and commit, stops and minutes, map, "It goes to the vault.",
+  "Go ahead?"; nothing changed after t1), a2 `exit 0`, a3 one note, one html, one json in `Plans/`, a4 `a_data` ok, a5 `repo_ok` ok.
+- (d) PASS in all three. d1 t1 says once that the page goes to the vault, not `docs/`; d2 only `Plans/` entries, repo section of
+  `t2.changed` empty; d3 `repo_ok` ok.
+- (e) PASS: `no_trace` prints ok for t1 of all six (a) and (d) reps.
+- (g) PASS in all three: `g_data` ok, the "files over 10 MB" entry is `review`, none is `plan`.
+
+### The origin/main claim
+
+Not fixed. 4 of 9 reps (r-a2, r-a3, r-d3, r-g2) still tell the user there is no `origin/main`. The earlier run had 2 of 6. In r-a2 the
+t1 commands were the same chain as before: `git ls-files; ... rev-parse --verify --quiet --abbrev-ref origin/HEAD; ... rev-parse
+--verify --quiet origin/main; ... rev-parse --short=7 HEAD`. The agent ran both checks, so the "say a ref is missing only when both
+checks print nothing" sentence did not stop the misreading: the chain is run as one command, the empty `origin/HEAD` result and the
+full id are not separated, and the cost message is written from the empty line. The page content is unaffected (same commit).
