@@ -52,7 +52,7 @@ Follow the obsidian-vault skill's conventions. Wayfinder takes a plan for code n
    - A gap the plan leaves (a name, an order, a limit, a table, a step) becomes a `proposal`, with no quote. Never write a gap as a plan step.
    - A choice only the team can make becomes an `open` choice whose text is the question. A short goal nearly always leaves at least one.
 
-   A plan file outside the repo is a `plan-file` source with its absolute path (no `~`). A plan file in the vault is a `vault-note` source, never `plan-file`. The full rules are in `references/plan-file.md`.
+   A plan file outside the vault is a `plan-file` source with its absolute path (no `~`). It may sit inside the repo when it is not committed at the base; a plan committed at the base is a `design-doc`. A plan file in the vault is a `vault-note` source, never `plan-file`. The full rules are in `references/plan-file.md`.
 8. **Write the data file.** Read `references/plan-file.md` first. Find the working folder once, in the shell: `echo "${TMPDIR:-/tmp}/wayfinder/<slug>"` (`<slug>`: the short name in lower case, words joined by `-`). Use the printed path as it is for the data file (`<working folder>/<slug>.plan.json`), for `--out`, and for any helper script; outside the vault, a run makes nothing anywhere else. Then build, by Build and check.
 9. **Reply**, by Reply.
 
