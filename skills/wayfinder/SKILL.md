@@ -25,12 +25,21 @@ Follow the obsidian-vault skill's conventions. Wayfinder takes a plan for code n
    ```
 
    It prints `none` or one line per walkthrough. If one covers the code, use its stops for the unchanged and changed stops, and set `walkthrough` to its note name, taken only from a look-up line you just read. Make no offer to build a walkthrough.
-4. **Pin the journey and the base.** One clean path of the data: one start, one end, about 4 to 12 stops. A larger plan: pick the first journey for this run and list the rest as next. The base is where today's code is read from:
-   - the ref the plan names, such as `origin/release`. A name that starts with `-` is not a ref, so use the next rule;
-   - otherwise the default branch, when the repo already has it locally: what `GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --verify --quiet --abbrev-ref origin/HEAD` prints (such as `origin/main`); when that prints nothing, the first of `origin/main` and `origin/master` that `GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --verify --quiet <ref>` finds (an empty first result is normal, since many clones have no `origin/HEAD`; it does not mean `origin/main` is missing, so say a ref is missing only when both checks print nothing);
-   - otherwise the disk: no `base` in the data file, and today's code is read as it is on disk.
+4. **Pin the journey and the base.** One clean path of the data: one start, one end, about 4 to 12 stops. A larger plan: pick the first journey for this run and list the rest as next. The base is where today's code is read from. Find it and its commit with one command per repo, run exactly as given:
+   - When the plan names a ref, such as `origin/release`, that does not start with `-`, use that ref and nothing else:
 
-   Note the commit: `GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --short=7 --end-of-options <base, or HEAD for the disk>`. Never fetch, and never ask the user to fetch, commit or revert first.
+     ```
+     (c=$(GIT_OPTIONAL_LOCKS=0 git -C <repo> rev-parse --verify --quiet --short=7 --end-of-options '<ref>') && echo "base=<ref> $c" || echo "base=<ref> missing")
+     ```
+
+     `missing` means the repo does not hold that ref: run the next command instead, and say in the cost message that the plan's ref is not here.
+   - Otherwise this one finds the default branch (`origin/HEAD`'s target, then `origin/main`, then `origin/master`), or the disk:
+
+     ```
+     (export GIT_OPTIONAL_LOCKS=0; b=; for r in "$(git -C <repo> rev-parse --verify --quiet --abbrev-ref --end-of-options origin/HEAD 2>/dev/null)" origin/main origin/master; do [ -z "$b" ] && [ -n "$r" ] && git -C <repo> rev-parse --verify --quiet --end-of-options "$r" >/dev/null && b=$r; done; echo "base=${b:-disk} $(git -C <repo> rev-parse --short=7 --end-of-options "${b:-HEAD}")")
+     ```
+
+   It prints one line, `base=<ref> <commit>` or `base=disk <commit>`. Copy the printed ref into the data file's `base` as is. Only on `base=disk`: leave `base` out, read today's code from disk, and use step 5's disk line. Never fetch, and never ask the user to fetch, commit or revert first.
 5. **State the cost and ask once**, in one message. Leave out the lines that do not apply:
 
    ```
