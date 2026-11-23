@@ -181,6 +181,11 @@ test('a new stop in an existing file: kicker, tags, sketch and choices', t => {
   assert.equal(s3.ticket, '');
 });
 
+test('a sketch on a new stop with no after reads new', t => {
+  const s3 = plan(t, d => { delete d.stops[2].code[0].after; }).stops[2];
+  assert.equal(s3.sketches[0].label, 'src/store.js · new');
+});
+
 test('a changed stop: today blocks, a sketch and today', t => {
   const s2 = plan(t).stops[1];
   assert.equal(s2.kicker, 'Stop 2 of 3 · Task 2');

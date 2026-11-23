@@ -44,15 +44,15 @@ function blockModel(block) {
   return { label: range(block), fn: block.function, rows, total, folded: rows.length !== all.length, showAll: `Show all ${total} lines` };
 }
 
-function sketchLabel(b) {
+function sketchLabel(b, status) {
   if (b.new_file) return `${b.file} · new file`;
   if (typeof b.after === 'number') return `${b.file} · new, after line ${b.after}`;
   if (b.after !== undefined) return `${b.file} · new, after ${b.after}`;
-  return `${b.file} · changed`;
+  return `${b.file} · ${status === 'new' ? 'new' : 'changed'}`;
 }
 
 // A sketch is never checked and never folds (30 lines at most): no line numbers, every line shown.
-const sketchModel = b => ({ label: sketchLabel(b), head: 'Sketch · not checked', fn: b.function, rows: splitLines(b.text).map(text => ({ text })), originTag: originTag(b.from) });
+const sketchModel = (b, status) => ({ label: sketchLabel(b, status), head: 'Sketch · not checked', fn: b.function, rows: splitLines(b.text).map(text => ({ text })), originTag: originTag(b.from) });
 
 // The chip's colour: written sources, commits and pull requests, comments in the code, and gaps.
 const TONE = {
@@ -85,7 +85,7 @@ function planStop(s, data) {
     originTag: originTag(s.from),
     ticket: s.ticket ?? '',
     task: taskWord(tasksOf(s.id, data)),
-    sketches: sketches.map(sketchModel),
+    sketches: sketches.map(b => sketchModel(b, s.status)),
     points: s.points || [],
     today: s.today ? { what: s.today.what, points: s.today.points || [] } : null,
     takes: s.takes || [], gives: s.gives || [],
