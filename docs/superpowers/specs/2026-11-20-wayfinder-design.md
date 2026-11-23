@@ -336,7 +336,7 @@ Open questions, then questions about today's code:
 
 **Writing rules** (also in `references/plan-file.md`): one plain sentence, then a few short bullets. No file names, signatures or backticks in sentences. A changed stop says Today and Plan apart. Short `takes` and `gives` names, reused word for word down the chain.
 
-**A change request** ("change stop 3 to …"): copy the `.plan.json` from the vault into the working folder (the build refuses one inside the vault), edit it, and rebuild with `--same-day replace`. **Call:** no question first, since the user asked for the change; on a later day it becomes a new dated plan linked as earlier. **Call:** Wayfinder never writes to the user's plan file. The reply ends with "Your plan file would need to say:" and a short list.
+**A change request** ("change stop 3 to …"): copy the `.plan.json` from the vault into the working folder (the build refuses one inside the vault), edit it, and rebuild with `--same-day replace`. **Call:** no question first, since the user asked for the change; on a later day it becomes a new dated plan linked as earlier. **Call:** Wayfinder never writes to the user's plan file. The reply ends with "Your plan file would need to say:" and a short list. **Call:** the user's words are saved as a new `chat` source (`change 1`, then `change 2`). Only a change stated as decided is quoted as `plan`; a tentative one ("what if …", "maybe …") becomes a proposal or an open choice, with no quote. An entry whose old quote says the opposite gets the new quote, or becomes a proposal.
 
 ### File by file
 
