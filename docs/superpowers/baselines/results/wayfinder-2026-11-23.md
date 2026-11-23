@@ -94,3 +94,31 @@ t1 commands were the same chain as before: `git ls-files; ... rev-parse --verify
 --verify --quiet origin/main; ... rev-parse --short=7 HEAD`. The agent ran both checks, so the "say a ref is missing only when both
 checks print nothing" sentence did not stop the misreading: the chain is run as one command, the empty `origin/HEAD` result and the
 full id are not separated, and the cost message is written from the empty line. The page content is unaffected (same commit).
+
+## Recheck after the labelled base command (e6781a6)
+
+Nine GREEN reps (three each of (a), (d), (g)), every one `claude -p --model sonnet` on its own copies, same harness and overrides,
+run in parallel under `<scratchpad>/wf3/wf/reps/r-*`, each launched by its own explicit command. Step 4 of `skills/wayfinder/SKILL.md`
+is now one labelled command that prints a `base=` line.
+
+| Rep | `repos[0].base` | printed `base=` line | claim "no origin/main" | scenario | U1 |
+|---|---|---|---|---|---|
+| r-a1 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+| r-a2 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+| r-a3 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+| r-d1 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+| r-d2 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+| r-d3 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+| r-g1 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+| r-g2 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+| r-g3 | `origin/main` | `base=origin/main 88f2e87` | none | PASS | nothing |
+
+9 of 9 reps have base `origin/main`. Every rep ran the step 4 command once in t1; every t1 cost message says "today's code read at
+`origin/main` (commit 88f2e87)". No t1 or t2 reply says `origin/main` is missing.
+
+Other checks, all reps: every turn ended `success`; `repo_ok` ok; `plans_ok` ok; `rebuild_ok` exit 0; U3 0; U4 nothing; each made
+tool calls. (a) a_data ok, one note, one html, one json in `Plans/`. (d) only `Plans/` entries, t1 says the page goes to the
+vault. (e) `no_trace` ok for t1 of all six (a) and (d) reps. (g) `g_data` ok in all three. Void reps: none.
+
+Correction to "The page content is unaffected" above: in the reps that wrote no `base`, today's code was read from disk, which only
+matched `origin/main` because the fixture's disk equals it.
