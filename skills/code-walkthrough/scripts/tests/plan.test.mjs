@@ -37,11 +37,19 @@ for (const [title, edit, line] of [
   ['a sketch file as an absolute path', (s, k) => { k.file = '/x.js'; }, 'stop s3 code block 1 is a sketch, so its file must be a path from the repo top'],
   ['a sketch file starting ./', (s, k) => { k.file = './x.js'; }, 'stop s3 code block 1 is a sketch, so its file must be a path from the repo top'],
   ['a sketch needs text', (s, k) => { delete k.text; }, 'stop s3 code block 1 has no text'],
+  ['after as empty text', (s, k) => { k.after = ''; }, 'stop s3 code block 1 needs after as a whole number, 1 or more, or as text from the file'],
+  ['after as 0', (s, k) => { k.after = 0; }, 'stop s3 code block 1 needs after as a whole number, 1 or more, or as text from the file'],
+  ['after as -1', (s, k) => { k.after = -1; }, 'stop s3 code block 1 needs after as a whole number, 1 or more, or as text from the file'],
+  ['after as true', (s, k) => { k.after = true; }, 'stop s3 code block 1 needs after as a whole number, 1 or more, or as text from the file'],
 ]) {
   test(title, t => {
     assert.deepEqual(sketchAfter(t, edit), [line]);
   });
 }
+
+test('after as text passes', t => {
+  assert.deepEqual(sketchAfter(t, (s, k) => { k.after = 'totalOf'; }), []);
+});
 
 test('only unchanged and changed stops need a Why entry', t => {
   const d = samplePlan(ledgerRepo(tempRoot(t)));

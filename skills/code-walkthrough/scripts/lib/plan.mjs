@@ -37,6 +37,7 @@ export function sketchErrors(data) {
       }
       if (b.lines !== undefined || b.key_lines !== undefined || b.left_out !== undefined) errors.push(`${at} is a sketch, so it cannot have lines, key_lines or left_out`);
       if (b.after !== undefined && b.new_file === true) errors.push(`${at} has after and new_file together; use one`);
+      if (b.after !== undefined && !(Number.isInteger(b.after) && b.after >= 1) && !(typeof b.after === 'string' && b.after)) errors.push(`${at} needs after as a whole number, 1 or more, or as text from the file`);
     });
   }
   return errors;

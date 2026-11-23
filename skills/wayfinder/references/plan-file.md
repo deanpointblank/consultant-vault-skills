@@ -211,6 +211,7 @@ These print alone, before any other check. Fix them all, and count that as one r
 | `… is a sketch of 1 line; give it 2 or more` (or `of 0 lines`) | Give it a signature and a body |
 | `… is a sketch, so it cannot have lines, key_lines or left_out` | Remove them |
 | `… has after and new_file together; use one` | A new file has no `after` |
+| `… needs after as a whole number, 1 or more, or as text from the file` | Give a line number of 1 or more, or text the file holds |
 | `… is a sketch, so its file must be a path from the repo top` | Use a path from the repo top, with no `..` and no leading `/` or `./` |
 
 **Origins**
