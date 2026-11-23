@@ -200,21 +200,21 @@ stops with a message when F3 to F6 fail.
 
 Every task extracts the code-walkthrough harness, makes three line edits to it, then extracts the
 overrides below and sources both. `SCRATCH` is the executing session's scratchpad directory; `LIVE_VAULT`
-is the live notes vault's folder and `STRIDE` the client folder that holds it. Both are set by the
+is the live notes vault's folder and `CLIENT_DIR` the client folder that holds it. Both are set by the
 person running the reps; this file never spells them. `W` is the `wayfinder` worktree.
 
 ```sh
-export SCRATCH=<scratchpad> W=<the wayfinder worktree> LIVE_VAULT=<live vault> STRIDE=<client folder>
+export SCRATCH=<scratchpad> W=<the wayfinder worktree> LIVE_VAULT=<live vault> CLIENT_DIR=<client folder>
 mkdir -p "$SCRATCH/wf-harness"
 # 1. code-walkthrough's harness block, with its rep folders and scripts under wf, its client folder from the environment
 awk '/^### Harness/{h=1} h&&/^```bash/{f=1;next} f&&/^```/{exit} f' "$W/docs/superpowers/baselines/code-walkthrough.md" \
-  | sed -e 's#^STRIDE=.*#STRIDE=${STRIDE:-$HOME/Code/Clients}#' -e 's#cw-harness#wf-harness#g' -e 's#cw/reps#wf/reps#g' \
+  | sed -e 's#^CLIENT_DIR=.*#CLIENT_DIR=${CLIENT_DIR:-$HOME/Code/Clients}#' -e 's#cw-harness#wf-harness#g' -e 's#cw/reps#wf/reps#g' \
   > "$SCRATCH/wf-harness/harness.sh"
 # 2. the overrides below
 awk '/^### Harness overrides/{h=1} h&&/^```bash/{f=1;next} f&&/^```/{exit} f' "$W/docs/superpowers/baselines/wayfinder.md" \
   > "$SCRATCH/wf-harness/overrides.sh"
 # every Bash call that uses the harness starts with:
-export SCRATCH=<scratchpad> W=<worktree> LIVE_VAULT=<live vault> STRIDE=<client folder>
+export SCRATCH=<scratchpad> W=<worktree> LIVE_VAULT=<live vault> CLIENT_DIR=<client folder>
 source "$SCRATCH/wf-harness/harness.sh"; source "$SCRATCH/wf-harness/overrides.sh"
 ```
 

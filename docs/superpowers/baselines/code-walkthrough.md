@@ -588,14 +588,14 @@ executing session's scratchpad directory.
 SRC=$LIVE_VAULT
 FIX=$HOME/.cache/vault-skills-fixtures/code-walkthrough
 W=${W:-$HOME/Code/consultant-vault-skills/.claude/worktrees/code-walkthrough}
-STRIDE=$HOME/Code/Clients
+CLIENT_DIR=$HOME/Code/Clients
 CW=$SCRATCH/cw/reps     # every rep lives here; the scripts live in $SCRATCH/cw-harness, out of the reps' way
 
 # Jira and Confluence writes and the Teamwork Graph write are denied. File edits are denied under the client folder,
 # the worktree, and all of ~/Code, ~/.claude and ~/.cache (a rep's own folders are under the scratchpad, so they stay
 # writable). Edit(path) covers every file-editing tool; a Write(path) rule would be inert. Agent is denied so a rep
 # stays one process.
-DENY="mcp__atlassian__createJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__editJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,mcp__atlassian__addTeamworkGraphContext,mcp__atlassian__createCompassComponent,mcp__atlassian__createCompassComponentRelationship,mcp__atlassian__createCompassCustomFieldDefinition,Edit(/$STRIDE/**),Edit(/$W/**),Edit(/$HOME/Code/**),Edit(/$HOME/.claude/**),Edit(/$HOME/.cache/**),Skill(uscold-db),Bash($HOME/.claude/skills/uscold-db/bin/pgq:*),Bash(~/.claude/skills/uscold-db/bin/pgq:*),Bash(open:*),WebFetch,WebSearch,RemoteTrigger,PushNotification,Agent"
+DENY="mcp__atlassian__createJiraIssue,mcp__atlassian__createIssueLink,mcp__atlassian__editJiraIssue,mcp__atlassian__addCommentToJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__addWorklogToJiraIssue,mcp__atlassian__createConfluencePage,mcp__atlassian__updateConfluencePage,mcp__atlassian__createConfluenceFooterComment,mcp__atlassian__createConfluenceInlineComment,mcp__atlassian__addTeamworkGraphContext,mcp__atlassian__createCompassComponent,mcp__atlassian__createCompassComponentRelationship,mcp__atlassian__createCompassCustomFieldDefinition,Edit(/$CLIENT_DIR/**),Edit(/$W/**),Edit(/$HOME/Code/**),Edit(/$HOME/.claude/**),Edit(/$HOME/.cache/**),Skill(uscold-db),Bash($HOME/.claude/skills/uscold-db/bin/pgq:*),Bash(~/.claude/skills/uscold-db/bin/pgq:*),Bash(open:*),WebFetch,WebSearch,RemoteTrigger,PushNotification,Agent"
 ALLOW="Skill,Bash,Read,Write,Edit,Glob,Grep"
 # No MCP servers in any rep: a test session must not reach a client database, Jira or any connected service.
 NO_MCP=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
@@ -689,7 +689,7 @@ answers_read() {
 # live_mentioned <dir> <label>: tool inputs that name the live vault or the client folder (recorded, not scored).
 live_mentioned() {
   jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use") | .input | tostring' "$1/$2.jsonl" \
-    | grep -F -e "$SRC" -e "$STRIDE" -e "~${STRIDE#"$HOME"}" -e "\$HOME${STRIDE#"$HOME"}" || true
+    | grep -F -e "$SRC" -e "$CLIENT_DIR" -e "~${CLIENT_DIR#"$HOME"}" -e "\$HOME${CLIENT_DIR#"$HOME"}" || true
 }
 # Tool calls or commands that reach outside: a Bash `open` (at the start or after ; && | or a newline), WebFetch, WebSearch, RemoteTrigger, PushNotification, any MCP tool, a page service, a post, a gh write, a push. Prints a count.
 outside_calls() {
